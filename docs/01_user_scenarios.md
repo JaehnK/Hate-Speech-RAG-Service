@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.4.0 |
+| 버전 | v0.4.1 |
 | 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
@@ -185,7 +185,7 @@ MVP는 단일 YouTube 영상 URL 또는 영상 ID만 처리한다.
 
 성공 기준:
 
-- 모델명과 dual vector store collection은 보고서 재현성을 위해 analysis run에 저장된다.
+- 모델명과 dual vector store collections는 보고서 재현성을 위해 analysis run에 저장된다.
 - API 키 원문은 표시하지 않는다.
 - MVP API 밖에서 변경된 설정은 이후 job부터 적용된다.
 
