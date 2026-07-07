@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 07:18:24 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:17:03 KST |
 
 ## 문서 목적
 
@@ -45,6 +45,7 @@ MVP는 다음 항목을 포함하지 않는다.
 - 관리자 기능은 MVP에서 API로만 제공한다.
 - 보고서는 생성 시점의 snapshot을 저장한다.
 - 댓글 소셜 네트워크는 독립 artifact로 생성한다.
+- Python dependency 관리는 `uv`를 사용하고, Docker Compose 환경 분리는 `10_docker_environment.md`를 따른다.
 - 원천 프로젝트 디렉토리인 `YouTubeHateSpeech/`, `hateSpeechRAG/`는 MVP 구현 전환의 참조 코드로 사용하고, 추후 별도 서브모듈 또는 vendor 구조로 포함하는 것을 검토한다.
 
 ## 시스템 컨텍스트
@@ -124,7 +125,7 @@ MVP에서는 기존 `hate_speech_collection`에 해당하는 컬렉션을 서비
 
 원천 자막 파일, 내보내기 파일, 보고서 snapshot payload처럼 관계형 테이블에 직접 넣기 부담스러운 산출물을 저장한다.
 
-MVP에서는 로컬 파일 시스템 또는 단일 object storage adapter 중 하나로 시작할 수 있다. 저장소 선택은 배포 환경 문서에서 확정한다.
+MVP에서는 Docker volume으로 mount되는 로컬 파일 시스템 저장소로 시작한다. object storage adapter는 운영 요구가 생기면 추가한다.
 
 ## 내부 모듈
 
@@ -353,9 +354,11 @@ MVP 기준 프로세스:
 - `web`: FastAPI 애플리케이션
 - `worker`: background worker
 - `postgres`: PostgreSQL
-- `chroma`: Chroma vector store 또는 persistent directory
+- `chroma_data`: Chroma persistent directory volume
 
-초기 개발 환경은 Docker Compose로 묶는 것을 기본 후보로 둔다. 실제 배포 방식은 `08_mvp_plan.md`에서 구현 순서와 함께 확정한다.
+MVP에서 별도 Chroma server container는 기본값이 아니다.
+
+실행 환경은 Docker Compose로 묶는다. 개발, 테스트, 운영 override 기준은 `10_docker_environment.md`에서 정의한다.
 
 ## 원천 프로젝트 전환 기준
 
