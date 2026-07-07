@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 08:17:03 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 목적
 
@@ -110,7 +110,7 @@ docs: add documentation agent spec
 - Python dependency 관리는 `uv`를 기본값으로 둔다.
 - Docker Compose는 dev, test, prod override로 분리한다.
 - PostgreSQL을 주 저장소로 사용한다.
-- Chroma를 RAG vector store로 사용한다.
+- Chroma를 예시 검색과 정의 문서 검색을 위한 dual vector RAG 저장소로 사용한다.
 - 보고서는 분석 모듈별 artifact를 조합해서 생성한다.
 - 부분 실패는 보고서에 표시하고, 관련 없는 분석 결과를 무효화하지 않는다.
 
