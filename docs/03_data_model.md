@@ -2,7 +2,7 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
+| 버전 | v0.3.1 |
 | 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
@@ -311,7 +311,7 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | hate_type | text nullable | 혐오 유형 |
 | evidence_strength | numeric nullable | 증거 강도 |
 | reasoning | text nullable | 분류 근거 |
-| similar_cases_used | jsonb nullable | RAG 유사 사례 |
+| similar_cases_used | jsonb nullable | RAG 유사 예시 |
 | definition_docs_used | jsonb nullable | RAG 정의 문서 근거 |
 | rag_context_status | text nullable | `complete`, `example_only`, `definition_only`, `unavailable` |
 | prompt_version | text nullable | prompt version |
@@ -347,7 +347,7 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | hate_type | text nullable | 혐오 유형 |
 | evidence_strength | numeric nullable | 증거 강도 |
 | reasoning | text nullable | 분류 근거 |
-| similar_cases_used | jsonb nullable | RAG 유사 사례 |
+| similar_cases_used | jsonb nullable | RAG 유사 예시 |
 | definition_docs_used | jsonb nullable | RAG 정의 문서 근거 |
 | rag_context_status | text nullable | `complete`, `example_only`, `definition_only`, `unavailable` |
 | prompt_version | text nullable | prompt version |
