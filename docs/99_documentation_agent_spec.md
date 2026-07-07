@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.1 |
-| 작성일시 | 2026-07-08 07:18:24 KST |
+| 버전 | v0.1.2 |
+| 작성일시 | 2026-07-08 08:11:56 KST |
 
 ## 목적
 
@@ -97,6 +97,7 @@ docs: add documentation agent spec
 - `06_report_spec.md`: 웹 보고서와 내보내기 명세
 - `07_backend_design.md`: 주요 백엔드 클래스와 모듈 책임
 - `08_mvp_plan.md`: MVP 구현 순서와 검증 기준
+- `09_implementation_decisions.md`: 구현 전 기술 결정과 결정 상태
 - `99_documentation_agent_spec.md`: 문서 작성 에이전트 운영 명세
 
 ## 서비스 설계 기준
