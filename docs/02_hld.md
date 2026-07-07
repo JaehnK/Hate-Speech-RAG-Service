@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.1 |
-| 작성일시 | 2026-07-08 08:19:25 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -45,6 +45,7 @@ MVP는 다음 항목을 포함하지 않는다.
 - 관리자 기능은 MVP에서 API로만 제공한다.
 - 보고서는 생성 시점의 snapshot을 저장한다.
 - 댓글 소셜 네트워크는 독립 artifact로 생성한다.
+- RAG 분류는 혐오표현 예시 vector store와 혐오표현 정의 문서 vector store를 함께 사용한다.
 - Python dependency 관리는 `uv`를 사용하고, Docker Compose 환경 분리는 `10_docker_environment.md`를 따른다.
 - 원천 프로젝트 디렉토리인 `YouTubeHateSpeech/`, `hateSpeechRAG/`는 MVP 구현 전환의 참조 코드로 사용하고, 추후 별도 서브모듈 또는 vendor 구조로 포함하는 것을 검토한다.
 
@@ -55,7 +56,7 @@ MVP는 다음 항목을 포함하지 않는다.
   -> FastAPI Web/API
       -> PostgreSQL
       -> Object/File Storage
-      -> Chroma Vector Store
+      -> Chroma Vector Stores
       -> Background Worker
           -> YouTube Data API
           -> Public Caption Collector
@@ -115,11 +116,16 @@ PostgreSQL은 서비스의 기준 저장소다.
 - exports
 - operation logs
 
-### Chroma Vector Store
+### Chroma Vector Stores
 
-Chroma는 RAG 분류에 필요한 혐오표현 유사 사례 검색 저장소로 사용한다.
+Chroma는 RAG 분류에 필요한 검색 저장소로 사용한다.
 
-MVP에서는 기존 `hate_speech_collection`에 해당하는 컬렉션을 서비스 설정으로 관리한다. 분석 결과에는 사용한 embedding provider, collection name, retriever 설정을 남긴다.
+MVP에서는 하나의 Chroma persistent directory 안에 목적별 collection을 둔다.
+
+- `hate_speech_examples`: 입력 텍스트와 유사한 혐오표현 예시 검색
+- `hate_speech_definitions`: 혐오표현 정의, 판단 기준, 분류 기준 문서 검색
+
+분석 결과에는 사용한 embedding provider, collection names, retriever 설정, definition corpus version을 남긴다.
 
 ### Object/File Storage
 
@@ -193,13 +199,16 @@ YouTube 원천 데이터를 수집한다.
 - `ScriptAnalyzer`
 - `RagClassifier`
 - `VectorStoreClient`
+- `ExampleRetriever`
+- `DefinitionRetriever`
 - `LlmClient`
 
 분석 정책:
 
 - 댓글 분석은 수집된 전체 댓글과 대댓글을 대상으로 한다.
 - 스크립트 분석은 수집된 자막을 세그먼트로 나누어 수행한다.
-- 각 분석 결과에는 모델명, prompt version, vector store collection, retriever 설정, 실행 시각을 저장한다.
+- RAG classifier는 예시 retriever와 정의 retriever의 검색 결과를 함께 prompt에 전달한다.
+- 각 분석 결과에는 모델명, prompt version, vector store collections, retriever 설정, definition corpus version, 실행 시각을 저장한다.
 - 개별 댓글 또는 세그먼트 분석 실패는 전체 job 실패가 아니라 항목별 실패로 기록할 수 있다.
 
 ### Network Module
@@ -257,7 +266,7 @@ MVP 기능:
 - 최근 quota 오류 조회
 - 실패 job 조회
 - 재시도 가능한 job 확인
-- 모델과 RAG 설정 조회
+- 모델과 dual vector RAG 설정 조회
 - 운영 로그 조회
 
 MVP에서는 관리자 웹 UI를 만들지 않는다.
@@ -373,6 +382,8 @@ MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다
 `hateSpeechRAG/`의 분석 코드는 다음 책임으로 재구성한다.
 
 - Chroma vector store 접근
+- 혐오표현 예시 retriever
+- 혐오표현 정의 문서 retriever
 - RAG classifier
 - 댓글 분석
 - 스크립트 세그먼트 분석
