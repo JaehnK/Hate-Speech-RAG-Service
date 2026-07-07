@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 08:19:25 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -204,6 +204,7 @@ MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다
 정책:
 
 - Chroma persistent directory를 `chroma_data` volume에 둔다.
+- 같은 persistent directory 안에 예시 collection과 정의 문서 collection을 둔다.
 - web과 worker가 같은 persistent directory 경로를 참조할 수 있어야 한다.
 - Chroma server mode가 필요해지면 별도 service로 분리한다.
 
@@ -263,6 +264,9 @@ Dockerfile 흐름 후보:
 | `EMBEDDING_MODEL` | embedding model |
 | `EMBEDDING_API_KEY` | embedding API key |
 | `CHROMA_PERSIST_DIRECTORY` | Chroma persistent directory |
+| `EXAMPLE_VECTOR_COLLECTION` | 혐오표현 예시 collection |
+| `DEFINITION_VECTOR_COLLECTION` | 혐오표현 정의 문서 collection |
+| `DEFINITION_CORPUS_VERSION` | 정의 문서 corpus version |
 | `REPORT_STORAGE_DIR` | report export 저장 경로 |
 | `LOG_LEVEL` | 로그 레벨 |
 
