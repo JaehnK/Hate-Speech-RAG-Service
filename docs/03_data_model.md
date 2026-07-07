@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 07:02:24 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 07:18:24 KST |
 
 ## 문서 목적
 
@@ -411,6 +411,11 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 - `(network_id)`
 - `(author_channel_id)`
 
+정책:
+
+- MVP에서는 `author_channel_id`를 `node_key`의 우선값으로 사용한다.
+- `author_channel_id`가 없으면 같은 job 안에서 재현 가능한 내부 key를 사용한다.
+
 ### comment_network_edges
 
 소셜 네트워크의 엣지를 저장한다.
@@ -436,8 +441,9 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 
 정책:
 
-- 동일 작성자 쌍의 엣지를 합칠지 개별 대댓글 단위로 둘지는 보고서 요구에 따라 결정한다.
-- MVP 기본값은 개별 대댓글 단위 저장이다. 요약 weight는 조회 시 집계한다.
+- MVP 기본값은 개별 대댓글 단위 edge 저장이다.
+- 저장된 개별 edge의 기본 `weight`는 1이다.
+- 작성자 쌍 집계 weight는 보고서 조회 또는 network summary 생성 시 계산한다.
 
 ## 보고서 테이블
 
@@ -449,7 +455,7 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | --- | --- | --- |
 | id | uuid PK | report snapshot ID |
 | analysis_run_id | uuid FK | `analysis_runs.id` |
-| status | text | `succeeded`, `failed` |
+| status | text | `succeeded`, `partial_success`, `failed` |
 | title | text | 보고서 제목 |
 | payload | jsonb | 보고서 렌더링용 정규화 payload |
 | payload_uri | text nullable | payload를 파일로 저장할 경우 경로 |
@@ -593,8 +599,6 @@ MVP 서비스 스키마의 변경 방향:
 - PostgreSQL enum을 사용할지, text + 애플리케이션 enum으로 유지할지
 - report `payload`를 DB에 저장할지 파일 저장소에 저장할지
 - export 파일의 기본 보존 기간
-- 댓글 작성자 식별자를 표시명 기준으로 둘지 채널 ID 기준으로 우선할지
-- 네트워크 엣지를 개별 대댓글 단위로 저장할지 작성자 쌍 집계 단위로 저장할지
 
 ## 검증 기준
 
