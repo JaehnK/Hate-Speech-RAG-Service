@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 07:05:36 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -18,6 +18,7 @@
 - 동일 영상 요청도 항상 새 job을 생성한다.
 - 보고서 JSON은 snapshot 기준으로 반환한다.
 - 댓글, 스크립트, 네트워크 상세 목록은 pagination을 사용한다.
+- 분석 상세 응답은 유사 예시 근거와 정의 문서 근거를 구분해 제공한다.
 - 관리자 기능은 MVP에서 웹 화면 없이 API로만 제공한다.
 - API 키, 쿠키, secret 원문은 응답에 포함하지 않는다.
 - 오류 응답은 공통 형식을 사용한다.
@@ -343,7 +344,10 @@ Query:
         "categories": ["욕설"],
         "target_group": null,
         "hate_type": "insult",
-        "reasoning": "분류 근거 요약"
+        "reasoning": "분류 근거 요약",
+        "rag_context_status": "complete",
+        "similar_cases_used": [],
+        "definition_docs_used": []
       }
     }
   ],
@@ -382,7 +386,10 @@ Query:
         "categories": [],
         "target_group": null,
         "hate_type": null,
-        "reasoning": "분류 근거 요약"
+        "reasoning": "분류 근거 요약",
+        "rag_context_status": "complete",
+        "similar_cases_used": [],
+        "definition_docs_used": []
       }
     }
   ],
@@ -617,9 +624,17 @@ Query:
     "model": "configured-embedding-model",
     "api_key_configured": true
   },
-  "vector_store": {
+  "vector_stores": {
     "provider": "chroma",
-    "collection": "hate_speech_collection"
+    "examples": {
+      "collection": "hate_speech_examples",
+      "is_configured": true
+    },
+    "definitions": {
+      "collection": "hate_speech_definitions",
+      "corpus_version": "definition-corpus-version",
+      "is_configured": true
+    }
   }
 }
 ```
