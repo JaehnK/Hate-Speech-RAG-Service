@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 08:17:03 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -18,7 +18,7 @@ MVP는 다음 조건을 만족하면 완료로 본다.
 - 사용자가 YouTube URL 또는 video ID 하나를 제출하고 job ID를 받는다.
 - worker가 job을 처리하고 단계별 상태를 기록한다.
 - 영상 메타데이터, 댓글, 대댓글, 공개 자막 snapshot을 저장한다.
-- 댓글과 스크립트 segment에 RAG 기반 혐오표현 분석을 수행한다.
+- 댓글과 스크립트 segment에 예시 검색과 정의 문서 검색을 함께 사용하는 RAG 기반 혐오표현 분석을 수행한다.
 - 댓글과 대댓글 기반 소셜 네트워크를 생성한다.
 - 보고서 snapshot을 저장한다.
 - 웹 보고서와 JSON report API로 결과를 확인한다.
@@ -229,11 +229,14 @@ MVP 기본값:
 
 목표:
 
-- Chroma와 LLM 호출을 서비스용 `RagClassifier`로 감싼다.
+- Chroma dual retriever와 LLM 호출을 서비스용 `RagClassifier`로 감싼다.
 
 작업:
 
 - `VectorStoreClient` 구현
+- `ExampleRetriever` 구현
+- `DefinitionRetriever` 구현
+- 혐오표현 정의 문서 corpus seed와 version 기록 방식 추가
 - `LlmClient` 구현
 - `RagClassifier.classify_text` 구현
 - prompt version 관리 추가
@@ -242,8 +245,9 @@ MVP 기본값:
 검증:
 
 - fake classifier로 댓글과 스크립트 분석 테스트가 통과한다.
-- 실제 Chroma collection 접근이 integration test에서 확인된다.
-- 분석 결과에 model, prompt version, vector collection이 기록된다.
+- 실제 Chroma example collection과 definition collection 접근이 integration test에서 확인된다.
+- 분석 결과에 model, prompt version, example collection, definition collection, definition corpus version이 기록된다.
+- 분석 결과에 유사 예시와 정의 문서 근거가 분리되어 저장된다.
 - LLM 오류가 domain error로 변환된다.
 
 ## Phase 8. 댓글 분석
@@ -406,7 +410,7 @@ MVP 기본값:
 5. 댓글 수집
 6. 자막 수집
 7. fake RAG 기반 분석 저장
-8. 실제 RAG adapter 연결
+8. 실제 dual vector RAG adapter 연결
 9. 네트워크 생성
 10. report snapshot
 11. 웹 보고서
@@ -434,6 +438,7 @@ MVP 기본값:
 - 관리자 API 인증을 `X-Admin-Token`으로 시작해도 되는가?
 - raw 프로젝트는 git submodule로 둘 것인가, 필요한 코드만 새 `app/`으로 옮길 것인가?
 - Chroma는 persistent directory로 시작할 것인가, 별도 서버로 띄울 것인가?
+- 혐오표현 정의 문서 corpus의 출처와 versioning을 어떻게 둘 것인가?
 - 웹 보고서는 server-side template로 먼저 만들고 React 분리는 MVP 이후로 미뤄도 되는가?
 - prod profile에 reverse proxy를 포함할 것인가?
 
@@ -447,6 +452,7 @@ MVP 기본값:
 - PostgreSQL repositories
 - YouTube collection adapters
 - RAG classifier adapter
+- Definition corpus seed
 - Comment analyzer
 - Script analyzer
 - Comment network builder
