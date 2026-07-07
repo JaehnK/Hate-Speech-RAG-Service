@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 08:14:35 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 08:19:25 KST |
 
 ## 문서 목적
 
@@ -17,7 +17,7 @@
 - Docker image는 web과 worker가 공유한다.
 - web과 worker는 같은 코드베이스를 사용하지만 별도 container로 실행한다.
 - PostgreSQL은 container service로 실행한다.
-- Chroma는 MVP에서 persistent directory 기반으로 시작한다.
+- Chroma는 MVP 권장 기본값으로 persistent directory 기반으로 시작한다.
 - report export와 자막 원문은 파일 저장소 volume에 저장한다.
 - 개발 환경은 bind mount와 reload를 허용한다.
 - 테스트 환경은 가능한 한 fake YouTube, fake LLM을 기본값으로 사용한다.
@@ -199,7 +199,7 @@ uv run alembic upgrade head
 
 ### chroma
 
-MVP에서는 별도 Chroma server container를 기본으로 두지 않는다.
+MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다.
 
 정책:
 
