@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
-| 작성일시 | 2026-07-08 07:18:24 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -175,17 +175,17 @@ MVP는 단일 YouTube 영상 URL 또는 영상 ID만 처리한다.
 
 ### AS-003 모델과 RAG 설정 확인
 
-관리자는 관리자용 API로 LLM 모델, embedding 모델, vector store 설정을 확인한다.
+관리자는 관리자용 API로 LLM 모델, embedding 모델, dual vector store 설정을 확인한다.
 
 기본 흐름:
 
 1. 관리자가 분석 설정을 확인한다.
-2. 서비스가 현재 LLM provider, 모델명, embedding provider, Chroma collection 이름을 표시한다.
+2. 서비스가 현재 LLM provider, 모델명, embedding provider, 예시 collection, 정의 collection, 정의 corpus version을 표시한다.
 3. 관리자가 설정 변경 필요 여부를 판단한다.
 
 성공 기준:
 
-- 모델명과 vector store collection은 보고서 재현성을 위해 analysis run에 저장된다.
+- 모델명과 dual vector store collection은 보고서 재현성을 위해 analysis run에 저장된다.
 - API 키 원문은 표시하지 않는다.
 - MVP API 밖에서 변경된 설정은 이후 job부터 적용된다.
 
