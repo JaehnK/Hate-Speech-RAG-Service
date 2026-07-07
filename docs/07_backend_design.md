@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 07:08:24 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 08:17:03 KST |
 
 ## 문서 목적
 
@@ -28,21 +28,24 @@ MVP 구현 기본값:
 
 - Web framework: FastAPI
 - Template: Jinja2 또는 FastAPI compatible template
+- Dependency management: `uv`
 - DB: PostgreSQL
 - DB access: SQLAlchemy 2.x
 - Migration: Alembic
 - Worker: PostgreSQL polling worker
 - Vector store: Chroma
+- Vector store mode: persistent directory
+- Runtime: Docker Compose with dev, test, prod overrides
 - Report export: openpyxl 또는 pandas 기반 Excel writer
 - HTTP client: 외부 API adapter 내부에서 관리
 
-보류:
+구현 세부 확인 사항:
 
-- SQLAlchemy sync engine과 async engine 중 최종 선택
-- worker를 처음부터 Celery/RQ로 갈지 여부
-- frontend를 server-side template만 둘지, 이후 React로 분리할지 여부
+- Python 3.11 기반 image tag
+- raw 프로젝트 submodule 또는 vendor 경로
+- prod reverse proxy를 Compose에 포함할지 여부
 
-MVP 기본값은 sync SQLAlchemy와 PostgreSQL polling worker다.
+MVP 기본값은 `uv`, sync SQLAlchemy, PostgreSQL polling worker, Chroma persistent directory, server-side template다.
 
 ## 패키지 구조
 
@@ -654,15 +657,15 @@ MVP 최소 테스트:
 - LLM 호출은 fake classifier로 대체한다.
 - Chroma 접근은 integration test에서 별도로 확인한다.
 
-## 보류 사항
+## 구현 전 확인 사항
 
 다음 항목은 구현 시작 전 최종 확인한다.
 
-- SQLAlchemy sync engine 사용 여부
-- PostgreSQL polling worker로 시작하는 결정
-- Chroma를 같은 프로세스 persistent directory로 둘지 별도 서버로 둘지
+- Python 3.11 기반 image tag
 - 기존 raw 프로젝트를 git submodule로 둘지 vendor directory로 둘지
 - `legacy_adapters/`를 MVP에 포함할지, 필요한 로직만 새 코드로 옮길지
+- prod reverse proxy를 Compose에 포함할지 여부
+- dev DB 관리 도구를 포함할지 여부
 
 ## 검증 기준
 
