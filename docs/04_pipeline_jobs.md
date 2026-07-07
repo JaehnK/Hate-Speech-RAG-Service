@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 07:18:24 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -22,6 +22,7 @@
 - 댓글 수집이 완료되지 않았으면 댓글 분석을 성공 처리하지 않는다.
 - 공개 자막이 없더라도 댓글 분석과 보고서 생성은 계속할 수 있다.
 - 보고서 snapshot은 성공한 artifact와 실패 정보를 함께 담는다.
+- RAG 분석은 혐오표현 예시 검색과 혐오표현 정의 문서 검색을 함께 사용한다.
 
 ## Job 상태
 
@@ -193,7 +194,7 @@ MVP 기본 worker는 DB polling 방식이다.
 책임:
 
 - 현재 job의 분석 실행 단위를 생성한다.
-- LLM provider, model, embedding provider, vector collection, retriever 설정, prompt version을 고정한다.
+- LLM provider, model, embedding provider, 예시 collection, 정의 collection, retriever 설정, definition corpus version, prompt version을 고정한다.
 
 성공 기준:
 
@@ -201,13 +202,14 @@ MVP 기본 worker는 DB polling 방식이다.
 
 실패 처리:
 
-- vector store 설정이 없거나 모델 설정이 불완전하면 job을 `failed`로 종료한다.
+- 예시 또는 정의 vector store 설정이 없거나 모델 설정이 불완전하면 job을 `failed`로 종료한다.
 
 ### analyze_comments
 
 책임:
 
 - 수집 완료된 모든 댓글과 대댓글을 분석한다.
+- 각 댓글에 대해 유사 혐오표현 예시와 관련 정의 문서를 검색한다.
 - 각 댓글별 분석 결과를 `comment_analysis_results`에 저장한다.
 - 실패한 댓글은 항목별 실패로 기록한다.
 
@@ -232,6 +234,7 @@ MVP 기본 worker는 DB polling 방식이다.
 책임:
 
 - transcript segment를 순서대로 분석한다.
+- 각 segment에 대해 유사 혐오표현 예시와 관련 정의 문서를 검색한다.
 - 각 segment 결과를 `script_analysis_results`에 저장한다.
 
 성공 기준:
@@ -276,7 +279,7 @@ MVP 기본 worker는 DB polling 방식이다.
 
 - 영상 메타데이터가 포함된다.
 - 댓글, 스크립트, 네트워크 섹션은 성공 또는 실패 상태가 명시된다.
-- 생성 시점, 모델 설정, vector store 설정이 포함된다.
+- 생성 시점, 모델 설정, dual vector store 설정, definition corpus version이 포함된다.
 
 실패 처리:
 
@@ -317,7 +320,9 @@ MVP 기본값:
 | `COMMENT_COLLECTION_INCOMPLETE` | 댓글 전체 수집 실패 | 예 |
 | `CAPTION_NOT_AVAILABLE` | 공개 자막 없음 | 아니오 |
 | `CAPTION_COLLECTION_ERROR` | 자막 수집 오류 | 조건부 |
-| `VECTOR_STORE_UNAVAILABLE` | Chroma 접근 실패 | 예 |
+| `EXAMPLE_VECTOR_STORE_UNAVAILABLE` | 혐오표현 예시 vector store 접근 실패 | 예 |
+| `DEFINITION_VECTOR_STORE_UNAVAILABLE` | 혐오표현 정의 문서 vector store 접근 실패 | 예 |
+| `RAG_CONTEXT_DEGRADED` | 예시 또는 정의 검색 한쪽만 성공 | 조건부 |
 | `LLM_RATE_LIMITED` | LLM rate limit | 예 |
 | `LLM_TIMEOUT` | LLM timeout | 예 |
 | `LLM_ERROR` | 기타 LLM 오류 | 조건부 |
