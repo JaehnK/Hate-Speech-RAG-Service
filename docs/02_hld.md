@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
-| 작성일시 | 2026-07-08 08:17:03 KST |
+| 버전 | v0.3.1 |
+| 작성일시 | 2026-07-08 08:19:25 KST |
 
 ## 문서 목적
 
@@ -354,9 +354,9 @@ MVP 기준 프로세스:
 - `web`: FastAPI 애플리케이션
 - `worker`: background worker
 - `postgres`: PostgreSQL
-- `chroma_data`: Chroma persistent directory volume
+- `chroma_data`: Chroma persistent directory volume 권장 기본값
 
-MVP에서 별도 Chroma server container는 기본값이 아니다.
+MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다.
 
 실행 환경은 Docker Compose로 묶는다. 개발, 테스트, 운영 override 기준은 `10_docker_environment.md`에서 정의한다.
 
