@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.2 |
-| 작성일시 | 2026-07-08 08:11:56 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 08:17:03 KST |
 
 ## 목적
 
@@ -15,7 +15,7 @@
 
 - 프로젝트 목적, 범위, 비범위를 명확히 문서화한다.
 - 이용자와 관리자 시나리오를 작성한다.
-- HLD, 데이터 모델, job pipeline, API 명세, 보고서 명세, 백엔드 설계 문서를 작성한다.
+- HLD, 데이터 모델, job pipeline, API 명세, 보고서 명세, 백엔드 설계, Docker 환경 문서를 작성한다.
 - 문서 간 용어와 아키텍처 결정을 일관되게 유지한다.
 - 기존 코드 분석 결과를 문서에 반영하되, 확인되지 않은 내용을 단정하지 않는다.
 - 문서 변경마다 검증 후 커밋한다.
@@ -98,6 +98,7 @@ docs: add documentation agent spec
 - `07_backend_design.md`: 주요 백엔드 클래스와 모듈 책임
 - `08_mvp_plan.md`: MVP 구현 순서와 검증 기준
 - `09_implementation_decisions.md`: 구현 전 기술 결정과 결정 상태
+- `10_docker_environment.md`: Docker 환경 분리와 uv 실행 기준
 - `99_documentation_agent_spec.md`: 문서 작성 에이전트 운영 명세
 
 ## 서비스 설계 기준
@@ -106,6 +107,8 @@ docs: add documentation agent spec
 
 - 초기 구조는 modular monolith다.
 - FastAPI 애플리케이션과 background worker를 분리한다.
+- Python dependency 관리는 `uv`를 기본값으로 둔다.
+- Docker Compose는 dev, test, prod override로 분리한다.
 - PostgreSQL을 주 저장소로 사용한다.
 - Chroma를 RAG vector store로 사용한다.
 - 보고서는 분석 모듈별 artifact를 조합해서 생성한다.
