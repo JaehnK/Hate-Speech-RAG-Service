@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 05:58:05 KST |
+| 버전 | v0.1.1 |
+| 작성일시 | 2026-07-08 07:18:24 KST |
 
 ## 목적
 
@@ -92,7 +92,7 @@ docs: add documentation agent spec
 - `01_user_scenarios.md`: 이용자와 관리자 시나리오
 - `02_hld.md`: 전체 아키텍처와 주요 컴포넌트
 - `03_data_model.md`: 테이블, 관계, 인덱스, 저장 정책
-- `04_pipeline_jobs.md`: 수집, 분석, 보고서 생성 job 흐름
+- `04_pipeline_jobs.md`: 수집, 분석, report snapshot 생성 흐름
 - `05_api_spec.md`: FastAPI endpoint 명세
 - `06_report_spec.md`: 웹 보고서와 내보내기 명세
 - `07_backend_design.md`: 주요 백엔드 클래스와 모듈 책임
