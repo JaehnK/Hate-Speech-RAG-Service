@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 06:48:52 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 07:18:24 KST |
 
 ## 문서 목적
 
@@ -161,7 +161,8 @@ job 생성, 단계 전이, 재시도 가능 여부 판단을 담당한다.
 - `analyze_script`
 - `build_comment_network`
 - `build_report_snapshot`
-- `export_report`
+
+보고서 내보내기는 분석 job의 기본 단계가 아니라, 생성된 report snapshot을 입력으로 하는 별도 export 작업이다.
 
 ### Collection Module
 
