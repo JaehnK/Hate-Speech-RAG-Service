@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 08:17:03 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -35,6 +35,7 @@ MVP 구현 기본값:
 - Worker: PostgreSQL polling worker
 - Vector store: Chroma
 - Vector store mode: persistent directory
+- RAG mode: dual retriever, examples + definitions
 - Runtime: Docker Compose with dev, test, prod overrides
 - Report export: openpyxl 또는 pandas 기반 Excel writer
 - HTTP client: 외부 API adapter 내부에서 관리
@@ -105,6 +106,8 @@ app/
     script_analyzer.py
     prompt_registry.py
     vector_store_client.py
+    example_retriever.py
+    definition_retriever.py
     llm_client.py
   network/
     comment_network_builder.py
@@ -217,7 +220,9 @@ adapter는 service schema에 맞는 DTO를 반환한다.
 - `embedding_provider`
 - `embedding_model`
 - `chroma_persist_directory`
-- `chroma_collection_name`
+- `example_vector_collection_name`
+- `definition_vector_collection_name`
+- `definition_corpus_version`
 - `admin_token`
 
 ### AnalysisJobService
@@ -375,8 +380,9 @@ collect(video_id: str) -> TranscriptCollectionResult
 
 책임:
 
-- vector store 검색과 LLM 분류를 조합한다.
+- 혐오표현 예시 retriever, 혐오표현 정의 retriever, LLM 분류를 조합한다.
 - comment와 script가 공통으로 사용하는 분류 결과 schema를 반환한다.
+- 분류 결과에는 유사 예시, 정의 문서 근거, RAG context 상태를 포함한다.
 
 주요 메서드:
 
@@ -629,7 +635,7 @@ DTO를 두는 이유:
 
 전환 방식:
 
-- `RagClassifier`로 LLM과 retriever 호출을 감싼다.
+- `RagClassifier`로 LLM, 예시 retriever, 정의 retriever 호출을 감싼다.
 - 기존 DAO update 방식은 사용하지 않는다.
 - `CommentAnalyzer`, `ScriptAnalyzer`가 새 분석 결과 테이블에 저장한다.
 - 네트워크 builder는 `author_channel_id` 기반 node key를 우선하도록 조정한다.
