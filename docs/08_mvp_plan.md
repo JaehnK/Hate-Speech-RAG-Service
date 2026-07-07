@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 07:09:40 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 08:17:03 KST |
 
 ## 문서 목적
 
@@ -68,25 +68,29 @@ POST /api/analysis-jobs
 작업:
 
 - Python 버전 확정
-- dependency 관리 도구 확정
-- SQLAlchemy sync/async 확정
-- PostgreSQL polling worker 확정
-- Chroma 실행 형태 확정
+- `uv` 기반 dependency와 lock file 정책 반영
+- Docker Compose 환경 분리 문서 반영
+- SQLAlchemy sync/async 권장안 최종 확인
+- PostgreSQL polling worker 권장안 최종 확인
+- Chroma persistent directory 권장안 최종 확인
 - raw 프로젝트를 git submodule로 둘지 vendor로 둘지 확정
 - 관리자 인증의 MVP 방식 확정
 
 검증:
 
-- 결정 사항이 `00_project_brief.md` 또는 관련 설계 문서에 반영되어 있다.
-- `.env.example`에 필요한 환경변수 목록이 정리되어 있다.
+- 결정 사항이 `09_implementation_decisions.md`와 관련 설계 문서에 반영되어 있다.
+- Docker 환경 분리 기준이 `10_docker_environment.md`에 정리되어 있다.
+- `.env*.example`에 필요한 환경변수 목록이 정리되어 있다.
 
 MVP 기본값:
 
+- `uv`
 - sync SQLAlchemy
 - Alembic
 - PostgreSQL polling worker
 - Chroma persistent directory
 - 관리자 API는 `X-Admin-Token`
+- Docker Compose dev, test, prod override 분리
 
 ## Phase 1. 프로젝트 스캐폴딩
 
@@ -101,14 +105,16 @@ MVP 기본값:
 - settings, logging, error handler 구성
 - health API 추가
 - pytest 기본 구조 추가
-- Docker Compose 후보 구성
+- `pyproject.toml`과 `uv.lock` 구성
+- Dockerfile과 compose 파일 초안 구성
 
 검증:
 
 - `GET /health`가 `200`을 반환한다.
 - settings가 `.env`를 읽는다.
-- 테스트 명령이 빈 테스트라도 실행된다.
+- `uv run pytest`가 빈 테스트라도 실행된다.
 - web 프로세스와 worker entrypoint가 분리되어 있다.
+- dev compose 조합으로 web과 worker가 실행된다.
 
 ## Phase 2. DB 모델과 마이그레이션
 
@@ -424,11 +430,12 @@ MVP 기본값:
 
 다음 항목은 개발 착수 전 확인하면 좋다.
 
-- PostgreSQL polling worker로 MVP를 시작해도 되는가?
+- Python 3.11을 사용할 것인가?
 - 관리자 API 인증을 `X-Admin-Token`으로 시작해도 되는가?
 - raw 프로젝트는 git submodule로 둘 것인가, 필요한 코드만 새 `app/`으로 옮길 것인가?
 - Chroma는 persistent directory로 시작할 것인가, 별도 서버로 띄울 것인가?
 - 웹 보고서는 server-side template로 먼저 만들고 React 분리는 MVP 이후로 미뤄도 되는가?
+- prod profile에 reverse proxy를 포함할 것인가?
 
 이 질문들은 현재 문서 작성을 막지는 않는다. 구현을 시작하기 전에는 결정이 필요하다.
 
