@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 07:04:06 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-08 07:18:24 KST |
 
 ## 문서 목적
 
@@ -296,7 +296,7 @@ MVP 기본 worker는 DB polling 방식이다.
 - `build_report_snapshot` 실패: `failed`
 - 필수 artifact가 성공하고 선택 artifact만 실패: `partial_success`
 - 모든 실행 대상 step 성공: `succeeded`
-- 댓글 비활성화 또는 공개 자막 없음: `partial_success` 또는 `succeeded` 여부는 보고서 정책에서 확정한다.
+- 댓글 비활성화 또는 공개 자막 없음: MVP에서는 `partial_success`
 
 MVP 기본값:
 
@@ -411,14 +411,14 @@ MVP 기본:
 - export는 `report_snapshots`를 입력으로 사용한다.
 - export 실패는 원본 report snapshot을 무효화하지 않는다.
 
-## 보류 사항
+## 구현 세부 확인 사항
 
-다음 항목은 구현 직전 확정한다.
+다음 항목은 구현 중 세부 수치를 정한다.
 
-- `COMMENTS_DISABLED`와 `CAPTION_NOT_AVAILABLE`이 있을 때 최종 job 상태를 `partial_success`로 둘지 `succeeded_with_warnings` 같은 별도 상태를 둘지
-- 관리자 재시도를 같은 job 재실행으로 유지할지, `retry_of_job_id`를 가진 새 job 생성으로 바꿀지
-- PostgreSQL polling worker에서 시작할지, 처음부터 Celery/RQ를 도입할지
-- 댓글 수집 미완료 후 재시도 시 partial snapshot을 병합할지 새 job으로 강제할지
+- YouTube API와 LLM 호출의 backoff 간격
+- 댓글 분석 batch size
+- worker polling interval
+- 진행률 표시의 세부 갱신 주기
 
 MVP 문서 기본값은 PostgreSQL polling, 같은 job 실패 step 재시도, 최종 상태 `partial_success`다.
 
