@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.2.0 |
-| 작성일시 | 2026-07-08 07:18:24 KST |
+| 버전 | v0.3.0 |
+| 작성일시 | 2026-07-08 08:35:46 KST |
 
 ## 문서 목적
 
@@ -19,6 +19,7 @@
 - 보고서는 특정 analysis run의 snapshot으로 고정한다.
 - 댓글과 대댓글은 수집 시점의 상태를 보존한다.
 - 댓글 분석, 스크립트 분석, 네트워크 생성은 독립 artifact로 저장한다.
+- RAG 근거는 혐오표현 예시와 혐오표현 정의 문서 출처를 분리해 저장한다.
 - 민감정보 원문은 저장하지 않는다.
 - 기존 `YouTubeHateSpeech/`, `hateSpeechRAG/`의 테이블은 참조 대상으로만 보고, MVP 서비스 스키마는 새로 정규화한다.
 
@@ -276,8 +277,10 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | llm_model | text | LLM model |
 | embedding_provider | text | embedding provider |
 | embedding_model | text | embedding model |
-| vector_collection | text | Chroma collection |
-| retriever_config | jsonb | retriever type, k 등 |
+| example_vector_collection | text | 혐오표현 예시 Chroma collection |
+| definition_vector_collection | text | 혐오표현 정의 문서 Chroma collection |
+| definition_corpus_version | text nullable | 정의 문서 corpus version |
+| retriever_config | jsonb | 예시/정의 retriever type, k 등 |
 | prompt_versions | jsonb | 댓글/스크립트 prompt version |
 | started_at | timestamptz | 시작 시각 |
 | finished_at | timestamptz nullable | 종료 시각 |
@@ -309,6 +312,8 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | evidence_strength | numeric nullable | 증거 강도 |
 | reasoning | text nullable | 분류 근거 |
 | similar_cases_used | jsonb nullable | RAG 유사 사례 |
+| definition_docs_used | jsonb nullable | RAG 정의 문서 근거 |
+| rag_context_status | text nullable | `complete`, `example_only`, `definition_only`, `unavailable` |
 | prompt_version | text nullable | prompt version |
 | model_name | text nullable | 모델명 |
 | raw_response | jsonb nullable | LLM 응답 원문 |
@@ -343,6 +348,8 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | evidence_strength | numeric nullable | 증거 강도 |
 | reasoning | text nullable | 분류 근거 |
 | similar_cases_used | jsonb nullable | RAG 유사 사례 |
+| definition_docs_used | jsonb nullable | RAG 정의 문서 근거 |
+| rag_context_status | text nullable | `complete`, `example_only`, `definition_only`, `unavailable` |
 | prompt_version | text nullable | prompt version |
 | model_name | text nullable | 모델명 |
 | raw_response | jsonb nullable | LLM 응답 원문 |
