@@ -1,0 +1,119 @@
+# Dataset source manifest
+#
+# Generated: 2026-07-09 00:38:24 KST
+# Purpose: track public Korean hate/offensive speech datasets for local research corpus setup.
+# Raw dataset files are intentionally ignored by git.
+
+version: dataset-sources-2026-07-09-v0.1
+generated_at: "2026-07-09 00:38:24 KST"
+notes:
+  - Raw data must not be committed to this repository.
+  - Verify each dataset license before using it in a public or commercial service.
+  - Dataset rows belong in hate_speech_examples unless the source contains annotation guidelines or taxonomy text.
+  - Papers, abstracts, label descriptions, and annotation guidelines belong in hate_speech_definitions after license review.
+
+datasets:
+  - id: unsmile
+    name: Korean UnSmile Dataset
+    role: examples_and_label_reference
+    source_url: https://github.com/smilegate-ai/korean_unsmile_dataset
+    local_path: hateSpeechRAG/data/raw/korean_unsmile_dataset
+    access: already_present
+    corpus_target:
+      examples: true
+      definitions: true
+    license_status: review_required
+    notes:
+      - Existing local copy is used as the baseline example corpus.
+      - Validation split should be held out for evaluation, not retrieval.
+
+  - id: k-mhas
+    name: K-MHaS Korean Multi-label Hate Speech Dataset
+    role: examples_and_label_reference
+    source_url: https://github.com/adlnlp/K-MHaS
+    paper_url: https://aclanthology.org/2022.coling-1.311/
+    local_path: data/external/datasets/k-mhas
+    access: public_git
+    source_revision: ec7a7e775d650b825872f6f538fc717822cdfc1a
+    corpus_target:
+      examples: true
+      definitions: true
+    license_status: citation_required_license_review_required
+    notes:
+      - Useful for multi-label Korean hate category mapping.
+
+  - id: k-haters
+    name: K-HATERS Korean Hate Speech Detection Corpus
+    role: examples_and_target_rating_reference
+    source_url: https://github.com/ssu-humane/K-HATERS
+    paper_url: https://aclanthology.org/2023.findings-emnlp.952/
+    local_path: data/external/datasets/k-haters
+    data_local_path: data/external/datasets/k-haters-hf
+    ratings_local_path: data/external/datasets/k-haters-ratings-hf
+    access: public_git
+    source_revision: ad8d78995b3c7df9d3660ebd0c39b29bcce3eabf
+    corpus_target:
+      examples: true
+      definitions: true
+    license_status: cc_by_4_0_observed_review_required
+    notes:
+      - GitHub repository contains documentation and transformation code.
+      - Actual split data was downloaded from Hugging Face datasets humane-lab/K-HATERS and humane-lab/K-HATERS-Ratings.
+      - Useful for target-specific offensiveness and target_group design.
+
+  - id: kodoli
+    name: KODOLI Korean Dataset for Offensive Language Identification
+    role: examples_and_offensiveness_reference
+    source_url: https://github.com/cardy20/KODOLI
+    paper_url: https://aclanthology.org/2023.findings-eacl.85/
+    local_path: data/external/datasets/kodoli
+    access: public_git
+    source_revision: 1f552f2205232260eb989ad6464a9c4090e2406f
+    corpus_target:
+      examples: true
+      definitions: true
+    license_status: cc_by_sa_4_0_observed_review_required
+    notes:
+      - Useful for offensive, likely offensive, and non-offensive distinctions.
+
+  - id: kold
+    name: KOLD Korean Offensive Language Dataset
+    role: examples_and_target_span_reference
+    source_url: https://github.com/boychaboy/KOLD
+    paper_url: https://aclanthology.org/2022.emnlp-main.744/
+    local_path: data/external/datasets/kold
+    access: public_git
+    source_revision: 6f458b205e5ef4c6ad74afd99cd48ce738384ddb
+    corpus_target:
+      examples: true
+      definitions: true
+    license_status: usage_restriction_observed_license_review_required
+    notes:
+      - Git LFS was not installed locally; data/kold_v1.json was downloaded via GitHub media URL.
+      - Useful for target/type hierarchy and offensive span references.
+
+  - id: beep
+    name: BEEP Korean Corpus of Online News Comments for Toxic Speech Detection
+    role: paper_reference_pending_dataset_source
+    paper_url: https://aclanthology.org/2020.socialnlp-1.4/
+    local_path: null
+    access: source_lookup_required
+    corpus_target:
+      examples: false
+      definitions: true
+    license_status: source_lookup_required
+    notes:
+      - Paper is useful, but the canonical public dataset repository needs confirmation.
+
+  - id: ai-hub-text-ethics
+    name: AI Hub Text Ethics Dataset
+    role: conditional_examples_reference
+    source_url: https://aihub.or.kr/aihubdata/data/view.do?dataSetSn=558
+    local_path: null
+    access: account_approval_required
+    corpus_target:
+      examples: true
+      definitions: false
+    license_status: approval_required
+    notes:
+      - Requires AI Hub account, agreement, and download permission.

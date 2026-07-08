@@ -1,0 +1,152 @@
+# Dataset download inventory
+#
+# Generated: 2026-07-09 00:38:24 KST
+# Raw dataset files are intentionally ignored by git.
+
+version: dataset-inventory-2026-07-09-v0.1
+generated_at: "2026-07-09 00:38:24 KST"
+
+downloads:
+  - id: k-mhas
+    local_path: data/external/datasets/k-mhas
+    source_revision: ec7a7e775d650b825872f6f538fc717822cdfc1a
+    size: 30M
+    files:
+      - path: data/external/datasets/k-mhas/data/kmhas_train.txt
+        line_count: 78978
+        record_count: 78977
+        sha256: ca9145afc5fd70a2222094daa427e57a08b309cb42dcce7986528b44eb0e7008
+      - path: data/external/datasets/k-mhas/data/kmhas_valid.txt
+        line_count: 8777
+        record_count: 8776
+        sha256: cb0df9e3cd665125b554d4c5e6f48b0801d5535ead51269134de5b85ae469c18
+      - path: data/external/datasets/k-mhas/data/kmhas_test.txt
+        line_count: 21940
+        record_count: 21939
+        sha256: 9eaf470ee12c445817301d58672349500d6759516a730e879d36d6de17a2051a
+    schema_summary:
+      format: tsv
+      columns:
+        - document
+        - label
+    license_observation: "README requests citation; explicit license file not found in cloned repository."
+
+  - id: k-haters-github
+    local_path: data/external/datasets/k-haters
+    source_revision: ad8d78995b3c7df9d3660ebd0c39b29bcce3eabf
+    size: 204K
+    files:
+      - path: data/external/datasets/k-haters/README.md
+      - path: data/external/datasets/k-haters/label_transformation.py
+    schema_summary:
+      format: documentation_and_code
+    license_observation: "README states CC-BY 4.0 for dataset usage."
+
+  - id: k-haters
+    local_path: data/external/datasets/k-haters-hf
+    source: humane-lab/K-HATERS
+    size: 51M
+    files:
+      - path: data/external/datasets/k-haters-hf/train.jsonl
+        record_count: 172158
+        sha256: e1eb9a7e7a7693a1d0e03f206a72247b98b703fdda8db8d74f25ddc8679aa437
+      - path: data/external/datasets/k-haters-hf/val.jsonl
+        record_count: 10000
+        sha256: 48e94ceed710f22f310e1ff23aaf6fe68fe089041165fb9de65677216f2536ce
+      - path: data/external/datasets/k-haters-hf/test.jsonl
+        record_count: 10000
+        sha256: ad79f90775505658257dbebcfe83823634c8d285256e37bf31616fa09ac923e5
+    schema_summary:
+      format: jsonl
+      keys:
+        - label
+        - offensiveness_rationale
+        - target_label
+        - target_rationale
+        - text
+    license_observation: "GitHub README states CC-BY 4.0."
+
+  - id: k-haters-ratings
+    local_path: data/external/datasets/k-haters-ratings-hf
+    source: humane-lab/K-HATERS-Ratings
+    size: 80M
+    files:
+      - path: data/external/datasets/k-haters-ratings-hf/train.jsonl
+        record_count: 172158
+        sha256: 1066f1559d2023dd11db708428fdc09922ceb87b9b385e6dcf0a2d1926b76d24
+      - path: data/external/datasets/k-haters-ratings-hf/val.jsonl
+        record_count: 10000
+        sha256: d424f9f71bf6dd505dd8401518af15e8e129bb87492d954d57619af9d354ed1e
+      - path: data/external/datasets/k-haters-ratings-hf/test.jsonl
+        record_count: 10000
+        sha256: e455802a9a61bfb281a1124a92e337530adc437aa0d6a284e1ffb6d550a02952
+    schema_summary:
+      format: jsonl
+      keys:
+        - age
+        - disability
+        - gender
+        - individuals
+        - insult
+        - job
+        - obscenity
+        - offensiveness_rationale
+        - others
+        - politics
+        - race
+        - religion
+        - swear
+        - target_label
+        - target_rationale
+        - text
+        - threat
+    license_observation: "GitHub README states CC-BY 4.0."
+
+  - id: kodoli
+    local_path: data/external/datasets/kodoli
+    source_revision: 1f552f2205232260eb989ad6464a9c4090e2406f
+    size: 11M
+    files:
+      - path: data/external/datasets/kodoli/data/kodoli.csv
+        line_count: 38526
+        record_count: 38525
+        sha256: 65cb166eb3091544bf61fa0055338f6e2d2ebb3706bcaedbccd0088b52b6a42c
+    schema_summary:
+      format: csv
+      columns:
+        - index
+        - sentences
+        - abuse
+        - sentiment
+        - offensiveness
+    license_observation: "README states CC-BY-SA 4.0."
+
+  - id: kold
+    local_path: data/external/datasets/kold
+    source_revision: 6f458b205e5ef4c6ad74afd99cd48ce738384ddb
+    size: 33M
+    files:
+      - path: data/external/datasets/kold/data/kold_v1.json
+        record_count: 40429
+        sha256: c11c29b972ecb7c63936cc8daa6e0925b6b891a78b6e6b3c321dbae238cf5468
+    schema_summary:
+      format: json
+      keys:
+        - GRP
+        - OFF
+        - OFF_span
+        - TGT
+        - TGT_span
+        - comment
+        - date
+        - guid
+        - raw_labels
+        - source
+        - title
+    license_observation: "README includes usage restriction note; explicit license file not found in cloned repository."
+
+pending:
+  - id: beep
+    reason: "Paper identified, canonical public dataset source still needs confirmation."
+  - id: ai-hub-text-ethics
+    reason: "Requires AI Hub account approval and terms acceptance."

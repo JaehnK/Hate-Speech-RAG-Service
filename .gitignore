@@ -1,0 +1,14 @@
+# Local raw/reference projects
+YouTubeHateSpeech/
+hateSpeechRAG/
+
+# Downloaded external datasets and source files
+data/external/datasets/
+data/external/papers/
+data/external/policies/
+
+# Keep source manifests under version control
+!data/
+!data/external/
+!data/external/manifests/
+!data/external/manifests/**
