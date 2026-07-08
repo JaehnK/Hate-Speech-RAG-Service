@@ -4,9 +4,52 @@
 # Raw dataset files are intentionally ignored by git.
 
 version: dataset-inventory-2026-07-09-v0.1
-generated_at: "2026-07-09 00:38:24 KST"
+generated_at: "2026-07-09 00:44:23 KST"
 
 downloads:
+  - id: beep
+    local_path: data/external/datasets/beep-korean-hate-speech
+    source_revision: f8d05dce2b22007bb149e5139c0060c68ad8f94b
+    size: 503M
+    files:
+      - path: data/external/datasets/beep-korean-hate-speech/labeled/train.tsv
+        line_count: 7897
+        record_count: 7896
+        sha256: ebebacdcd023af2c4acc8c0a37695fb6433ac04fc009feff8f222724e303a5a9
+      - path: data/external/datasets/beep-korean-hate-speech/labeled/dev.tsv
+        line_count: 472
+        record_count: 471
+        sha256: 232b615d6e359a9d31dfb8370f32e1733dc5bb3f9c5430d34d7fcc7ba4b7e8ef
+      - path: data/external/datasets/beep-korean-hate-speech/test.no_label.tsv
+        line_count: 975
+        record_count: 974
+        sha256: 87190f1fe55db520bbcf3958943714ebc0366be508f6ce6a0fe456a8241a4e1a
+      - path: data/external/datasets/beep-korean-hate-speech/guideline/annotation_guideline_en.md
+        sha256: 9c4b01c17db6c1c9aa5df72c55bb158dc34401b918c5d4485acbea8887910769
+      - path: data/external/datasets/beep-korean-hate-speech/unlabeled/unlabeled_comments_1.txt
+        line_count: 500000
+        sha256: 23014b1147eebd52bfd9a5ce7c5710711809894e08e971198bdafc4f8a748b90
+      - path: data/external/datasets/beep-korean-hate-speech/unlabeled/unlabeled_comments_2.txt
+        line_count: 500000
+        sha256: 8bd4322293de23392567d6229e63b8e91c05b835da8a62742de838970a4199bd
+      - path: data/external/datasets/beep-korean-hate-speech/unlabeled/unlabeled_comments_3.txt
+        line_count: 500000
+        sha256: 8bd93191a1c637afc66ae83c7cdfddf499805c3168807037b065ef2237e926d5
+      - path: data/external/datasets/beep-korean-hate-speech/unlabeled/unlabeled_comments_4.txt
+        line_count: 500000
+        sha256: 2d947356edf36121b4a21e917898c746fa2af9a841e65de0c714b1da5dd8cb5b
+      - path: data/external/datasets/beep-korean-hate-speech/unlabeled/unlabeled_comments_5.txt
+        line_count: 33893
+        sha256: e224a1d545c2729d8f9828429af0f6ee34cd9a4ac5861c7a12d4f32b9a9ed641
+    schema_summary:
+      format: tsv
+      columns:
+        - comments
+        - contain_gender_bias
+        - bias
+        - hate
+    license_observation: "README and LICENSE.md state CC-BY-SA 4.0."
+
   - id: k-mhas
     local_path: data/external/datasets/k-mhas
     source_revision: ec7a7e775d650b825872f6f538fc717822cdfc1a
@@ -146,7 +189,5 @@ downloads:
     license_observation: "README includes usage restriction note; explicit license file not found in cloned repository."
 
 pending:
-  - id: beep
-    reason: "Paper identified, canonical public dataset source still needs confirmation."
   - id: ai-hub-text-ethics
     reason: "Requires AI Hub account approval and terms acceptance."

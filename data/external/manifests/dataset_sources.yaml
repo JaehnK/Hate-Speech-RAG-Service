@@ -5,7 +5,7 @@
 # Raw dataset files are intentionally ignored by git.
 
 version: dataset-sources-2026-07-09-v0.1
-generated_at: "2026-07-09 00:38:24 KST"
+generated_at: "2026-07-09 00:44:23 KST"
 notes:
   - Raw data must not be committed to this repository.
   - Verify each dataset license before using it in a public or commercial service.
@@ -94,16 +94,22 @@ datasets:
 
   - id: beep
     name: BEEP Korean Corpus of Online News Comments for Toxic Speech Detection
-    role: paper_reference_pending_dataset_source
+    role: examples_and_annotation_guideline_reference
+    source_url: https://github.com/kocohub/korean-hate-speech
     paper_url: https://aclanthology.org/2020.socialnlp-1.4/
-    local_path: null
-    access: source_lookup_required
+    huggingface_url: https://huggingface.co/datasets/moon1ite/kor_hate
+    local_path: data/external/datasets/beep-korean-hate-speech
+    access: public_git
+    source_revision: f8d05dce2b22007bb149e5139c0060c68ad8f94b
     corpus_target:
-      examples: false
+      examples: true
       definitions: true
-    license_status: source_lookup_required
+    license_status: cc_by_sa_4_0_observed_review_required
     notes:
-      - Paper is useful, but the canonical public dataset repository needs confirmation.
+      - Canonical public repository confirmed from paper references and dataset catalogues.
+      - Labeled train/dev rows can be used as examples after license review.
+      - English annotation guideline can be used as definition corpus material after license review.
+      - Large unlabeled corpus should not be ingested into RAG examples by default.
 
   - id: ai-hub-text-ethics
     name: AI Hub Text Ethics Dataset
