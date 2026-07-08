@@ -1,6 +1,6 @@
 # Local raw/reference projects
-YouTubeHateSpeech/
-hateSpeechRAG/
+legacy/YouTubeHateSpeech/
+legacy/hateSpeechRAG/
 
 # Downloaded external datasets and source files
 data/external/datasets/

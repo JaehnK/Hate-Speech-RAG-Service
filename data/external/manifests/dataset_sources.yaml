@@ -5,7 +5,7 @@
 # Raw dataset files are intentionally ignored by git.
 
 version: dataset-sources-2026-07-09-v0.1
-generated_at: "2026-07-09 02:35:08 KST"
+generated_at: "2026-07-09 03:04:53 KST"
 notes:
   - Raw data must not be committed to this repository.
   - Verify each dataset license before using it in a public or commercial service.
@@ -17,7 +17,7 @@ datasets:
     name: Korean UnSmile Dataset
     role: internal_evaluation_reference
     source_url: https://github.com/smilegate-ai/korean_unsmile_dataset
-    local_path: hateSpeechRAG/data/raw/korean_unsmile_dataset
+    local_path: legacy/hateSpeechRAG/data/raw/korean_unsmile_dataset
     access: already_present
     corpus_target:
       examples: false

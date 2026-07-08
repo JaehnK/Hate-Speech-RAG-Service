@@ -2,14 +2,14 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
-| 작성일시 | 2026-07-08 08:35:46 KST |
+| 버전 | v0.3.1 |
+| 작성일시 | 2026-07-09 03:04:53 KST |
 
 ## 문서 목적
 
 이 문서는 단일 YouTube 영상 혐오표현 분석 MVP의 FastAPI 백엔드 모듈 구조와 주요 클래스 책임을 정의한다.
 
-이 문서는 기존 `YouTubeHateSpeech/`, `hateSpeechRAG/` 연구 코드를 서비스 코드로 전환할 때의 경계와 adapter 설계를 설명한다.
+이 문서는 기존 `legacy/YouTubeHateSpeech/`, `legacy/hateSpeechRAG/` 연구 코드를 서비스 코드로 전환할 때의 경계와 adapter 설계를 설명한다.
 
 ## 설계 원칙
 
@@ -623,7 +623,7 @@ DTO를 두는 이유:
 - 기존 `duration_formatted` 타입과 실제 값이 맞지 않을 수 있다.
 - 기존 자막 downloader는 실제 다운로드와 목록 조회 동작을 재확인해야 한다.
 
-### hateSpeechRAG
+### legacy/hateSpeechRAG
 
 재사용 후보:
 
