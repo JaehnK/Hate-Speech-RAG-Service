@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-08 08:44:59 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-09 02:35:08 KST |
 
 ## 문서 목적
 
@@ -21,9 +21,48 @@ MVP seed corpus는 다음 기준을 우선한다.
 - 한국어 분석에 직접 도움이 되거나 한국어로 정규화 가능한 문서
 - 단순 뉴스, 블로그 해설, paywall 논문은 MVP seed에서 제외
 
-## 권장 Seed 구성
+## Seed 구성 원칙
 
-MVP의 첫 corpus version은 다음 7개 출처로 시작한다.
+MVP의 첫 definition corpus는 외부 규범 문서만으로 구성하지 않는다.
+
+`13_rag_chunking_prompt_strategy.md` 기준으로 다음 순서를 따른다.
+
+1. 내부 taxonomy 문서
+2. 내부 카테고리 판단 카드
+3. 한국어 dataset annotation guideline과 label description
+4. 국내 공식/준공식 혐오표현 문서
+5. 국제 기준과 플랫폼 정책
+6. 논문 초록, 라벨 체계 설명, 저자가 공개한 summary
+
+## 내부 Seed 구성
+
+다음 내부 문서는 `hate_speech_definitions`에 반드시 포함한다.
+
+| 우선순위 | source_id | 역할 | 수집 판단 |
+| --- | --- | --- | --- |
+| A | `internal_taxonomy_allowed_categories` | 허용 카테고리 목록 | 포함 |
+| A | `internal_taxonomy_non_hate_rule` | 비혐오와 `unclassified` 규칙 | 포함 |
+| A | `internal_taxonomy_other_rule` | `other` 독점 규칙 | 포함 |
+| A | `internal_taxonomy_political_axis` | authority/regime/community와 state/non-state 축 | 포함 |
+| A | `internal_category_cards` | 카테고리별 포함/제외 기준 | 포함 |
+| A | `internal_conflict_rules` | 충돌 및 우선순위 규칙 | 포함 |
+
+## 한국어 Dataset Guideline Seed
+
+다음 한국어 dataset 관련 문서는 한국어 표현과 label 기준 보강을 위해 포함 또는 검토한다.
+
+| 우선순위 | 출처 | 역할 | 수집 판단 |
+| --- | --- | --- | --- |
+| A | K-HATERS README와 label description | target-specific offensiveness, politics target 기준 | 포함 |
+| A | BEEP annotation guideline | social bias, hate/offensive/none 기준 | 포함 |
+| B | KODOLI README와 guideline | offensive/likely offensive/non-offensive 기준 | ShareAlike 검토 후 포함 |
+| B | K-MHaS README label description | 정치성향, 출신, 외모, 욕설 등 한국어 멀티라벨 기준 | 라이선스 확인 후 label 설명만 검토 |
+| B | KOLD README target group structure | target/type/span 구조 | 라이선스 확인 후 구조 설명만 검토 |
+| C | UNSMILE README label description | 기본 보호 속성 label 기준 | 내부 평가 참고용, 공개/상업 retrieval 제외 |
+
+## 외부 규범 Seed 구성
+
+외부 규범 문서는 다음 7개 출처로 시작한다.
 
 | 우선순위 | 출처 | 역할 | 수집 판단 |
 | --- | --- | --- | --- |
@@ -65,7 +104,7 @@ MVP seed에는 다음 자료를 넣지 않는다.
 초기 version:
 
 ```text
-definition-corpus-2026-07-08-v0.1
+definition-corpus-2026-07-09-v0.2
 ```
 
 version 변경 기준:
@@ -125,6 +164,7 @@ MVP 구현 전까지는 다음 원칙을 둔다.
 
 - source URL과 metadata는 저장한다.
 - 본문 chunk 저장은 license 또는 내부 사용 가능 여부 확인 후 수행한다.
+- license tier가 `permission_required`인 자료는 public 또는 commercial retrieval corpus에서 제외한다.
 - 보고서에는 긴 원문을 노출하지 않고 짧은 근거 요약과 source title, source URL만 표시한다.
 - corpus 원문을 export 파일에 포함하지 않는다.
 
@@ -135,9 +175,10 @@ MVP 구현 전까지는 다음 원칙을 둔다.
 - 영어 문서의 한국어 정규화 chunk 생성 방식
 - platform policy를 최종 판단 기준으로 사용할지, 참고 기준으로만 사용할지
 - source 개정 여부를 주기적으로 확인할지, 수동으로만 갱신할지
+- `sharealike_review` tier 자료를 public demo에 포함할지
 
 ## 권장 결론
 
-MVP에서는 국내 기준 3개, 국제 기준 3개, YouTube 정책 1개로 `definition-corpus-2026-07-08-v0.1`을 만든다.
+MVP에서는 내부 taxonomy card, 한국어 dataset guideline/label description, 국내 기준 3개, 국제 기준 3개, YouTube 정책 1개로 `definition-corpus-2026-07-09-v0.2`를 만든다.
 
 이 corpus는 혐오표현 여부를 단독으로 결정하는 규칙 엔진이 아니라, LLM 분류가 참고할 정의, 보호 속성, 심각도 판단 기준, 플랫폼 맥락을 제공하는 검색 기반 근거 자료로 사용한다.
