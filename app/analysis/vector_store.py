@@ -20,8 +20,14 @@ def ingest_definition_documents(
     documents: list[DefinitionDocument],
     collection_name: str = DEFINITION_COLLECTION_NAME,
     reset: bool = False,
+    embedding_function: Any | None = None,
 ) -> int:
-    collection = _get_collection(persist_directory, collection_name, reset=reset)
+    collection = _get_collection(
+        persist_directory,
+        collection_name,
+        reset=reset,
+        embedding_function=embedding_function,
+    )
     collection.upsert(
         ids=[document.doc_id for document in documents],
         documents=[document.chunk_text for document in documents],
@@ -35,8 +41,13 @@ def query_definition_documents(
     query_text: str,
     collection_name: str = DEFINITION_COLLECTION_NAME,
     n_results: int = 5,
+    embedding_function: Any | None = None,
 ) -> list[DefinitionSearchResult]:
-    collection = _get_collection(persist_directory, collection_name)
+    collection = _get_collection(
+        persist_directory,
+        collection_name,
+        embedding_function=embedding_function,
+    )
     result = collection.query(query_texts=[query_text], n_results=n_results)
     ids = result.get("ids", [[]])[0]
     documents = result.get("documents", [[]])[0]
@@ -65,8 +76,14 @@ def ingest_example_documents(
     documents: list[ExampleDocument],
     collection_name: str = EXAMPLE_COLLECTION_NAME,
     reset: bool = False,
+    embedding_function: Any | None = None,
 ) -> int:
-    collection = _get_collection(persist_directory, collection_name, reset=reset)
+    collection = _get_collection(
+        persist_directory,
+        collection_name,
+        reset=reset,
+        embedding_function=embedding_function,
+    )
     if not documents:
         return collection.count()
 
@@ -83,8 +100,13 @@ def query_example_documents(
     query_text: str,
     collection_name: str = EXAMPLE_COLLECTION_NAME,
     n_results: int = 5,
+    embedding_function: Any | None = None,
 ) -> list[ExampleSearchResult]:
-    collection = _get_collection(persist_directory, collection_name)
+    collection = _get_collection(
+        persist_directory,
+        collection_name,
+        embedding_function=embedding_function,
+    )
     result = collection.query(query_texts=[query_text], n_results=n_results)
     ids = result.get("ids", [[]])[0]
     documents = result.get("documents", [[]])[0]
@@ -113,6 +135,7 @@ def _get_collection(
     persist_directory: Path | str,
     collection_name: str,
     reset: bool = False,
+    embedding_function: Any | None = None,
 ) -> Any:
     client = chromadb.PersistentClient(path=str(persist_directory))
     if reset and collection_name in _collection_names(client):
@@ -120,7 +143,7 @@ def _get_collection(
 
     return client.get_or_create_collection(
         collection_name,
-        embedding_function=HashEmbeddingFunction(),
+        embedding_function=embedding_function or HashEmbeddingFunction(),
         metadata={"hnsw:space": "cosine"},
     )
 
