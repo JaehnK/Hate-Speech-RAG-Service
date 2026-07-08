@@ -8,9 +8,11 @@ import chromadb
 
 from app.analysis.embeddings import HashEmbeddingFunction
 from app.analysis.models import DefinitionDocument, DefinitionSearchResult
+from app.analysis.models import ExampleDocument, ExampleSearchResult
 
 
 DEFINITION_COLLECTION_NAME = "hate_speech_definitions"
+EXAMPLE_COLLECTION_NAME = "hate_speech_examples"
 
 
 def ingest_definition_documents(
@@ -58,6 +60,55 @@ def query_definition_documents(
     return search_results
 
 
+def ingest_example_documents(
+    persist_directory: Path | str,
+    documents: list[ExampleDocument],
+    collection_name: str = EXAMPLE_COLLECTION_NAME,
+    reset: bool = False,
+) -> int:
+    collection = _get_collection(persist_directory, collection_name, reset=reset)
+    if not documents:
+        return collection.count()
+
+    collection.upsert(
+        ids=[document.doc_id for document in documents],
+        documents=[document.text for document in documents],
+        metadatas=[_example_metadata(document) for document in documents],
+    )
+    return collection.count()
+
+
+def query_example_documents(
+    persist_directory: Path | str,
+    query_text: str,
+    collection_name: str = EXAMPLE_COLLECTION_NAME,
+    n_results: int = 5,
+) -> list[ExampleSearchResult]:
+    collection = _get_collection(persist_directory, collection_name)
+    result = collection.query(query_texts=[query_text], n_results=n_results)
+    ids = result.get("ids", [[]])[0]
+    documents = result.get("documents", [[]])[0]
+    metadatas = result.get("metadatas", [[]])[0]
+    distances = result.get("distances", [[]])[0]
+
+    search_results = []
+    for index, doc_id in enumerate(ids):
+        metadata = metadatas[index]
+        search_results.append(
+            ExampleSearchResult(
+                doc_id=doc_id,
+                text=documents[index],
+                source_dataset=str(metadata["source_dataset"]),
+                source_split=str(metadata["source_split"]),
+                license_tier=str(metadata["license_tier"]),
+                mapped_categories=tuple(json.loads(str(metadata["mapped_categories"]))),
+                is_hate_speech=_metadata_bool(metadata["is_hate_speech"]),
+                distance=distances[index] if distances else None,
+            )
+        )
+    return search_results
+
+
 def _get_collection(
     persist_directory: Path | str,
     collection_name: str,
@@ -94,3 +145,25 @@ def _definition_metadata(document: DefinitionDocument) -> dict[str, str]:
         "chunk_hash": document.chunk_hash,
         "corpus_version": document.corpus_version,
     }
+
+
+def _example_metadata(document: ExampleDocument) -> dict[str, str | bool]:
+    return {
+        "doc_id": document.doc_id,
+        "source_dataset": document.source_dataset,
+        "source_split": document.source_split,
+        "source_revision": document.source_revision or "",
+        "license_tier": document.license_tier,
+        "raw_labels": json.dumps(document.raw_labels, ensure_ascii=False),
+        "mapped_categories": json.dumps(document.mapped_categories, ensure_ascii=False),
+        "is_hate_speech": document.is_hate_speech,
+        "target_labels": json.dumps(document.target_labels, ensure_ascii=False),
+        "hate_type_labels": json.dumps(document.hate_type_labels, ensure_ascii=False),
+        "text_hash": document.text_hash,
+    }
+
+
+def _metadata_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).lower() == "true"

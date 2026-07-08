@@ -1616,6 +1616,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "chromadb" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1624,7 +1625,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "chromadb", specifier = ">=1.5.9" }]
+requires-dist = [
+    { name = "chromadb", specifier = ">=1.5.9" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
+]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8.4.1" }]

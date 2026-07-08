@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 from typing import Literal
 
 
@@ -35,6 +36,10 @@ class ExampleDocument:
     license_tier: str
     mapped_categories: tuple[str, ...]
     is_hate_speech: bool
+    raw_labels: dict[str, Any] = field(default_factory=dict)
+    target_labels: tuple[str, ...] = ()
+    hate_type_labels: tuple[str, ...] = ()
+    text_hash: str = ""
     score: float | None = None
 
 
@@ -53,4 +58,16 @@ class DefinitionSearchResult:
     source_title: str
     retrieval_tags: tuple[str, ...]
     related_categories: tuple[str, ...]
+    distance: float | None
+
+
+@dataclass(frozen=True)
+class ExampleSearchResult:
+    doc_id: str
+    text: str
+    source_dataset: str
+    source_split: str
+    license_tier: str
+    mapped_categories: tuple[str, ...]
+    is_hate_speech: bool
     distance: float | None
