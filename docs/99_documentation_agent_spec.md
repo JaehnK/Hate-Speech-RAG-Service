@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.4.0 |
-| 작성일시 | 2026-07-08 08:44:59 KST |
+| 버전 | v0.5.0 |
+| 작성일시 | 2026-07-08 09:03:34 KST |
 
 ## 목적
 
@@ -15,7 +15,7 @@
 
 - 프로젝트 목적, 범위, 비범위를 명확히 문서화한다.
 - 이용자와 관리자 시나리오를 작성한다.
-- HLD, 데이터 모델, job pipeline, API 명세, 보고서 명세, 백엔드 설계, Docker 환경, corpus 수집 대상 문서를 작성한다.
+- HLD, 데이터 모델, job pipeline, API 명세, 보고서 명세, 백엔드 설계, Docker 환경, corpus 수집 대상, 혐오 카테고리 분류 체계 문서를 작성한다.
 - 문서 간 용어와 아키텍처 결정을 일관되게 유지한다.
 - 기존 코드 분석 결과를 문서에 반영하되, 확인되지 않은 내용을 단정하지 않는다.
 - 문서 변경마다 검증 후 커밋한다.
@@ -100,6 +100,7 @@ docs: add documentation agent spec
 - `09_implementation_decisions.md`: 구현 전 기술 결정과 결정 상태
 - `10_docker_environment.md`: Docker 환경 분리와 uv 실행 기준
 - `11_definition_corpus_targets.md`: 혐오표현 정의 corpus 수집 대상과 seed 기준
+- `12_category_taxonomy.md`: 혐오 카테고리 분류 체계와 평가 기준
 - `99_documentation_agent_spec.md`: 문서 작성 에이전트 운영 명세
 
 ## 서비스 설계 기준
@@ -112,6 +113,7 @@ docs: add documentation agent spec
 - Docker Compose는 dev, test, prod override로 분리한다.
 - PostgreSQL을 주 저장소로 사용한다.
 - Chroma를 예시 검색과 정의 문서 검색을 위한 dual vector RAG 저장소로 사용한다.
+- 혐오표현 여부보다 혐오 카테고리 분류 체계를 핵심 분석 기준으로 둔다.
 - 보고서는 분석 모듈별 artifact를 조합해서 생성한다.
 - 부분 실패는 보고서에 표시하고, 관련 없는 분석 결과를 무효화하지 않는다.
 
