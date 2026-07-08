@@ -9,6 +9,10 @@ __pycache__/
 .pytest_cache/
 .coverage
 
+# Local vector stores
+.chroma/
+data/vectorstores/
+
 # Downloaded external datasets and source files
 data/external/datasets/
 data/external/papers/

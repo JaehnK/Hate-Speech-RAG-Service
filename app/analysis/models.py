@@ -43,3 +43,14 @@ class ValidationResult:
     valid: bool
     errors: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class DefinitionSearchResult:
+    doc_id: str
+    chunk_text: str
+    source_id: str
+    source_title: str
+    retrieval_tags: tuple[str, ...]
+    related_categories: tuple[str, ...]
+    distance: float | None
