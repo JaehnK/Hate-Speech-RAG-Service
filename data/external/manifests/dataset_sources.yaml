@@ -5,7 +5,7 @@
 # Raw dataset files are intentionally ignored by git.
 
 version: dataset-sources-2026-07-09-v0.1
-generated_at: "2026-07-09 00:44:23 KST"
+generated_at: "2026-07-09 02:35:08 KST"
 notes:
   - Raw data must not be committed to this repository.
   - Verify each dataset license before using it in a public or commercial service.
@@ -15,17 +15,18 @@ notes:
 datasets:
   - id: unsmile
     name: Korean UnSmile Dataset
-    role: examples_and_label_reference
+    role: internal_evaluation_reference
     source_url: https://github.com/smilegate-ai/korean_unsmile_dataset
     local_path: hateSpeechRAG/data/raw/korean_unsmile_dataset
     access: already_present
     corpus_target:
-      examples: true
-      definitions: true
-    license_status: review_required
+      examples: false
+      definitions: false
+    license_status: cc_by_nc_nd_4_0_permission_required
     notes:
-      - Existing local copy is used as the baseline example corpus.
+      - Existing local copy is useful for internal evaluation and label mapping reference.
       - Validation split should be held out for evaluation, not retrieval.
+      - Dataset is not used in public or commercial retrieval corpus without explicit permission.
 
   - id: k-mhas
     name: K-MHaS Korean Multi-label Hate Speech Dataset
@@ -36,11 +37,12 @@ datasets:
     access: public_git
     source_revision: ec7a7e775d650b825872f6f538fc717822cdfc1a
     corpus_target:
-      examples: true
+      examples: false
       definitions: true
     license_status: citation_required_license_review_required
     notes:
       - Useful for multi-label Korean hate category mapping.
+      - Explicit license file was not found locally; retrieval examples are excluded until license is confirmed.
 
   - id: k-haters
     name: K-HATERS Korean Hate Speech Detection Corpus
@@ -53,7 +55,7 @@ datasets:
     access: public_git
     source_revision: ad8d78995b3c7df9d3660ebd0c39b29bcce3eabf
     corpus_target:
-      examples: true
+      examples: false
       definitions: true
     license_status: cc_by_4_0_observed_review_required
     notes:
@@ -91,6 +93,7 @@ datasets:
     notes:
       - Git LFS was not installed locally; data/kold_v1.json was downloaded via GitHub media URL.
       - Useful for target/type hierarchy and offensive span references.
+      - Explicit license file was not found locally; retrieval examples are excluded until license is confirmed.
 
   - id: beep
     name: BEEP Korean Corpus of Online News Comments for Toxic Speech Detection
