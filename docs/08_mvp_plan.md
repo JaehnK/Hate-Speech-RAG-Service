@@ -2,14 +2,14 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
-| 작성일시 | 2026-07-08 08:35:46 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-09 02:35:08 KST |
 
 ## 문서 목적
 
 이 문서는 단일 YouTube 영상 혐오표현 분석 보고서 서비스의 MVP 구현 순서와 검증 기준을 정의한다.
 
-목표는 FastAPI 기반 modular monolith를 빠르게 세우되, 수집, 분석, 보고서 생성이 서로 뒤섞이지 않게 단계별로 검증하는 것이다.
+목표는 RAG corpus와 프롬프트 계약을 먼저 고정한 뒤, FastAPI 기반 modular monolith에서 수집, 분석, 보고서 생성이 서로 뒤섞이지 않게 단계별로 검증하는 것이다.
 
 ## MVP 완료 정의
 
@@ -39,7 +39,9 @@ MVP는 다음 조건을 만족하면 완료로 본다.
 
 ## 구현 전략
 
-가장 먼저 얇은 end-to-end 경로를 만든다.
+가장 먼저 RAG corpus, 청킹, retrieval slot, prompt output 계약을 검증한다.
+
+그 다음 얇은 end-to-end 경로를 만든다.
 
 초기 end-to-end 경로:
 
@@ -51,12 +53,13 @@ POST /api/analysis-jobs
   -> GET /api/reports/{report_id}
 ```
 
-그 다음 실제 YouTube 수집, RAG 분석, 네트워크, export를 단계적으로 붙인다.
+그 다음 실제 YouTube 수집, RAG adapter, 네트워크, export를 단계적으로 붙인다.
 
 이 전략의 이유:
 
-- API, DB, worker, report 경계가 먼저 검증된다.
-- 외부 API나 LLM 문제가 전체 구조 검증을 막지 않는다.
+- RAG 출력 계약이 DB, API, 보고서, 평가의 기준이므로 먼저 흔들림을 줄인다.
+- 이후 API, DB, worker, report 경계를 얇은 E2E로 검증한다.
+- 외부 YouTube API나 LLM 문제가 전체 구조 검증을 막지 않는다.
 - raw 프로젝트 전환 범위를 작게 유지할 수 있다.
 
 ## Phase 0. 구현 전 확정
@@ -91,6 +94,32 @@ MVP 기본값:
 - Chroma persistent directory
 - 관리자 API는 `X-Admin-Token`
 - Docker Compose dev, test, prod override 분리
+
+## Phase 0.5. RAG Corpus와 Prompt PoC
+
+목표:
+
+- FastAPI 구현 전에 RAG ingest, retrieval, prompt output 계약을 검증한다.
+
+작업:
+
+- source manifest의 license tier 확정
+- `hate_speech_examples` dataset loader 작성
+- `hate_speech_definitions` internal taxonomy card 생성
+- definition corpus chunk builder 작성
+- Chroma collection 생성 스크립트 작성
+- `category-rag-v0.1.0` prompt template 초안 작성
+- output validation rule 작성
+- retrieval smoke test 작성
+
+검증:
+
+- `hate_speech_examples` count가 ingest 대상 row 수와 일치한다.
+- `hate_speech_definitions`에 internal taxonomy card가 포함된다.
+- 정치 관련 query가 political axis chunk를 검색한다.
+- 보호 속성 query가 관련 category card를 검색한다.
+- sample input의 output JSON이 validation rule을 통과한다.
+- `permission_required` corpus는 retrieval corpus에서 제외된다.
 
 ## Phase 1. 프로젝트 스캐폴딩
 
@@ -229,17 +258,17 @@ MVP 기본값:
 
 목표:
 
-- Chroma dual retriever와 LLM 호출을 서비스용 `RagClassifier`로 감싼다.
+- Phase 0.5에서 검증한 Chroma dual retriever와 prompt 계약을 서비스용 `RagClassifier`로 감싼다.
 
 작업:
 
 - `VectorStoreClient` 구현
 - `ExampleRetriever` 구현
 - `DefinitionRetriever` 구현
-- 혐오표현 정의 문서 corpus seed와 version 기록 방식 추가
+- 혐오표현 정의 문서 corpus version 읽기
 - `LlmClient` 구현
 - `RagClassifier.classify_text` 구현
-- prompt version 관리 추가
+- prompt version 기록
 - fake classifier 테스트 추가
 
 검증:
@@ -403,20 +432,22 @@ MVP 기본값:
 
 ## 구현 우선순위
 
-1. 프로젝트 스캐폴딩
-2. DB migration
-3. job API와 worker skeleton
-4. metadata 수집
-5. 댓글 수집
-6. 자막 수집
-7. fake RAG 기반 분석 저장
-8. 실제 dual vector RAG adapter 연결
-9. 네트워크 생성
-10. report snapshot
-11. 웹 보고서
-12. Excel export
-13. 관리자 API
-14. E2E hardening
+1. RAG corpus와 prompt PoC
+2. Chroma ingest와 retrieval smoke test
+3. 프로젝트 스캐폴딩
+4. DB migration
+5. job API와 worker skeleton
+6. metadata 수집
+7. 댓글 수집
+8. 자막 수집
+9. fake RAG 기반 분석 저장
+10. 실제 dual vector RAG adapter 연결
+11. 네트워크 생성
+12. report snapshot
+13. 웹 보고서
+14. Excel export
+15. 관리자 API
+16. E2E hardening
 
 ## 주요 리스크
 
