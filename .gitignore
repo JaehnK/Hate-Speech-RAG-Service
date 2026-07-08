@@ -2,6 +2,13 @@
 legacy/YouTubeHateSpeech/
 legacy/hateSpeechRAG/
 
+# Python local artifacts
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
 # Downloaded external datasets and source files
 data/external/datasets/
 data/external/papers/
