@@ -43,6 +43,9 @@ def query_definition_documents(
     n_results: int = 5,
     embedding_function: Any | None = None,
 ) -> list[DefinitionSearchResult]:
+    if n_results <= 0:
+        return []
+
     collection = _get_collection(
         persist_directory,
         collection_name,
@@ -102,6 +105,9 @@ def query_example_documents(
     n_results: int = 5,
     embedding_function: Any | None = None,
 ) -> list[ExampleSearchResult]:
+    if n_results <= 0:
+        return []
+
     collection = _get_collection(
         persist_directory,
         collection_name,

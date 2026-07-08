@@ -13,6 +13,10 @@ __pycache__/
 .chroma/
 data/vectorstores/
 
+# Experiment outputs
+experiments/outputs/*
+!experiments/outputs/.gitkeep
+
 # Downloaded external datasets and source files
 data/external/datasets/
 data/external/papers/
