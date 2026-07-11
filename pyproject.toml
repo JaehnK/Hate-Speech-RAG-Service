@@ -17,6 +17,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "sqlalchemy>=2.0",
     "uvicorn>=0.35",
+    "youtube-transcript-api>=1.2.4",
 ]
 
 [dependency-groups]
@@ -24,6 +25,7 @@ dev = [
     "httpx>=0.28",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.0",
+    "ruff>=0.12",
 ]
 
 [tool.pytest.ini_options]
