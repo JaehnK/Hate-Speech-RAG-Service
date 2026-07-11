@@ -48,6 +48,21 @@
   - `uv run pytest -q`
 - 결과: diff 검사와 compileall 통과, migration up/down 포함 테스트 38개 통과
 
+### `feat/job-pipeline`
+
+- 범위: YouTube video ID 검증, Job 생성/상태 API, DB polling worker, step orchestrator, fake report E2E
+- 주요 결정:
+  - 문서의 10개 step 순서를 repository가 명시적으로 보장한다.
+  - 필수 step 실패 시 이후 step을 skipped 처리하고, 선택 step 실패는 report 생성을 계속한다.
+  - handler 실패 트랜잭션을 rollback하여 부분 artifact가 다음 단계에 섞이지 않게 한다.
+- 검증:
+  - URL 형식별 video ID 추출과 잘못된 입력 거부
+  - 같은 영상의 독립 job 생성
+  - pending → running → succeeded 상태 전이와 report link 생성
+  - 필수 metadata 실패 시 job failed 및 downstream skipped
+  - 전체 회귀 `uv run pytest -q`
+- 결과: diff 검사와 compileall 통과, 정상/실패 E2E 포함 테스트 47개 통과
+
 ## 외부 검증 대기 항목
 
 - YouTube Data API 실제 metadata/comment 수집: `YOUTUBE_API_KEY` 필요
