@@ -1,7 +1,7 @@
 """create initial service schema
 
 Revision ID: 2b58c77800bf
-Revises: 
+Revises:
 Create Date: 2026-07-11 10:19:26.556181
 """
 from typing import Sequence, Union
