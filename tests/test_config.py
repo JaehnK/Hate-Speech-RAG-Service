@@ -32,3 +32,15 @@ def test_settings_reads_optional_langfuse(monkeypatch) -> None:
     assert settings.langfuse_capture_io
     assert settings.langfuse_public_key == "pk"
     assert settings.langfuse_secret_key == "sk"
+
+
+def test_settings_repr_masks_secrets(monkeypatch) -> None:
+    monkeypatch.setenv("DATABASE_URL", "postgresql://user:password@db/app")
+    monkeypatch.setenv("ADMIN_TOKEN", "admin-secret")
+    monkeypatch.setenv("YOUTUBE_API_KEY", "youtube-secret")
+
+    rendered = repr(load_settings())
+
+    assert "password" not in rendered
+    assert "admin-secret" not in rendered
+    assert "youtube-secret" not in rendered
