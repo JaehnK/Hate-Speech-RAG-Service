@@ -5,6 +5,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.api.jobs import build_jobs_router
+from app.api.reports import build_reports_router
 from app.core.config import Settings, load_settings
 from app.core.errors import DomainError
 from app.core.logging import configure_logging
@@ -27,6 +29,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             yield session
 
     app.state.get_session = get_session
+    app.include_router(build_jobs_router(get_session))
+    app.include_router(build_reports_router(get_session))
 
     @app.exception_handler(DomainError)
     async def domain_error_handler(_request, exc: DomainError) -> JSONResponse:
