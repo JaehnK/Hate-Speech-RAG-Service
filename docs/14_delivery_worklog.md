@@ -106,3 +106,20 @@
 - 실제 LLM RAG 품질 실험: `ANTHROPIC_API_KEY` 필요
 - Upstage embedding 실제 corpus ingest: `UPSTAGE_API_KEY` 필요
 - API 키 없이 fake client와 deterministic embedding으로 전체 경로를 먼저 검증한다.
+
+### `feat/predeploy-hardening`
+
+- 범위: 불변 migration, Docker image, dev/test/prod Compose, CI, production 설정 검증, 보안 헤더, dependency audit, 운영 runbook
+- 주요 결정:
+  - production은 PostgreSQL, production pipeline, 변경된 관리자 token을 강제한다.
+  - web/worker는 non-root로 실행하고 named volume ownership은 일회성 `init-volumes`가 설정한다.
+  - migration 컨테이너에는 DB URL만 전달하고 YouTube/LLM/embedding secret은 전달하지 않는다.
+  - Chroma HTTP server는 실행하지 않으며 `PYSEC-2026-311`의 도달 불가능 조건과 제거 기준을 `SECURITY.md`에 기록한다.
+- 검증:
+  - SQLite와 PostgreSQL 16 migration upgrade/downgrade/upgrade
+  - runtime image build와 container health smoke test
+  - dev/test/prod Compose config
+  - PostgreSQL + web + worker fake pipeline job/report E2E
+  - container XLSX export와 관리자 secret masking
+  - Ruff, compileall, pytest, pip-audit gate
+- 결과: diff, Ruff, compileall 통과, 테스트 61개 통과; dependency audit는 문서화된 Chroma server 비도달 예외 1건 외 통과; PostgreSQL migration 왕복, runtime image, Compose fake E2E, XLSX export 검증 통과

@@ -11,7 +11,10 @@ async def test_health_and_readiness(tmp_path) -> None:
     transport = httpx.ASGITransport(app=app)
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-        assert (await client.get("/health")).json() == {"status": "ok"}
+        health = await client.get("/health")
+        assert health.json() == {"status": "ok"}
+        assert health.headers["x-content-type-options"] == "nosniff"
+        assert health.headers["x-frame-options"] == "DENY"
         readiness = (await client.get("/api/health/readiness")).json()
         assert readiness["status"] == "ok"
         assert readiness["checks"]["database"] == "ok"

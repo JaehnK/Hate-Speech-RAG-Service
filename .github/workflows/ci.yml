@@ -1,0 +1,20 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run ruff check app tests experiments
+      - run: uv run python -m compileall -q app tests experiments alembic
+      - run: uv run pytest -q
+      - run: uv run pip-audit --ignore-vuln PYSEC-2026-311
+      - run: docker compose -f compose.yaml -f compose.test.yaml config --quiet
