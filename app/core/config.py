@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     youtube_api_key: str | None = Field(default=None, repr=False)
     worker_poll_interval_seconds: float = 2.0
     worker_stale_after_seconds: int = 900
+    pipeline_mode: str = "fake"
     chroma_persist_directory: str = ".chroma"
     embedding_provider: str = "upstage"
     embedding_model: str = "solar-embedding-1-large"

@@ -1,12 +1,73 @@
 from app.core.config import load_settings
+from app.analysis.embeddings import create_embedding_function
+from app.analysis.llm_client import AnthropicLlmClient
+from app.analysis.observability import LangfuseConfig, build_observability_client
+from app.analysis.rag_classifier import RagClassifier
+from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
+from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
+from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.collectors.comments import CommentCollector
+from app.collectors.metadata import VideoMetadataCollector
+from app.collectors.transcript import PublicTranscriptProvider, TranscriptCollector
 from app.db.session import build_engine, build_session_factory
+from app.external.youtube import YouTubeApiClient
+from app.jobs.fake_pipeline import build_fake_handlers
+from app.jobs.production_pipeline import build_collection_analysis_handlers
 from app.jobs.worker import JobWorker
 
 
 def main() -> None:
     settings = load_settings()
+    handlers = build_fake_handlers()
+    if settings.pipeline_mode == "production":
+        youtube = YouTubeApiClient(settings.youtube_api_key)
+        classifier = RagClassifier(
+            settings.chroma_persist_directory,
+            AnthropicLlmClient(
+                settings.llm_api_key,
+                model=settings.llm_model,
+                max_tokens=settings.llm_max_tokens,
+                temperature=settings.llm_temperature,
+            ),
+            embedding_function=create_embedding_function(
+                provider=settings.embedding_provider,
+                model=settings.embedding_model,
+                api_key=settings.embedding_api_key,
+                base_url=settings.upstage_embedding_base_url,
+            ),
+            observability=build_observability_client(
+                LangfuseConfig(
+                    enabled=settings.langfuse_enabled,
+                    public_key=settings.langfuse_public_key,
+                    secret_key=settings.langfuse_secret_key,
+                    host=settings.langfuse_host,
+                    capture_io=settings.langfuse_capture_io,
+                )
+            ),
+        )
+        handlers.update(
+            build_collection_analysis_handlers(
+                VideoMetadataCollector(youtube),
+                CommentCollector(youtube),
+                TranscriptCollector(PublicTranscriptProvider()),
+                CommentAnalyzer(classifier),
+                ScriptAnalyzer(classifier),
+                {
+                    "llm_provider": settings.llm_provider,
+                    "llm_model": settings.llm_model,
+                    "embedding_provider": settings.embedding_provider,
+                    "embedding_model": settings.embedding_model,
+                    "example_vector_collection": EXAMPLE_COLLECTION_NAME,
+                    "definition_vector_collection": DEFINITION_COLLECTION_NAME,
+                    "definition_corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION,
+                    "retriever_config": {"taxonomy_k": 4, "definition_k": 4, "example_k": 6},
+                    "prompt_versions": {"comment": "category-rag-v0.1.0", "script": "category-rag-v0.1.0"},
+                },
+            )
+        )
     worker = JobWorker(
         build_session_factory(build_engine(settings.database_url)),
+        handlers=handlers,
         poll_interval_seconds=settings.worker_poll_interval_seconds,
     )
     worker.run_forever()

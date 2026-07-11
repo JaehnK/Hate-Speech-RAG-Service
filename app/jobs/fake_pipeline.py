@@ -73,7 +73,7 @@ def _build_report(session: Session, job: AnalysisJob) -> StepResult:
             "job_id": str(job.id),
             "video": {"youtube_video_id": job.youtube_video_id, "title": metadata.title},
             "sections": {"comments": {"status": "succeeded"}, "script": {"status": "succeeded"}, "network": {"status": "succeeded"}},
-            "mode": "fake",
+            "mode": "fake" if run.llm_provider == "fake" else "production",
         },
         source_counts={"comments": 0, "script_segments": 0},
     )
