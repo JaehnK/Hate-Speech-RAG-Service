@@ -1,12 +1,15 @@
 from collections.abc import Iterator
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.api.admin import build_admin_router
 from app.api.jobs import build_jobs_router
-from app.api.reports import build_reports_router
+from app.api.exports import build_exports_router
+from app.api.reports import build_report_pages_router, build_reports_router
 from app.core.config import Settings, load_settings
 from app.core.errors import DomainError
 from app.core.logging import configure_logging
@@ -30,7 +33,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.state.get_session = get_session
     app.include_router(build_jobs_router(get_session))
-    app.include_router(build_reports_router(get_session))
+    app.include_router(build_reports_router(get_session, settings.report_storage_dir))
+    app.include_router(build_report_pages_router(get_session))
+    app.include_router(build_exports_router(get_session, settings.report_storage_dir))
+    app.include_router(build_admin_router(get_session, settings))
 
     @app.exception_handler(DomainError)
     async def domain_error_handler(_request, exc: DomainError) -> JSONResponse:
@@ -44,9 +50,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"status": "ok"}
 
     @app.get("/api/health/readiness")
-    def readiness(session: Session = Depends(get_session)) -> dict[str, str]:
+    def readiness(session: Session = Depends(get_session)) -> dict:
         session.execute(text("SELECT 1"))
-        return {"status": "ready"}
+        return {
+            "status": "ok",
+            "checks": {
+                "database": "ok",
+                "chroma": "ok" if Path(settings.chroma_persist_directory).exists() else "not_initialized",
+                "youtube_api_key": "configured" if settings.youtube_api_key else "not_configured",
+                "llm_api_key": "configured" if settings.llm_api_key else "not_configured",
+            },
+        }
 
     return app
 

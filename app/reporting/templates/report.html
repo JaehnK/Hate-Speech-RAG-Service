@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ report.title }}</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; color: #191c1e; background: #f7f9fb; }
+    body { max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1, h2 { color: #182442; } .meta { color: #62666d; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .card { background: white; border: 1px solid #e0e3e5; border-radius: 8px; padding: 20px; margin: 16px 0; }
+    .metric { font-size: 28px; font-weight: 700; } .risk { color: #bb0112; }
+    table { width: 100%; border-collapse: collapse; } th, td { padding: 10px; border-bottom: 1px solid #e0e3e5; text-align: left; }
+    .warning { border-left: 4px solid #bb0112; padding-left: 12px; }
+  </style>
+</head>
+<body>
+  <header><h1>{{ report.title }}</h1><p class="meta">Video ID: {{ payload.youtube_video_id }} · 상태: {{ report.status }}</p></header>
+  {% if payload.failure_summary %}<section class="card warning"><h2>부분 실패</h2><ul>{% for item in payload.failure_summary %}<li>{{ item.step_key }}: {{ item.error_code or item.status }}</li>{% endfor %}</ul></section>{% endif %}
+  <section class="card"><h2>영상</h2><p>{{ payload.video.title }}</p><p class="meta">{{ payload.video.channel_title }}</p></section>
+  <section class="grid">
+    <article class="card"><h2>댓글</h2><div class="metric">{{ payload.comment_analysis_summary.total }}</div><p>혐오표현 <span class="risk">{{ payload.comment_analysis_summary.hate_speech_count }}</span></p></article>
+    <article class="card"><h2>스크립트</h2><div class="metric">{{ payload.script_analysis_summary.total }}</div><p>혐오표현 <span class="risk">{{ payload.script_analysis_summary.hate_speech_count }}</span></p></article>
+    <article class="card"><h2>네트워크</h2><div class="metric">{{ payload.network_summary.node_count or 0 }}</div><p>엣지 {{ payload.network_summary.edge_count or 0 }}</p></article>
+  </section>
+  <section class="card"><h2>카테고리 분포</h2><table><thead><tr><th>카테고리</th><th>건수</th></tr></thead><tbody>{% for category, count in payload.comment_analysis_summary.category_distribution.items() %}<tr><td>{{ category }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="card"><h2>대표 사례</h2>{% for item in payload.representative_comments %}<article><p>{{ item.text }}</p><p class="meta">{{ item.categories|join(', ') }} · {{ item.reasoning }}</p></article>{% else %}<p>표시할 혐오표현 사례가 없습니다.</p>{% endfor %}</section>
+</body>
+</html>

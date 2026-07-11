@@ -37,7 +37,7 @@ async def test_job_api_worker_and_fake_report_end_to_end(tmp_path) -> None:
 
         report_response = await client.get(status_payload["links"]["report_api"])
         assert report_response.status_code == 200
-        assert report_response.json()["payload"]["mode"] == "fake"
+        assert report_response.json()["video"]["youtube_video_id"] == "abcdefghijk"
 
 
 @pytest.mark.asyncio

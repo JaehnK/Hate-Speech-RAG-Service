@@ -12,4 +12,6 @@ async def test_health_and_readiness(tmp_path) -> None:
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         assert (await client.get("/health")).json() == {"status": "ok"}
-        assert (await client.get("/api/health/readiness")).json() == {"status": "ready"}
+        readiness = (await client.get("/api/health/readiness")).json()
+        assert readiness["status"] == "ok"
+        assert readiness["checks"]["database"] == "ok"

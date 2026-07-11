@@ -10,13 +10,14 @@ from app.collectors.transcript import TranscriptCollector, TranscriptData, Trans
 from app.core.config import Settings
 from app.core.errors import DomainError
 from app.db.base import Base
-from app.db.models import CommentAnalysisResult, CommentSnapshot, ScriptAnalysisResult, TranscriptSegment, VideoMetadataSnapshot
+from app.db.models import ApiQuotaEvent, CommentAnalysisResult, CommentSnapshot, ScriptAnalysisResult, TranscriptSegment, VideoMetadataSnapshot
 from app.external.youtube import CommentRecord
 from app.jobs.fake_pipeline import build_fake_handlers
 from app.jobs.production_pipeline import build_collection_analysis_handlers
 from app.jobs.service import AnalysisJobService
 from app.jobs.worker import JobWorker
 from app.main import create_app
+from app.reporting.pipeline import build_reporting_handlers
 
 
 class FakeYouTubeClient:
@@ -88,6 +89,7 @@ def test_real_adapter_pipeline_persists_collection_and_analysis_artifacts(tmp_pa
         assert AnalysisJobService(session).get_job(job_id).status == "succeeded"
         for model in (VideoMetadataSnapshot, CommentSnapshot, TranscriptSegment, CommentAnalysisResult, ScriptAnalysisResult):
             assert session.scalar(select(func.count()).select_from(model)) == 1
+        assert session.scalar(select(func.count()).select_from(ApiQuotaEvent)) == 2
 
 
 def test_incomplete_comment_collection_is_preserved_but_not_analyzed(tmp_path) -> None:
@@ -131,4 +133,5 @@ def _handlers(youtube):
             },
         )
     )
+    handlers.update(build_reporting_handlers())
     return handlers

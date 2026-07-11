@@ -8,7 +8,7 @@ from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
 from app.collectors.transcript import TranscriptCollector
 from app.core.errors import DomainError
-from app.db.models import AnalysisJob, AnalysisRun, CommentSnapshot, TranscriptSegment, TranscriptSnapshot
+from app.db.models import AnalysisJob, AnalysisRun, ApiQuotaEvent, CommentSnapshot, TranscriptSegment, TranscriptSnapshot
 from app.jobs.orchestrator import StepResult
 
 
@@ -22,15 +22,18 @@ def build_collection_analysis_handlers(
 ) -> dict:
     def collect_metadata(session: Session, job: AnalysisJob) -> StepResult:
         metadata_collector.collect(session, job)
+        _quota_event(session, job, "videos.list", "used")
         return StepResult(metrics={"video_count": 1})
 
     def collect_comments(session: Session, job: AnalysisJob) -> StepResult:
         try:
             comments = comment_collector.collect_all(session, job)
         except DomainError as exc:
+            _quota_event(session, job, "commentThreads.list", _quota_status(exc.code), exc.code)
             if exc.code == "COMMENTS_DISABLED":
                 return StepResult("skipped", error_code=exc.code, error_message=exc.message)
             return StepResult("failed", error_code=exc.code, error_message=exc.message)
+        _quota_event(session, job, "commentThreads.list", "used")
         return StepResult(metrics={"comments_collected": len(comments)})
 
     def collect_transcript(session: Session, job: AnalysisJob) -> StepResult:
@@ -90,3 +93,25 @@ def _step_status(session: Session, job: AnalysisJob, step_key: str) -> str | Non
     from app.db.models import JobStep
 
     return session.scalar(select(JobStep.status).where(JobStep.job_id == job.id, JobStep.step_key == step_key))
+
+
+def _quota_event(session: Session, job: AnalysisJob, operation: str, status: str, error_code: str | None = None) -> None:
+    session.add(
+        ApiQuotaEvent(
+            job_id=job.id,
+            provider="youtube",
+            operation=operation,
+            quota_cost=1,
+            status=status,
+            error_code=error_code,
+            metadata_json={},
+        )
+    )
+
+
+def _quota_status(error_code: str) -> str:
+    if error_code == "YOUTUBE_QUOTA_EXCEEDED":
+        return "quota_exceeded"
+    if error_code == "YOUTUBE_RATE_LIMITED":
+        return "rate_limited"
+    return "failed"
