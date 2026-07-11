@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from app.api.jobs import build_jobs_router
 from app.api.reports import build_reports_router
