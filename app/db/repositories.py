@@ -10,13 +10,16 @@ from app.db.models import AnalysisJob, JobStep
 
 
 DEFAULT_JOB_STEPS = (
-    ("metadata", True),
-    ("comments", False),
-    ("transcript", False),
-    ("comment_analysis", False),
-    ("script_analysis", False),
-    ("network", False),
-    ("report", True),
+    ("validate_input", True),
+    ("collect_metadata", True),
+    ("collect_comments", False),
+    ("collect_transcript", False),
+    ("create_analysis_run", True),
+    ("analyze_comments", False),
+    ("analyze_script", False),
+    ("build_comment_network", False),
+    ("build_report_snapshot", True),
+    ("finalize_job", True),
 )
 
 
@@ -49,10 +52,10 @@ class AnalysisJobRepository:
         return self.session.get(AnalysisJob, job_id)
 
     def list_steps(self, job_id: UUID) -> list[JobStep]:
-        statement: Select[tuple[JobStep]] = (
-            select(JobStep).where(JobStep.job_id == job_id).order_by(JobStep.id)
-        )
-        return list(self.session.scalars(statement))
+        statement: Select[tuple[JobStep]] = select(JobStep).where(JobStep.job_id == job_id)
+        steps = list(self.session.scalars(statement))
+        order = {step_key: index for index, (step_key, _required) in enumerate(DEFAULT_JOB_STEPS)}
+        return sorted(steps, key=lambda step: order[step.step_key])
 
     def claim_pending(self) -> AnalysisJob | None:
         statement = (

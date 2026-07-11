@@ -21,7 +21,18 @@ def test_job_repository_allows_repeat_video_jobs_and_creates_steps(tmp_path) -> 
     with factory() as session:
         repository = AnalysisJobRepository(session)
         assert first_id != second_id
-        assert len(repository.list_steps(first_id)) == 7
+        assert [step.step_key for step in repository.list_steps(first_id)] == [
+            "validate_input",
+            "collect_metadata",
+            "collect_comments",
+            "collect_transcript",
+            "create_analysis_run",
+            "analyze_comments",
+            "analyze_script",
+            "build_comment_network",
+            "build_report_snapshot",
+            "finalize_job",
+        ]
 
 
 def test_comment_id_is_unique_within_job(tmp_path) -> None:
