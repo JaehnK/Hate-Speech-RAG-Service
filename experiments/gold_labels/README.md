@@ -9,3 +9,7 @@
 ```
 
 MVP에서는 단일 검토자 small set으로 시작하고, 운영 전에는 2인 이상 라벨링과 불일치 조정을 추가한다.
+
+`synthetic_smoke_5.jsonl`은 평가 코드와 prompt 회귀를 확인하기 위한 합성 smoke set이다. 실제 YouTube 댓글 품질을 대표하지 않으며, 운영 판단 지표로 사용하지 않는다.
+
+실제 품질 검증은 익명화된 YouTube 댓글과 script segment를 2인 이상이 독립 라벨링하고 불일치를 조정한 별도 gold set으로 실행한다.
