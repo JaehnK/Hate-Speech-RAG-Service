@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.4.0 |
-| 작성일시 | 2026-07-08 08:35:46 KST |
+| 버전 | v0.4.1 |
+| 작성일시 | 2026-07-09 03:04:53 KST |
 
 ## 문서 목적
 
@@ -47,7 +47,7 @@ MVP는 다음 항목을 포함하지 않는다.
 - 댓글 소셜 네트워크는 독립 artifact로 생성한다.
 - RAG 분류는 혐오표현 예시 vector store와 혐오표현 정의 문서 vector store를 함께 사용한다.
 - Python dependency 관리는 `uv`를 사용하고, Docker Compose 환경 분리는 `10_docker_environment.md`를 따른다.
-- 원천 프로젝트 디렉토리인 `YouTubeHateSpeech/`, `hateSpeechRAG/`는 MVP 구현 전환의 참조 코드로 사용하고, 추후 별도 서브모듈 또는 vendor 구조로 포함하는 것을 검토한다.
+- 원천 프로젝트 디렉토리인 `legacy/YouTubeHateSpeech/`, `legacy/hateSpeechRAG/`는 MVP 구현 전환의 참조 코드로 사용하고, 추후 별도 서브모듈 또는 vendor 구조로 포함하는 것을 검토한다.
 
 ## 시스템 컨텍스트
 
@@ -371,7 +371,7 @@ MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다
 
 ## 원천 프로젝트 전환 기준
 
-`YouTubeHateSpeech/`의 수집 코드는 다음 책임으로 재구성한다.
+`legacy/YouTubeHateSpeech/`의 수집 코드는 다음 책임으로 재구성한다.
 
 - video ID 추출
 - 영상 메타데이터 수집
@@ -379,7 +379,7 @@ MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다
 - 자막 수집 adapter
 - 수집 결과 정규화
 
-`hateSpeechRAG/`의 분석 코드는 다음 책임으로 재구성한다.
+`legacy/hateSpeechRAG/`의 분석 코드는 다음 책임으로 재구성한다.
 
 - Chroma vector store 접근
 - 혐오표현 예시 retriever

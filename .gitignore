@@ -1,6 +1,24 @@
 # Local raw/reference projects
-YouTubeHateSpeech/
-hateSpeechRAG/
+legacy/YouTubeHateSpeech/
+legacy/hateSpeechRAG/
+
+# Python local artifacts
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+
+# Local vector stores
+.chroma/
+data/vectorstores/
+
+# Experiment outputs
+experiments/outputs/*
+!experiments/outputs/.gitkeep
 
 # Downloaded external datasets and source files
 data/external/datasets/

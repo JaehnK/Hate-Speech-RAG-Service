@@ -1,0 +1,21 @@
+[project]
+name = "youtube-hatespeech-report"
+version = "0.1.0"
+description = "Single-video YouTube hate speech analysis report service."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "anthropic>=0.116.0",
+    "chromadb>=1.5.9",
+    "httpx>=0.28.1",
+    "langfuse>=4.13.2",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
