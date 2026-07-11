@@ -35,8 +35,10 @@ def test_metadata_and_all_comment_pages_are_persisted(tmp_path) -> None:
         job = AnalysisJobRepository(session).create("abcdefghijk", "abcdefghijk")
         metadata = VideoMetadataCollector(client).collect(session, job)
         comments = CommentCollector(client).collect_all(session, job)
+        repeated = CommentCollector(client).collect_all(session, job)
         assert metadata.duration_seconds == 3723
         assert len(comments) == 3
+        assert len(repeated) == 3
         assert comments[1].parent_comment_snapshot_id == comments[0].id
         assert comments[2].parent_comment_snapshot_id == comments[0].id
 

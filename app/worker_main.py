@@ -14,11 +14,13 @@ from app.external.youtube import YouTubeApiClient
 from app.jobs.fake_pipeline import build_fake_handlers
 from app.jobs.production_pipeline import build_collection_analysis_handlers
 from app.jobs.worker import JobWorker
+from app.reporting.pipeline import build_reporting_handlers
 
 
 def main() -> None:
     settings = load_settings()
     handlers = build_fake_handlers()
+    handlers.update(build_reporting_handlers())
     if settings.pipeline_mode == "production":
         youtube = YouTubeApiClient(settings.youtube_api_key)
         classifier = RagClassifier(
