@@ -1,4 +1,6 @@
 from app.core.config import load_settings
+from app.core.config import Settings
+import pytest
 
 
 def test_settings_default_to_upstage_haiku_and_langfuse_disabled(monkeypatch) -> None:
@@ -44,3 +46,21 @@ def test_settings_repr_masks_secrets(monkeypatch) -> None:
     assert "password" not in rendered
     assert "admin-secret" not in rendered
     assert "youtube-secret" not in rendered
+
+
+def test_production_settings_reject_unsafe_defaults() -> None:
+    with pytest.raises(ValueError):
+        Settings(app_env="production")
+
+
+def test_production_settings_accept_complete_runtime_config() -> None:
+    settings = Settings(
+        app_env="production",
+        database_url="postgresql+psycopg://user:password@db/app",
+        admin_token="strong-admin-token",
+        pipeline_mode="production",
+        youtube_api_key="youtube",
+        anthropic_api_key="llm",
+        upstage_api_key="embedding",
+    )
+    assert settings.pipeline_mode == "production"

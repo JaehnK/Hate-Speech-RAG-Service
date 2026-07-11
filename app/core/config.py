@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import Field
+from typing import Literal
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,7 +14,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    app_env: str = "development"
+    app_env: Literal["development", "test", "production"] = "development"
     log_level: str = "INFO"
     database_url: str = Field(default="sqlite:///./hatespeech.db", repr=False)
     admin_token: str = Field(default="change-me", repr=False)
@@ -20,7 +22,7 @@ class Settings(BaseSettings):
     youtube_api_key: str | None = Field(default=None, repr=False)
     worker_poll_interval_seconds: float = 2.0
     worker_stale_after_seconds: int = 900
-    pipeline_mode: str = "fake"
+    pipeline_mode: Literal["fake", "production"] = "fake"
     chroma_persist_directory: str = ".chroma"
     embedding_provider: str = "upstage"
     embedding_model: str = "solar-embedding-1-large"
@@ -45,6 +47,27 @@ class Settings(BaseSettings):
 
     upstage_api_key: str | None = Field(default=None, repr=False)
     anthropic_api_key: str | None = Field(default=None, repr=False)
+
+    @model_validator(mode="after")
+    def validate_runtime(self):
+        if self.app_env == "production":
+            if self.admin_token == "change-me":
+                raise ValueError("ADMIN_TOKEN must be changed in production")
+            if self.database_url.startswith("sqlite"):
+                raise ValueError("PostgreSQL DATABASE_URL is required in production")
+            if self.pipeline_mode != "production":
+                raise ValueError("PIPELINE_MODE=production is required in production")
+        if self.pipeline_mode == "production":
+            missing = []
+            if not self.youtube_api_key:
+                missing.append("YOUTUBE_API_KEY")
+            if not self.llm_api_key:
+                missing.append("LLM_API_KEY or ANTHROPIC_API_KEY")
+            if self.embedding_provider != "hash" and not self.embedding_api_key:
+                missing.append("EMBEDDING_API_KEY or UPSTAGE_API_KEY")
+            if missing:
+                raise ValueError(f"Missing production pipeline settings: {', '.join(missing)}")
+        return self
 
 
 def load_settings() -> Settings:
