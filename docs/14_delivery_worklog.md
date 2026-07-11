@@ -81,6 +81,25 @@
   - 전체 회귀 `uv run pytest -q`
 - 결과: diff, Ruff, compileall 통과, 수집·분석·부분 실패 포함 테스트 57개 통과
 
+### `feat/reporting-operations`
+
+- 범위: 댓글 작성자 네트워크, report snapshot, 상세 API, HTML 화면, HTML/Excel export, 관리자 API
+- 주요 결정:
+  - 작성자 채널 ID가 없으면 comment snapshot UUID 기반 익명 node key를 사용한다.
+  - 자기 답글 edge를 제거하지 않고 summary에 별도 집계한다.
+  - report snapshot은 생성 후 수정하지 않으며 재분석 시 새 snapshot을 만든다.
+  - export 파일 경로는 설정된 storage root 내부로 제한한다.
+  - 관리자 token은 constant-time 비교하고 설정 API에는 secret 존재 여부만 노출한다.
+- 검증:
+  - node/edge/degree와 혐오 비율 계산
+  - report summary, 대표 사례, 부분 실패 표시
+  - 댓글/스크립트 pagination·filter와 network API
+  - HTML escaping 및 Excel 5개 sheet 생성
+  - export 생성·상태·다운로드와 PDF 거부
+  - 관리자 인증, 설정 masking, retry 상태 전이, log/quota 조회
+  - 전체 회귀 `uv run pytest -q`
+- 결과: diff, Ruff, compileall 통과, reporting/export/admin 포함 테스트 59개 통과
+
 ## 외부 검증 대기 항목
 
 - YouTube Data API 실제 metadata/comment 수집: `YOUTUBE_API_KEY` 필요
