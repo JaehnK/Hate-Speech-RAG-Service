@@ -34,6 +34,20 @@
   - `uv run pytest -q`
 - 결과: diff whitespace 오류 없음, 테스트 33개 통과
 
+### `feat/service-foundation`
+
+- 범위: FastAPI app factory, health/readiness, 환경 설정, SQLAlchemy 전체 모델, Alembic 초기 migration, job repository
+- 주요 결정:
+  - PostgreSQL을 운영 DB로 사용하고 SQLite를 repository/migration 테스트에 사용한다.
+  - PostgreSQL에서는 JSONB와 text array를 사용하고 SQLite에서는 호환 JSON 타입을 사용한다.
+  - 같은 video ID의 job 중복 생성을 허용하고 댓글 ID는 job 내부에서만 유일하게 유지한다.
+- 검증:
+  - migration `upgrade head`와 `downgrade base`
+  - health/readiness ASGI 호출
+  - 전체 table metadata 생성과 repository 제약 테스트
+  - `uv run pytest -q`
+- 결과: diff 검사와 compileall 통과, migration up/down 포함 테스트 38개 통과
+
 ## 외부 검증 대기 항목
 
 - YouTube Data API 실제 metadata/comment 수집: `YOUTUBE_API_KEY` 필요
