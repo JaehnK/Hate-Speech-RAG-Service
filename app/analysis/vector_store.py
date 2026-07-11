@@ -28,6 +28,8 @@ def ingest_definition_documents(
         reset=reset,
         embedding_function=embedding_function,
     )
+    if not documents:
+        return collection.count()
     collection.upsert(
         ids=[document.doc_id for document in documents],
         documents=[document.chunk_text for document in documents],

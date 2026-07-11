@@ -1,0 +1,5 @@
+{"item_id":"sample-001","is_hate_speech":false,"categories":["unclassified"],"target_group":null,"hate_type":null,"rationale":"일반적인 긍정 의견"}
+{"item_id":"sample-002","is_hate_speech":true,"categories":["non_state_community"],"target_group":"특정 정치 지지층","hate_type":"집단 일반화/비하","rationale":"정치 지지층 전체를 대화 불가능한 집단으로 일반화"}
+{"item_id":"sample-003","is_hate_speech":false,"categories":["unclassified"],"target_group":null,"hate_type":null,"rationale":"성별 비하를 금지하는 반혐오 문장"}
+{"item_id":"sample-004","is_hate_speech":false,"categories":["unclassified"],"target_group":null,"hate_type":null,"rationale":"정책 절차에 대한 비판"}
+{"item_id":"sample-005","is_hate_speech":false,"categories":["unclassified"],"target_group":null,"hate_type":null,"rationale":"댓글 품질에 대한 부정적 평가이나 보호집단 표적이 없음"}

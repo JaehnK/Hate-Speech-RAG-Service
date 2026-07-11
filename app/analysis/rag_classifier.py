@@ -14,6 +14,8 @@ from app.analysis.observability import NoopObservabilityClient, ObservabilityCli
 from app.analysis.prompt_template import PROMPT_VERSION, build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.vector_store import query_definition_documents, query_example_documents
+from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,12 @@ class ClassificationResult:
     usage: dict[str, int]
     validation: ValidationResult
     attempts: int
+    rag_context_status: str
+    example_collection: str
+    definition_collection: str
+    definition_corpus_version: str
+    retrieved_examples: tuple[ExampleSearchResult, ...]
+    retrieved_definitions: tuple[DefinitionSearchResult, ...]
 
 
 class ClassificationError(Exception):
@@ -40,6 +48,7 @@ class RagClassifier:
         taxonomy_k: int = 4,
         definition_k: int = 4,
         example_k: int = 6,
+        definition_corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
     ) -> None:
         self.persist_directory = persist_directory
         self.llm_client = llm_client
@@ -48,26 +57,40 @@ class RagClassifier:
         self.taxonomy_k = taxonomy_k
         self.definition_k = definition_k
         self.example_k = example_k
+        self.definition_corpus_version = definition_corpus_version
 
     def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
+        definitions: list[DefinitionSearchResult] = []
+        examples: list[ExampleSearchResult] = []
+        retrieval_failures = []
         with self.observability.observation(
             "rag.retrieval",
             as_type="retriever",
             input_value=input_text,
             metadata={"source_type": source_type},
         ):
-            definitions = query_definition_documents(
-                self.persist_directory,
-                _retrieval_query(input_text, source_type),
-                n_results=self.taxonomy_k + self.definition_k,
-                embedding_function=self.embedding_function,
-            )
-            examples = query_example_documents(
-                self.persist_directory,
-                _retrieval_query(input_text, source_type),
-                n_results=self.example_k,
-                embedding_function=self.embedding_function,
-            )
+            try:
+                definitions = query_definition_documents(
+                    self.persist_directory,
+                    _retrieval_query(input_text, source_type),
+                    n_results=self.taxonomy_k + self.definition_k,
+                    embedding_function=self.embedding_function,
+                )
+            except Exception:
+                retrieval_failures.append("definitions")
+            try:
+                examples = query_example_documents(
+                    self.persist_directory,
+                    _retrieval_query(input_text, source_type),
+                    n_results=self.example_k,
+                    embedding_function=self.embedding_function,
+                )
+            except Exception:
+                retrieval_failures.append("examples")
+
+        if len(retrieval_failures) == 2:
+            raise ClassificationError("both RAG vector stores are unavailable")
+        context_status = _context_status(definitions, examples)
 
         prompt = build_category_prompt(
             input_text=input_text,
@@ -87,7 +110,10 @@ class RagClassifier:
                 metadata={"prompt_version": PROMPT_VERSION, "attempt": attempt},
                 model=self.llm_client.model,
             ):
-                response = self.llm_client.complete(prompt)
+                try:
+                    response = self.llm_client.complete(prompt)
+                except Exception as exc:
+                    raise ClassificationError("LLM classification request failed") from exc
 
             payload, validation = _validated_payload(response.text)
             last_validation = validation
@@ -99,6 +125,12 @@ class RagClassifier:
                     usage=response.usage,
                     validation=validation,
                     attempts=attempt,
+                    rag_context_status=context_status,
+                    example_collection=EXAMPLE_COLLECTION_NAME,
+                    definition_collection=DEFINITION_COLLECTION_NAME,
+                    definition_corpus_version=self.definition_corpus_version,
+                    retrieved_examples=tuple(examples),
+                    retrieved_definitions=tuple(definitions),
                 )
 
             prompt = _retry_prompt(prompt, validation)
@@ -177,3 +209,13 @@ def _example_document(result: ExampleSearchResult) -> ExampleDocument:
         is_hate_speech=result.is_hate_speech,
         score=score,
     )
+
+
+def _context_status(definitions: list[DefinitionSearchResult], examples: list[ExampleSearchResult]) -> str:
+    if definitions and examples:
+        return "complete"
+    if examples:
+        return "example_only"
+    if definitions:
+        return "definition_only"
+    return "unavailable"

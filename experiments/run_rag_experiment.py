@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 from datetime import UTC, datetime
-import os
-from pathlib import Path
 from typing import Any
 
 from app.analysis.embeddings import create_embedding_function

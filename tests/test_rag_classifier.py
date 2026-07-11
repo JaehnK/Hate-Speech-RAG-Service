@@ -67,6 +67,12 @@ def test_rag_classifier_returns_valid_payload(tmp_path) -> None:
     assert result.payload["categories"] == ["gender"]
     assert result.attempts == 1
     assert result.model == "claude-haiku-4-5-20251001"
+    assert result.rag_context_status == "complete"
+    assert result.example_collection == "hate_speech_examples"
+    assert result.definition_collection == "hate_speech_definitions"
+    assert result.definition_corpus_version
+    assert result.retrieved_examples
+    assert result.retrieved_definitions
 
 
 def test_rag_classifier_retries_invalid_json_contract(tmp_path) -> None:

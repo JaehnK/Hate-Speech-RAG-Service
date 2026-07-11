@@ -10,6 +10,7 @@ PERMISSION_REQUIRED = "permission_required"
 INTERNAL_EVAL_ONLY = "internal_eval_only"
 
 DEFAULT_EXAMPLE_LICENSE_TIERS: tuple[str, ...] = (COMMERCIAL_OK,)
+DEFAULT_DEFINITION_LICENSE_TIERS: tuple[str, ...] = (COMMERCIAL_OK,)
 
 
 def normalize_license_tier(license_status: str | None) -> str:
@@ -39,3 +40,13 @@ def examples_allowed(
 
     license_tier = normalize_license_tier(source.get("license_status"))
     return license_tier in set(allowed_license_tiers)
+
+
+def definitions_allowed(
+    source: dict,
+    allowed_license_tiers: Iterable[str] = DEFAULT_DEFINITION_LICENSE_TIERS,
+) -> bool:
+    corpus_target = source.get("corpus_target") or {}
+    return corpus_target.get("definitions") is True and normalize_license_tier(
+        source.get("license_status")
+    ) in set(allowed_license_tiers)
