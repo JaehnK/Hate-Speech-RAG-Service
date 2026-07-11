@@ -63,6 +63,24 @@
   - 전체 회귀 `uv run pytest -q`
 - 결과: diff 검사와 compileall 통과, 정상/실패 E2E 포함 테스트 47개 통과
 
+### `feat/collectors-analysis`
+
+- 범위: YouTube metadata/comment adapter, 공개 자막 수집·segment, 댓글/스크립트 분석 저장, production worker 조립, 외부 정의 corpus와 평가 도구
+- 주요 결정:
+  - YouTube metadata/comment는 공식 Data API v3만 사용한다.
+  - 공개 자막은 API key가 필요 없는 `youtube-transcript-api` adapter로 조회하며 외부 파일 업로드는 추가하지 않는다.
+  - 댓글 수집이 중단되면 수집 완료분은 보존하지만 해당 job의 댓글 분석은 실행하지 않는다.
+  - 외부 definition corpus는 기본적으로 `commercial_ok`만 ingest하고 ShareAlike, permission, review tier는 제외한다.
+  - 합성 gold set은 평가 코드 smoke test에만 사용하고 실제 품질 지표로 표현하지 않는다.
+- 검증:
+  - YouTube pagination, 추가 reply 조회, quota/comments-disabled 오류 변환
+  - 자막 정규화와 시간/길이 기반 segment 생성
+  - comment/script 모든 항목에 성공 또는 실패 결과 생성
+  - 실제 adapter 조립 pipeline과 부분 댓글 수집 경로
+  - RAG collection/corpus metadata 기록 및 license gate
+  - 전체 회귀 `uv run pytest -q`
+- 결과: diff, Ruff, compileall 통과, 수집·분석·부분 실패 포함 테스트 57개 통과
+
 ## 외부 검증 대기 항목
 
 - YouTube Data API 실제 metadata/comment 수집: `YOUTUBE_API_KEY` 필요
