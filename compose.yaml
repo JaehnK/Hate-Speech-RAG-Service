@@ -1,0 +1,87 @@
+x-app-environment: &app-environment
+  APP_ENV: ${APP_ENV:-development}
+  DATABASE_URL: postgresql+psycopg://hatespeech:${POSTGRES_PASSWORD:-hatespeech}@postgres:5432/hatespeech
+  ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
+  PIPELINE_MODE: ${PIPELINE_MODE:-fake}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+  LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+  LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5-20251001}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-upstage}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-solar-embedding-1-large}
+  UPSTAGE_API_KEY: ${UPSTAGE_API_KEY:-}
+  CHROMA_PERSIST_DIRECTORY: /data/chroma
+  REPORT_STORAGE_DIR: /data/reports
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hatespeech
+      POSTGRES_USER: hatespeech
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hatespeech}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hatespeech -d hatespeech"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  init-volumes:
+    build:
+      context: .
+      target: runtime
+    user: root
+    command: ["chown", "-R", "app:app", "/data/chroma", "/data/reports"]
+    volumes:
+      - chroma_data:/data/chroma
+      - report_storage:/data/reports
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://hatespeech:${POSTGRES_PASSWORD:-hatespeech}@postgres:5432/hatespeech
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init-volumes:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      target: runtime
+    environment: *app-environment
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - chroma_data:/data/chroma:ro
+      - report_storage:/data/reports
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "app.worker_main"]
+    environment: *app-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - chroma_data:/data/chroma
+      - report_storage:/data/reports
+
+volumes:
+  postgres_data:
+  chroma_data:
+  report_storage:
