@@ -81,6 +81,7 @@ class ReportBuilder:
                 "example_collection": run.example_vector_collection,
                 "definition_collection": run.definition_vector_collection,
                 "definition_corpus_version": run.definition_corpus_version,
+                "retriever_config": run.retriever_config,
                 "prompt_versions": run.prompt_versions,
             },
         }

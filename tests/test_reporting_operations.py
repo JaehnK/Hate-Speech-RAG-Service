@@ -28,6 +28,7 @@ def test_network_report_html_and_excel_builders(tmp_path) -> None:
         report = _seed_report(session)
         assert report.payload["comment_analysis_summary"]["hate_speech_count"] == 1
         assert report.payload["network_summary"]["node_count"] == 2
+        assert report.payload["analysis_config"]["retriever_config"]["example_min_similarity"] == 0.4
         report.payload["representative_comments"][0]["text"] = "<script>alert(1)</script>"
         rendered = HtmlReportRenderer().render(report)
         assert "대표 사례" in rendered
@@ -144,6 +145,7 @@ def _seed_report(session):
         example_vector_collection="examples",
         definition_vector_collection="definitions",
         definition_corpus_version="test-v1",
+        retriever_config={"example_min_similarity": 0.4},
         prompt_versions={"comment": "test-v1", "script": "test-v1"},
     )
     session.add_all([segment, run])

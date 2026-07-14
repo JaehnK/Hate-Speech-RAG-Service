@@ -13,6 +13,7 @@ from app.analysis.models import ExampleDocument, ExampleSearchResult
 
 DEFINITION_COLLECTION_NAME = "hate_speech_definitions"
 EXAMPLE_COLLECTION_NAME = "hate_speech_examples"
+UPSERT_BATCH_SIZE = 100
 
 
 def ingest_definition_documents(
@@ -30,7 +31,8 @@ def ingest_definition_documents(
     )
     if not documents:
         return collection.count()
-    collection.upsert(
+    _upsert_batches(
+        collection,
         ids=[document.doc_id for document in documents],
         documents=[document.chunk_text for document in documents],
         metadatas=[_definition_metadata(document) for document in documents],
@@ -92,7 +94,8 @@ def ingest_example_documents(
     if not documents:
         return collection.count()
 
-    collection.upsert(
+    _upsert_batches(
+        collection,
         ids=[document.doc_id for document in documents],
         documents=[document.text for document in documents],
         metadatas=[_example_metadata(document) for document in documents],
@@ -198,3 +201,19 @@ def _metadata_bool(value: object) -> bool:
     if isinstance(value, bool):
         return value
     return str(value).lower() == "true"
+
+
+def _upsert_batches(
+    collection: Any,
+    ids: list[str],
+    documents: list[str],
+    metadatas: list[dict],
+    batch_size: int = UPSERT_BATCH_SIZE,
+) -> None:
+    for start in range(0, len(ids), batch_size):
+        end = start + batch_size
+        collection.upsert(
+            ids=ids[start:end],
+            documents=documents[start:end],
+            metadatas=metadatas[start:end],
+        )

@@ -1,7 +1,7 @@
 from app.analysis.embeddings import HashEmbeddingFunction
 from app.analysis.llm_client import LlmResponse
 from app.analysis.models import ExampleDocument
-from app.analysis.rag_classifier import RagClassifier
+from app.analysis.rag_classifier import _example_similarity, RagClassifier
 from app.analysis.rag_ingest import ingest_internal_taxonomy
 from app.analysis.vector_store import ingest_example_documents
 
@@ -95,3 +95,23 @@ def test_rag_classifier_retries_invalid_json_contract(tmp_path) -> None:
     assert result.attempts == 2
     assert len(llm.calls) == 2
     assert "Previous output failed validation." in llm.calls[1]
+
+
+def test_example_similarity_excludes_missing_and_low_scores() -> None:
+    from app.analysis.models import ExampleSearchResult
+
+    def result(distance: float | None) -> ExampleSearchResult:
+        return ExampleSearchResult(
+            doc_id="fixture",
+            text="text",
+            source_dataset="fixture",
+            source_split="train",
+            license_tier="commercial_ok",
+            mapped_categories=("gender",),
+            is_hate_speech=True,
+            distance=distance,
+        )
+
+    assert _example_similarity(result(None)) == float("-inf")
+    assert _example_similarity(result(0.61)) < 0.4
+    assert _example_similarity(result(0.6)) == 0.4

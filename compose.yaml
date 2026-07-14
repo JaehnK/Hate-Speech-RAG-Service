@@ -38,6 +38,26 @@ services:
       - chroma_data:/data/chroma
       - report_storage:/data/reports
 
+  corpus:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: runtime
+    command: ["python", "-m", "scripts.bootstrap_corpus", "--persist-directory", "/data/chroma", "--reset"]
+    environment:
+      APP_ENV: development
+      PIPELINE_MODE: fake
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-upstage}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-solar-embedding-1-large}
+      UPSTAGE_API_KEY: ${UPSTAGE_API_KEY:-}
+      CHROMA_PERSIST_DIRECTORY: /data/chroma
+    depends_on:
+      init-volumes:
+        condition: service_completed_successfully
+    volumes:
+      - chroma_data:/data/chroma
+      - ./data/external:/app/data/external:ro
+
   migrate:
     build:
       context: .

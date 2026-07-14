@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from app.analysis.example_loaders import load_example_documents
 from app.analysis.license_policy import COMMERCIAL_OK, SHAREALIKE_REVIEW
 from app.analysis.license_policy import examples_allowed, normalize_license_tier
@@ -14,6 +16,15 @@ def test_license_policy_defaults_to_commercial_ok_only() -> None:
     assert normalize_license_tier(source["license_status"]) == SHAREALIKE_REVIEW
     assert not examples_allowed(source)
     assert examples_allowed(source, allowed_license_tiers=(SHAREALIKE_REVIEW,))
+
+
+def test_production_manifest_enables_verified_k_haters_examples() -> None:
+    manifest_path = Path("data/external/manifests/dataset_sources.yaml")
+    manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
+    source = next(item for item in manifest["datasets"] if item["id"] == "k-haters")
+
+    assert source["corpus_target"]["examples"] is True
+    assert normalize_license_tier(source["license_status"]) == COMMERCIAL_OK
 
 
 def test_beep_loader_maps_labeled_rows_when_sharealike_allowed(tmp_path) -> None:

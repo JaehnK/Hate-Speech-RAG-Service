@@ -1,6 +1,6 @@
 from app.analysis.rag_ingest import ingest_internal_taxonomy
 from app.analysis.taxonomy import build_internal_taxonomy_documents
-from app.analysis.vector_store import query_definition_documents
+from app.analysis.vector_store import _upsert_batches, query_definition_documents
 
 
 def test_ingests_internal_taxonomy_to_chroma(tmp_path) -> None:
@@ -31,3 +31,25 @@ def test_protected_attribute_query_retrieves_gender_card(tmp_path) -> None:
     )
 
     assert "category:gender:0" in {result.doc_id for result in results}
+
+
+def test_upsert_batches_limits_each_external_embedding_request() -> None:
+    class RecordingCollection:
+        def __init__(self) -> None:
+            self.batch_sizes: list[int] = []
+
+        def upsert(self, *, ids: list[str], documents: list[str], metadatas: list[dict]) -> None:
+            assert len(ids) == len(documents) == len(metadatas)
+            self.batch_sizes.append(len(ids))
+
+    collection = RecordingCollection()
+    count = 513
+
+    _upsert_batches(
+        collection,
+        ids=[str(index) for index in range(count)],
+        documents=["document"] * count,
+        metadatas=[{}] * count,
+    )
+
+    assert collection.batch_sizes == [100, 100, 100, 100, 100, 13]

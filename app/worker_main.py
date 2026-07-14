@@ -2,7 +2,8 @@ from app.core.config import load_settings
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.observability import LangfuseConfig, build_observability_client
-from app.analysis.rag_classifier import RagClassifier
+from app.analysis.prompt_template import PROMPT_VERSION
+from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
@@ -62,8 +63,13 @@ def main() -> None:
                     "example_vector_collection": EXAMPLE_COLLECTION_NAME,
                     "definition_vector_collection": DEFINITION_COLLECTION_NAME,
                     "definition_corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION,
-                    "retriever_config": {"taxonomy_k": 4, "definition_k": 4, "example_k": 6},
-                    "prompt_versions": {"comment": "category-rag-v0.1.0", "script": "category-rag-v0.1.0"},
+                    "retriever_config": {
+                        "taxonomy_k": 4,
+                        "definition_k": 4,
+                        "example_k": 6,
+                        "example_min_similarity": DEFAULT_EXAMPLE_MIN_SIMILARITY,
+                    },
+                    "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
                 },
             )
         )
