@@ -18,6 +18,9 @@ from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLEC
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 
 
+DEFAULT_EXAMPLE_MIN_SIMILARITY = 0.4
+
+
 @dataclass(frozen=True)
 class ClassificationResult:
     payload: dict[str, Any]
@@ -48,6 +51,7 @@ class RagClassifier:
         taxonomy_k: int = 4,
         definition_k: int = 4,
         example_k: int = 6,
+        example_min_similarity: float = DEFAULT_EXAMPLE_MIN_SIMILARITY,
         definition_corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
     ) -> None:
         self.persist_directory = persist_directory
@@ -57,6 +61,7 @@ class RagClassifier:
         self.taxonomy_k = taxonomy_k
         self.definition_k = definition_k
         self.example_k = example_k
+        self.example_min_similarity = example_min_similarity
         self.definition_corpus_version = definition_corpus_version
 
     def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
@@ -87,6 +92,11 @@ class RagClassifier:
                 )
             except Exception:
                 retrieval_failures.append("examples")
+            examples = [
+                result
+                for result in examples
+                if _example_similarity(result) >= self.example_min_similarity
+            ]
 
         if len(retrieval_failures) == 2:
             raise ClassificationError("both RAG vector stores are unavailable")
@@ -219,3 +229,7 @@ def _context_status(definitions: list[DefinitionSearchResult], examples: list[Ex
     if definitions:
         return "definition_only"
     return "unavailable"
+
+
+def _example_similarity(result: ExampleSearchResult) -> float:
+    return float("-inf") if result.distance is None else 1 - result.distance

@@ -36,8 +36,11 @@ def main() -> None:
     parser.add_argument("--persist-directory", default=None)
     parser.add_argument("--variant", action="append", choices=list(get_variant_names()))
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    if args.repeat < 1:
+        parser.error("--repeat must be at least 1")
 
     settings = load_settings()
     persist_directory = args.persist_directory or settings.chroma_persist_directory
@@ -70,8 +73,9 @@ def main() -> None:
             definition_k=variant.definition_k,
             example_k=variant.example_k,
         )
-        for item in inputs:
-            rows.append(_run_item(classifier, variant, item))
+        for repeat_index in range(args.repeat):
+            for item in inputs:
+                rows.append(_run_item(classifier, variant, item, repeat_index))
 
     append_jsonl(args.output_path, rows)
     observability.flush()
@@ -99,6 +103,7 @@ def _run_item(
     classifier: RagClassifier,
     variant: ExperimentVariant,
     item: ExperimentInput,
+    repeat_index: int = 0,
 ) -> dict[str, Any]:
     started_at = datetime.now(UTC)
     try:
@@ -106,6 +111,7 @@ def _run_item(
         return {
             "item_id": item.item_id,
             "variant": variant.name,
+            "repeat_index": repeat_index,
             "status": "succeeded",
             "source_type": item.source_type,
             "text_hash": _stable_hash(item.text),
@@ -122,6 +128,7 @@ def _run_item(
         return {
             "item_id": item.item_id,
             "variant": variant.name,
+            "repeat_index": repeat_index,
             "status": "failed",
             "source_type": item.source_type,
             "text_hash": _stable_hash(item.text),

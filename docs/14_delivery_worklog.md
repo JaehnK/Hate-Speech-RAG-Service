@@ -3,6 +3,7 @@
 | 항목 | 값 |
 | --- | --- |
 | 시작일 | 2026-07-11 |
+| 최종 live 검증 | 2026-07-14 |
 | 기준 브랜치 | `main` |
 | 완료 기준 | 외부 API 키만 주입하면 실제 E2E를 실행할 수 있는 배포 직전 상태 |
 
@@ -100,12 +101,9 @@
   - 전체 회귀 `uv run pytest -q`
 - 결과: diff, Ruff, compileall 통과, reporting/export/admin 포함 테스트 59개 통과
 
-## 외부 검증 대기 항목
+## 외부 검증 결과
 
-- YouTube Data API 실제 metadata/comment 수집: `YOUTUBE_API_KEY` 필요
-- 실제 LLM RAG 품질 실험: `ANTHROPIC_API_KEY` 필요
-- Upstage embedding 실제 corpus ingest: `UPSTAGE_API_KEY` 필요
-- API 키 없이 fake client와 deterministic embedding으로 전체 경로를 먼저 검증한다.
+2026-07-14에 YouTube, Anthropic, Upstage 실제 키를 사용한 production Compose 검증을 완료했다. 제한 corpus 적재, dual retrieval, 정상/댓글 비활성/자막 없음 job, HTML/XLSX, 관리자 API, secret scan의 상세 증적은 `docs/17_live_validation_evidence.md`에 기록한다.
 
 ### `feat/predeploy-hardening`
 
@@ -123,3 +121,12 @@
   - container XLSX export와 관리자 secret masking
   - Ruff, compileall, pytest, pip-audit gate
 - 결과: diff, Ruff, compileall 통과, 테스트 61개 통과; dependency audit는 문서화된 Chroma server 비도달 예외 1건 외 통과; PostgreSQL migration 왕복, runtime image, Compose fake E2E, XLSX export 검증 통과
+
+### `chore/live-e2e-validation`
+
+- 범위: 실제 정상/댓글 비활성/자막 없음 E2E runner, HTML/XLSX 검증, admin/secret scan, RAG 3회 안정성 지표
+- 자동 검증: mock HTTP contract, batch ingest, prompt v0.2, similarity gate, repeat evaluator 테스트 통과
+- 외부 검증: 제한 K-HATERS corpus와 실제 YouTube/Anthropic/Upstage production E2E 통과
+- RAG 교정: example 본문/라벨 전달 누락 수정, `example_min_similarity=0.40` 적용 후 합성 smoke 15/15 성공·정확도/F1/안정성 1.000
+- 최종 게이트: Ruff, compileall, pytest 69개, dependency audit, dev/test/prod Compose config 통과
+- 증적: `docs/17_live_validation_evidence.md`

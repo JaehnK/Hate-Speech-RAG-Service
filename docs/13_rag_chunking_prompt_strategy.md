@@ -246,9 +246,7 @@ prompt에는 검색 결과를 슬롯별로 분리해 넣는다.
 - `sharealike_review` tier는 설정으로 포함 여부를 제어한다.
 - score가 낮은 결과는 prompt에 넣지 않고 `rag_context_status`에 반영한다.
 
-score threshold는 Chroma smoke test 후 정한다.
-
-초기값은 문서화만 하고 코드에서는 config로 둔다.
+실제 Upstage/K-HATERS smoke calibration에서 무관 예시가 0.33 이하로 관찰되어, `example_min_similarity=0.40`을 초기 gate로 고정한다. threshold 미만 예시는 prompt와 `similar_cases_used` 후보에서 제외한다. 실제 2인 gold set 평가에서 재조정한다.
 
 ## Prompt Strategy
 
@@ -257,7 +255,7 @@ score threshold는 Chroma smoke test 후 정한다.
 초기 prompt version:
 
 ```text
-category-rag-v0.1.0
+category-rag-v0.2.0
 ```
 
 prompt version이 바뀌면 analysis run에 기록한다.

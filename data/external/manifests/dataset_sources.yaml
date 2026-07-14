@@ -55,13 +55,14 @@ datasets:
     access: public_git
     source_revision: ad8d78995b3c7df9d3660ebd0c39b29bcce3eabf
     corpus_target:
-      examples: false
+      examples: true
       definitions: true
-    license_status: cc_by_4_0_observed_review_required
+    license_status: cc_by_4_0_verified
     notes:
       - GitHub repository contains documentation and transformation code.
       - Actual split data was downloaded from Hugging Face datasets humane-lab/K-HATERS and humane-lab/K-HATERS-Ratings.
       - Useful for target-specific offensiveness and target_group design.
+      - CC-BY 4.0 verified in GitHub and Hugging Face README on 2026-07-11.
 
   - id: kodoli
     name: KODOLI Korean Dataset for Offensive Language Identification

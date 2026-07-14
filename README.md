@@ -68,8 +68,8 @@ curl -X POST http://localhost:8000/api/analysis-jobs \
 ## 검증
 
 ```bash
-uv run ruff check app tests experiments
-uv run python -m compileall -q app tests experiments alembic
+uv run ruff check app tests experiments scripts
+uv run python -m compileall -q app tests experiments scripts alembic
 uv run pytest -q
 uv run pip-audit --ignore-vuln PYSEC-2026-311
 docker compose -f compose.yaml -f compose.dev.yaml config --quiet
@@ -77,4 +77,4 @@ docker compose -f compose.yaml -f compose.test.yaml config --quiet
 docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 ```
 
-실제 API E2E 절차와 배포 전 체크리스트는 `docs/15_predeploy_runbook.md`를 따른다.
+실제 API E2E 절차와 배포 전 체크리스트는 `docs/15_predeploy_runbook.md`, 최종 외부 검증 증적은 `docs/17_live_validation_evidence.md`를 따른다.
