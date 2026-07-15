@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     youtube_api_key: str | None = Field(default=None, repr=False)
     worker_poll_interval_seconds: float = 2.0
     worker_stale_after_seconds: int = 900
+    rag_execution_mode: Literal["sequential", "parallel"] = "sequential"
+    rag_item_concurrency: int = Field(default=2, ge=1, le=16)
+    rag_embedding_concurrency: int = Field(default=2, ge=1, le=16)
+    rag_llm_concurrency: int = Field(default=2, ge=1, le=16)
+    rag_item_max_attempts: int = Field(default=3, ge=1, le=5)
+    rag_heartbeat_interval_seconds: int = Field(default=30, ge=5)
+    rag_shutdown_grace_seconds: int = Field(default=30, ge=5)
+    rag_request_timeout_seconds: int = Field(default=30, ge=5)
     pipeline_mode: Literal["fake", "production"] = "fake"
     chroma_persist_directory: str = ".chroma"
     embedding_provider: str = "upstage"
@@ -50,6 +58,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_runtime(self):
+        if self.rag_embedding_concurrency > self.rag_item_concurrency:
+            raise ValueError("RAG_EMBEDDING_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
+        if self.rag_llm_concurrency > self.rag_item_concurrency:
+            raise ValueError("RAG_LLM_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
         if self.app_env == "production":
             if self.admin_token == "change-me":
                 raise ValueError("ADMIN_TOKEN must be changed in production")

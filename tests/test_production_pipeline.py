@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from sqlalchemy import func, select
 
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
+from app.analysis.executor import RagRuntime
 from app.analysis.result_store import AnalysisResultStore
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
@@ -116,6 +117,7 @@ def test_incomplete_comment_collection_is_preserved_but_not_analyzed(tmp_path) -
 
 def _handlers(youtube, session_factory):
     classifier = FakeClassifier()
+    runtime = RagRuntime([classifier])
     result_store = AnalysisResultStore(session_factory)
     handlers = build_fake_handlers()
     handlers.update(
@@ -123,8 +125,8 @@ def _handlers(youtube, session_factory):
             VideoMetadataCollector(youtube),
             CommentCollector(youtube),
             TranscriptCollector(FakeTranscriptProvider()),
-            CommentAnalyzer(classifier, result_store),
-            ScriptAnalyzer(classifier, result_store),
+            CommentAnalyzer(runtime, result_store),
+            ScriptAnalyzer(runtime, result_store),
             {
                 "llm_provider": "fake-test",
                 "llm_model": "fake-test",

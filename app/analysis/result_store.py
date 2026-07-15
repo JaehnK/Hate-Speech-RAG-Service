@@ -139,6 +139,10 @@ class AnalysisResultStore:
                 raise StaleStepExecution(context.step_key)
         return {"total": total, "succeeded": succeeded, "failed": failed}
 
+    def heartbeat(self, context: StepAttemptContext) -> None:
+        with self.session_factory.begin() as session:
+            _fence(session, context)
+
 
 def _fence(session: Session, context: StepAttemptContext) -> None:
     statement = (
