@@ -50,3 +50,7 @@
 - 새 `DatabaseJobProgressReporter`가 포함된 worker image를 다시 빌드하고 worker를 재기동했다.
 - 기존 job API와 jobs 화면은 `partial_success` 및 legacy counter 안내를 정상 표시한다.
 - 새 분석은 별도 요청하지 않았다. 같은 영상 재분석은 Anthropic/Upstage 비용을 다시 발생시키므로 사용자가 새 job을 생성할 때 교정된 저장 경로와 진행 counter가 적용된다.
+
+## 2026-07-15 후속 checkpoint 구현
+
+초기 진단 당시의 counter-only reporter는 `feat/rag-item-checkpoints`에서 결과 저장 경로에 통합됐다. 현재 구현은 item 결과와 조건부 progress 증가를 같은 transaction으로 commit하고, unique conflict에서는 counter를 증가시키지 않는다. step 재시작 시 기존 결과를 건너뛰며 시작·종료 reconcile이 실제 결과 row에서 progress를 교정한다. 구현 기록은 `docs/24_rag_parallel_delivery.md`를 따른다.

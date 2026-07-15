@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.core.config import Settings
 from app.core.errors import DomainError
 from app.db.base import Base
-from app.db.models import OperationLog, utcnow
+from app.db.models import JobStep, OperationLog, utcnow
 from app.jobs.fake_pipeline import build_fake_handlers
 from app.jobs.orchestrator import StepResult
 from app.jobs.service import AnalysisJobService
@@ -125,3 +125,35 @@ def test_worker_does_not_recover_an_active_running_step(tmp_path) -> None:
 
     with app.state.session_factory() as session:
         assert AnalysisJobService(session).get_job(job_id).status == "running"
+
+
+def test_stale_step_attempt_cannot_finish_or_finalize_job(tmp_path) -> None:
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'fencing.db'}"))
+    Base.metadata.create_all(app.state.engine)
+    with app.state.session_factory() as session:
+        job = AnalysisJobService(session).create_job("abcdefghijk")
+        job_id = job.id
+
+    def supersede_attempt(_session, job) -> StepResult:
+        with app.state.session_factory.begin() as other:
+            step = other.scalar(
+                select(JobStep).where(JobStep.job_id == job.id, JobStep.step_key == "collect_metadata")
+            )
+            assert step is not None
+            step.attempt_count += 1
+            step.status = "running"
+        return StepResult(metrics={"video_count": 1})
+
+    handlers = build_fake_handlers()
+    handlers["collect_metadata"] = supersede_attempt
+    assert JobWorker(app.state.session_factory, handlers=handlers).run_once()
+
+    with app.state.session_factory() as session:
+        service = AnalysisJobService(session)
+        assert service.get_job(job_id).status == "running"
+        steps = {step.step_key: step for step in service.get_steps(job_id)}
+        assert steps["collect_metadata"].status == "running"
+        assert steps["collect_metadata"].attempt_count == 2
+        assert steps["finalize_job"].status == "pending"
+        discarded = session.scalar(select(OperationLog).where(OperationLog.event_type == "stale_step_result_discarded"))
+        assert discarded is not None

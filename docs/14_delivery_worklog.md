@@ -252,3 +252,10 @@
 - query embedding 1회 재사용, 장기 provider/Chroma client 생명주기와 worker resource 정리를 구현했다.
 - 상세 변경과 검증은 `docs/24_rag_parallel_delivery.md`에 누적 기록한다.
 - 검증: diff check, Ruff, compileall, 집중 테스트 14개와 backend 전체 테스트 79개 통과.
+
+# 2026-07-15 RAG item checkpoint와 fencing 구현
+
+- 브랜치: `feat/rag-item-checkpoints`
+- item별 멱등 결과 저장, progress atomic update/reconcile, 누락 item resume와 stale attempt fencing을 구현했다.
+- SQLite 집중 테스트와 실제 개발 PostgreSQL의 동시 duplicate insert race를 검증했다.
+- 검증: diff check, Ruff, compileall, 집중 테스트 11개, PostgreSQL integration 1개, backend 전체 테스트 82개 통과(기본 opt-in 1개 skip).

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from sqlalchemy import func, select
 
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
+from app.analysis.result_store import AnalysisResultStore
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
 from app.collectors.transcript import TranscriptCollector, TranscriptData, TranscriptItem
@@ -79,7 +80,7 @@ class PartiallyFailingYouTubeClient(FakeYouTubeClient):
 def test_real_adapter_pipeline_persists_collection_and_analysis_artifacts(tmp_path) -> None:
     app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'production.db'}"))
     Base.metadata.create_all(app.state.engine)
-    handlers = _handlers(FakeYouTubeClient())
+    handlers = _handlers(FakeYouTubeClient(), app.state.session_factory)
 
     with app.state.session_factory() as session:
         job_id = AnalysisJobService(session).create_job("abcdefghijk").id
@@ -98,7 +99,10 @@ def test_incomplete_comment_collection_is_preserved_but_not_analyzed(tmp_path) -
     with app.state.session_factory() as session:
         job_id = AnalysisJobService(session).create_job("abcdefghijk").id
 
-    assert JobWorker(app.state.session_factory, handlers=_handlers(PartiallyFailingYouTubeClient())).run_once()
+    assert JobWorker(
+        app.state.session_factory,
+        handlers=_handlers(PartiallyFailingYouTubeClient(), app.state.session_factory),
+    ).run_once()
 
     with app.state.session_factory() as session:
         service = AnalysisJobService(session)
@@ -110,16 +114,17 @@ def test_incomplete_comment_collection_is_preserved_but_not_analyzed(tmp_path) -
         assert session.scalar(select(func.count()).select_from(CommentAnalysisResult)) == 0
 
 
-def _handlers(youtube):
+def _handlers(youtube, session_factory):
     classifier = FakeClassifier()
+    result_store = AnalysisResultStore(session_factory)
     handlers = build_fake_handlers()
     handlers.update(
         build_collection_analysis_handlers(
             VideoMetadataCollector(youtube),
             CommentCollector(youtube),
             TranscriptCollector(FakeTranscriptProvider()),
-            CommentAnalyzer(classifier),
-            ScriptAnalyzer(classifier),
+            CommentAnalyzer(classifier, result_store),
+            ScriptAnalyzer(classifier, result_store),
             {
                 "llm_provider": "fake-test",
                 "llm_model": "fake-test",

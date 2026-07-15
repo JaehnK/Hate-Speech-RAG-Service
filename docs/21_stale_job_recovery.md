@@ -9,7 +9,7 @@
 ## 회수 방식
 
 1. step 시작 시 `job_steps.heartbeat_at`을 기록한다.
-2. 댓글·자막 RAG는 item 하나가 완료될 때마다 진행 counter와 heartbeat를 같은 별도 transaction에서 갱신한다.
+2. 댓글·자막 RAG는 item 결과, 진행 counter와 heartbeat를 같은 짧은 transaction에서 갱신한다.
 3. worker poll 시작 시 `running` step 중 heartbeat가 stale 기준보다 오래된 job 한 건을 row lock으로 선택한다.
 4. 해당 step만 `pending`으로 되돌리고 job도 `pending`으로 전환한다.
 5. `attempt_count`는 유지하므로 재실행 시 증가한다.
@@ -21,8 +21,10 @@
 ## 동시성과 한계
 
 - stale 후보는 `FOR UPDATE SKIP LOCKED`로 선택해 여러 worker가 같은 job을 동시에 회수하지 않게 한다.
-- 현재 분석 결과는 step transaction 마지막에 저장되므로 worker crash 시 미완료 transaction이 rollback되고 같은 step을 안전하게 다시 실행할 수 있다.
-- 향후 RAG item 결과를 개별 commit할 때는 기존 결과 unique constraint를 checkpoint로 사용하고 완료 수를 결과 row에서 집계한다. 현재 계획은 job을 점유한 단일 worker 내부 병렬화만 포함하며 분산 queue는 도입하지 않는다. 상세 방식은 `docs/22_rag_parallel_processing_plan.md`를 따른다.
+- 분석 결과는 item별로 commit되고 기존 결과 unique constraint가 checkpoint 역할을 한다. worker crash 후 같은 step을 재실행하면 완료 result가 있는 source는 건너뛰고 누락 item만 처리한다.
+- 결과 insert가 실제 발생한 경우에만 같은 transaction에서 progress를 증가시키고 step 시작·종료 시 결과 row에서 counter를 재조정한다.
+- `job_steps.attempt_count` fencing으로 stale 이전 실행은 결과 저장, step 완료와 job finalize를 덮어쓰지 못한다.
+- 현재 계획은 job을 점유한 단일 worker 내부 병렬화만 포함하며 분산 queue는 도입하지 않는다. 상세 방식은 `docs/22_rag_parallel_processing_plan.md`를 따른다.
 - RAG가 아닌 장시간 step은 시작 heartbeat만 가진다. 해당 step이 stale 기준보다 오래 걸릴 가능성이 생기면 주기 heartbeat를 추가해야 한다.
 
 ## 성공 기준

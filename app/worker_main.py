@@ -3,6 +3,7 @@ from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.observability import LangfuseConfig, build_observability_client
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
+from app.analysis.result_store import AnalysisResultStore
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
@@ -15,7 +16,6 @@ from app.db.session import build_engine, build_session_factory
 from app.external.youtube import YouTubeApiClient
 from app.jobs.fake_pipeline import build_fake_handlers
 from app.jobs.production_pipeline import build_collection_analysis_handlers
-from app.jobs.progress import DatabaseJobProgressReporter
 from app.jobs.worker import JobWorker
 from app.reporting.pipeline import build_reporting_handlers
 
@@ -53,13 +53,14 @@ def main() -> None:
                 )
             ),
         )
+        result_store = AnalysisResultStore(session_factory)
         handlers.update(
             build_collection_analysis_handlers(
                 VideoMetadataCollector(youtube),
                 CommentCollector(youtube),
                 TranscriptCollector(PublicTranscriptProvider()),
-                CommentAnalyzer(classifier),
-                ScriptAnalyzer(classifier),
+                CommentAnalyzer(classifier, result_store),
+                ScriptAnalyzer(classifier, result_store),
                 {
                     "llm_provider": settings.llm_provider,
                     "llm_model": settings.llm_model,
@@ -76,7 +77,6 @@ def main() -> None:
                     },
                     "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
                 },
-                progress_reporter=DatabaseJobProgressReporter(session_factory),
             )
         )
     try:
