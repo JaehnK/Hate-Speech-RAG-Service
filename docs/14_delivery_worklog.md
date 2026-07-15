@@ -208,3 +208,4 @@
 - active heartbeat는 회수하지 않고 recovery attempt와 operation log를 보존한다.
 - 상세 동작과 향후 분산 처리 경계는 `docs/21_stale_job_recovery.md`에 기록했다.
 - 검증: diff check, Ruff, compileall, backend 76개 테스트, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config 통과.
+- 개발 PostgreSQL을 heartbeat migration head로 올리고 stale recovery 설정과 코드가 포함된 worker를 재빌드·재기동했다.
