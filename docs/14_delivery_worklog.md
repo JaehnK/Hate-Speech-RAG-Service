@@ -189,3 +189,11 @@
 - 예상하지 못한 worker step 예외에 traceback 로깅을 추가했다.
 - 상세 진단과 동시 처리 확장 경계는 `docs/20_rag_job_progress_diagnosis.md`에 기록했다.
 - 검증: diff check, Ruff, compileall, backend 74개 테스트, frontend 4개 테스트와 production build, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config, 대상 jobs 화면 브라우저 렌더링 통과.
+
+# 2026-07-15 RAG 방법론 가독성 개선
+
+- 브랜치: `style/rag-methodology-readability`
+- 방법론 화면의 제목, 본문, code, 설정표, validation, 체크리스트 글자 크기와 행간을 확대했다.
+- 데스크톱 파이프라인과 재현 체크리스트를 4/3열에서 2열로 완화해 확대된 텍스트가 겹치지 않도록 했다.
+- 모바일은 단일 열 구조를 유지하고 제목 크기를 확대했다.
+- 검증: frontend 4개 테스트, TypeScript/Vite production build, 1440px/500px 브라우저 렌더링 통과.
