@@ -76,3 +76,27 @@
 - Anthropic rate limit `Retry-After` 검증
 - Ruff, compileall과 dev/test/prod Compose config 통과
 - backend 전체 테스트 94개 통과, PostgreSQL opt-in 테스트 1개 기본 skip
+
+## Phase 5. 배포 전 통합 검증
+
+- 브랜치: `chore/rag-parallel-predeploy-validation`
+- 로컬 비밀 설정 파일에 `parallel`, item/Upstage/Anthropic 동시성 2를 적용하고 worker image를 새로 빌드해 재기동했다.
+- 실행 중인 worker container에서 동일 설정값과 정상 기동 상태를 확인했다.
+- production provider 경로에 합성 comment 2건을 동시에 전달해 Upstage 검색 embedding과 Anthropic 분류를 실제 호출했다.
+- 두 item 모두 `claude-haiku-4-5-20251001`로 성공했고 input 3,662/output 445 token, provider retry 0회, 총 2,932ms를 기록했다.
+- 공유 개발 PostgreSQL에서 worker와 opt-in 통합 테스트가 경합하지 않도록 테스트 job을 즉시 `running` 상태로 격리했다.
+- 테스트 정리는 non-cascade `operation_logs`를 먼저 삭제하도록 보강했으며 수정 브랜치 `test/rag-postgres-worker-isolation`은 병합 후 보존했다.
+
+최종 검증 결과:
+
+- Ruff와 compileall 통과
+- dev/test/prod Compose config 통과
+- backend 전체 테스트 94개 통과, PostgreSQL opt-in 테스트 1개 기본 skip
+- worker 실행 중 실제 PostgreSQL duplicate insert race 테스트 1개 통과
+- 실제 provider 병렬 smoke 2/2 성공
+- worker image 재빌드와 container 기동 확인
+
+배포 경계:
+
+- 애플리케이션 코드, container image build, runtime 설정과 실제 provider smoke까지 완료했다.
+- 외부 배포 환경 반영과 트래픽 전환은 수행하지 않았다.
