@@ -209,3 +209,12 @@
 - 상세 동작과 향후 분산 처리 경계는 `docs/21_stale_job_recovery.md`에 기록했다.
 - 검증: diff check, Ruff, compileall, backend 76개 테스트, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config 통과.
 - 개발 PostgreSQL을 heartbeat migration head로 올리고 stale recovery 설정과 코드가 포함된 worker를 재빌드·재기동했다.
+
+# 2026-07-15 RAG 병렬 처리 계획
+
+- 브랜치: `docs/rag-parallel-processing-plan`
+- 현재 순차 RAG loop, 단일 SQLAlchemy session, 원자 증가 progress counter와 stale step recovery의 병렬화 제약을 확인했다.
+- item ledger, lease token, idempotent result persistence와 terminal item 기반 progress projection을 병렬 실행의 선행 조건으로 정했다.
+- 동기 provider adapter에 맞춘 bounded thread executor, provider별 concurrency gate, 429 backoff와 sequential rollback 경로를 단계화했다.
+- 단일 worker 병렬화 뒤 여러 worker 분산 claim으로 확장하는 순서와 단계별 정량 성공 기준을 `docs/22_rag_parallel_processing_plan.md`에 기록했다.
+- 검증: diff check, 문서 교차 참조, job progress/pipeline 회귀 테스트 6개 통과.
