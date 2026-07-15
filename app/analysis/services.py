@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Protocol
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.analysis.models import SourceType
 from app.analysis.rag_classifier import ClassificationError, ClassificationResult
 from app.db.models import AnalysisRun, CommentAnalysisResult, CommentSnapshot, ScriptAnalysisResult, TranscriptSegment, TranscriptSnapshot
+from app.jobs.progress import JobProgressReporter
 
 
 class Classifier(Protocol):
@@ -18,8 +20,15 @@ class CommentAnalyzer:
     def __init__(self, classifier: Classifier) -> None:
         self.classifier = classifier
 
-    def analyze(self, session: Session, run: AnalysisRun) -> dict[str, int]:
+    def analyze(
+        self,
+        session: Session,
+        run: AnalysisRun,
+        progress: JobProgressReporter | None = None,
+        step_key: str = "analyze_comments",
+    ) -> dict[str, int]:
         comments = list(session.scalars(select(CommentSnapshot).where(CommentSnapshot.job_id == run.job_id)))
+        _start_progress(progress, run.job_id, step_key, len(comments))
         succeeded = failed = 0
         for comment in comments:
             source_type = "reply" if comment.is_reply else "comment"
@@ -28,6 +37,7 @@ class CommentAnalyzer:
             session.add(row)
             succeeded += row.status == "succeeded"
             failed += row.status == "failed"
+            _advance_progress(progress, run.job_id, step_key, row.status == "succeeded")
         session.flush()
         return {"comments_analyzed": len(comments), "succeeded": succeeded, "failed": failed}
 
@@ -36,7 +46,13 @@ class ScriptAnalyzer:
     def __init__(self, classifier: Classifier) -> None:
         self.classifier = classifier
 
-    def analyze(self, session: Session, run: AnalysisRun) -> dict[str, int]:
+    def analyze(
+        self,
+        session: Session,
+        run: AnalysisRun,
+        progress: JobProgressReporter | None = None,
+        step_key: str = "analyze_script",
+    ) -> dict[str, int]:
         statement = (
             select(TranscriptSegment)
             .join(TranscriptSnapshot, TranscriptSegment.transcript_snapshot_id == TranscriptSnapshot.id)
@@ -44,6 +60,7 @@ class ScriptAnalyzer:
             .order_by(TranscriptSegment.segment_index)
         )
         segments = list(session.scalars(statement))
+        _start_progress(progress, run.job_id, step_key, len(segments))
         succeeded = failed = 0
         for segment in segments:
             result = _classify(self.classifier, segment.text, "script_segment")
@@ -51,6 +68,7 @@ class ScriptAnalyzer:
             session.add(row)
             succeeded += row.status == "succeeded"
             failed += row.status == "failed"
+            _advance_progress(progress, run.job_id, step_key, row.status == "succeeded")
         session.flush()
         return {"script_segments_analyzed": len(segments), "succeeded": succeeded, "failed": failed}
 
@@ -79,3 +97,13 @@ def _classify(classifier: Classifier, text: str, source_type: SourceType) -> dic
         "model_name": result.model,
         "raw_response": payload,
     }
+
+
+def _start_progress(progress: JobProgressReporter | None, job_id: UUID, step_key: str, total: int) -> None:
+    if progress is not None:
+        progress.start(job_id, step_key, total)
+
+
+def _advance_progress(progress: JobProgressReporter | None, job_id: UUID, step_key: str, succeeded: bool) -> None:
+    if progress is not None:
+        progress.advance(job_id, step_key, succeeded)

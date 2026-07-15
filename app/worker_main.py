@@ -15,6 +15,7 @@ from app.db.session import build_engine, build_session_factory
 from app.external.youtube import YouTubeApiClient
 from app.jobs.fake_pipeline import build_fake_handlers
 from app.jobs.production_pipeline import build_collection_analysis_handlers
+from app.jobs.progress import DatabaseJobProgressReporter
 from app.jobs.worker import JobWorker
 from app.reporting.pipeline import build_reporting_handlers
 
@@ -22,6 +23,7 @@ from app.reporting.pipeline import build_reporting_handlers
 def main() -> None:
     settings = load_settings()
     configure_logging(settings.log_level)
+    session_factory = build_session_factory(build_engine(settings.database_url))
     handlers = build_fake_handlers()
     handlers.update(build_reporting_handlers())
     if settings.pipeline_mode == "production":
@@ -73,10 +75,11 @@ def main() -> None:
                     },
                     "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
                 },
+                progress_reporter=DatabaseJobProgressReporter(session_factory),
             )
         )
     worker = JobWorker(
-        build_session_factory(build_engine(settings.database_url)),
+        session_factory,
         handlers=handlers,
         poll_interval_seconds=settings.worker_poll_interval_seconds,
     )

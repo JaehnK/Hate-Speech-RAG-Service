@@ -20,7 +20,7 @@ class FakeClassifier:
                 "is_hate_speech": False,
                 "categories": ["unclassified"],
                 "target_group": None,
-                "hate_type": None,
+                "hate_type": "장문 유형 설명 " * 10 if text == "long" else None,
                 "reasoning": "clean",
                 "similar_cases_used": [],
                 "definition_docs_used": [],
@@ -71,3 +71,39 @@ def test_comment_and_script_analyzers_record_every_item(tmp_path) -> None:
     with factory() as session:
         assert [row.status for row in session.scalars(select(CommentAnalysisResult).order_by(CommentAnalysisResult.created_at))] == ["succeeded", "failed"]
         assert [row.status for row in session.scalars(select(ScriptAnalysisResult).order_by(ScriptAnalysisResult.created_at))] == ["succeeded", "failed"]
+
+
+def test_comment_analyzer_persists_long_hate_type(tmp_path) -> None:
+    engine = build_engine(f"sqlite:///{tmp_path / 'long-hate-type.db'}")
+    Base.metadata.create_all(engine)
+    factory = build_session_factory(engine)
+    with factory.begin() as session:
+        job = AnalysisJobRepository(session).create("abcdefghijk", "abcdefghijk")
+        session.add(
+            CommentSnapshot(
+                job_id=job.id,
+                youtube_video_id="abcdefghijk",
+                youtube_comment_id="c-long",
+                text_original="long",
+            )
+        )
+        run = AnalysisRun(
+            job_id=job.id,
+            youtube_video_id="abcdefghijk",
+            status="running",
+            llm_provider="fake",
+            llm_model="fake",
+            embedding_provider="hash",
+            embedding_model="hash",
+            example_vector_collection="examples",
+            definition_vector_collection="definitions",
+        )
+        session.add(run)
+        session.flush()
+        CommentAnalyzer(FakeClassifier()).analyze(session, run)
+
+    with factory() as session:
+        result = session.scalar(select(CommentAnalysisResult))
+        assert result is not None
+        assert result.hate_type is not None
+        assert len(result.hate_type) > 64

@@ -179,6 +179,23 @@ job 상태와 단계별 진행 상황을 조회한다.
       "metrics": {
         "video_count": 1
       },
+      "item_progress": null,
+      "error": null
+    },
+    {
+      "step_key": "analyze_comments",
+      "status": "running",
+      "attempt_count": 1,
+      "started_at": "2026-07-08T07:06:10+09:00",
+      "finished_at": null,
+      "metrics": {},
+      "item_progress": {
+        "total": 1200,
+        "completed": 430,
+        "succeeded": 426,
+        "failed": 4,
+        "percent": 36
+      },
       "error": null
     }
   ],
@@ -197,6 +214,8 @@ job 상태와 단계별 진행 상황을 조회한다.
   "finished_at": null
 }
 ```
+
+`item_progress`는 item 단위 분석 단계에서만 제공한다. counter는 별도 transaction의 원자적 증가로 저장하므로 장시간 RAG transaction이 완료되기 전에도 조회할 수 있고, 향후 같은 step 내부의 병렬 item 처리에서도 값이 역행하지 않는다.
 
 상태별 링크:
 

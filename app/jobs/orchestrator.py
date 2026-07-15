@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import logging
 from typing import Any
 from uuid import UUID
 
@@ -10,6 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, JobStep, OperationLog, utcnow
 from app.db.repositories import AnalysisJobRepository
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -62,6 +66,7 @@ class JobOrchestrator:
             self.session.rollback()
             result = StepResult("failed", error_code=exc.code, error_message=exc.message)
         except Exception:
+            logger.exception("unexpected job step failure", extra={"job_id": str(job.id), "step_key": step.step_key})
             self.session.rollback()
             result = StepResult("failed", error_code="UNEXPECTED_ERROR", error_message="단계 실행 중 오류가 발생했습니다.")
         self._finish_step(step, result)

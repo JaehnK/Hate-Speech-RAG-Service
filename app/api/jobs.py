@@ -79,9 +79,24 @@ def _step_payload(step: JobStep) -> dict[str, Any]:
         "started_at": step.started_at,
         "finished_at": step.finished_at,
         "metrics": step.metrics,
+        "item_progress": _item_progress(step),
         "error": (
             {"code": step.error_code, "message": step.error_message}
             if step.error_code or step.error_message
             else None
         ),
+    }
+
+
+def _item_progress(step: JobStep) -> dict[str, int] | None:
+    if step.items_total is None:
+        return None
+    total = step.items_total
+    completed = min(step.items_completed, total) if total else step.items_completed
+    return {
+        "total": total,
+        "completed": completed,
+        "succeeded": step.items_succeeded,
+        "failed": step.items_failed,
+        "percent": round(completed / total * 100) if total else 100,
     }

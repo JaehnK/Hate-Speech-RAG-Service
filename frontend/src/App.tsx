@@ -29,7 +29,7 @@ import { ApiError, createExport, createJob, getExport, getJob, getReport } from 
 import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
 import type { Job, JobStep, Report, StoredJob } from "./types";
-import { formatDate, formatNumber, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
+import { formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
   validate_input: "입력 검증",
@@ -219,7 +219,7 @@ function JobPage() {
             <strong className="progress-number">{job.progress.percent}%</strong>
           </div>
           <div className="progress-track"><span style={{ width: `${job.progress.percent}%` }} /></div>
-          <div className="step-list">{job.steps.map((step) => <StepRow key={step.step_key} step={step} />)}</div>
+          <div className="step-list">{job.steps.map((step) => <StepRow key={step.step_key} step={step} totalHint={itemTotalHint(job, step)} />)}</div>
         </section>
         <aside className="job-aside">
           <section className="video-card">
@@ -237,14 +237,16 @@ function JobPage() {
       <section className="terminal-panel">
         <div className="terminal-title"><Terminal size={17} /> LIVE PROCESS LOG</div>
         {job.steps.filter((step) => step.status !== "pending").map((step) => (
-          <p key={step.step_key}><span>{step.finished_at ? formatDate(step.finished_at) : "진행 중"}</span> {step.status.toUpperCase()}: {STEP_LABELS[step.step_key] ?? step.step_key}</p>
+          <p key={step.step_key}>
+            <span>{step.finished_at ? formatDate(step.finished_at) : "진행 중"}</span> {step.status.toUpperCase()}: {STEP_LABELS[step.step_key] ?? step.step_key}{stepProgressText(step, itemTotalHint(job, step)) ? ` — ${stepProgressText(step, itemTotalHint(job, step))}` : ""}
+          </p>
         ))}
       </section>
     </div>
   );
 }
 
-function StepRow({ step }: { step: JobStep }) {
+function StepRow({ step, totalHint }: { step: JobStep; totalHint: number | null }) {
   const running = step.status === "running";
   const complete = ["succeeded", "skipped"].includes(step.status);
   return (
@@ -252,10 +254,29 @@ function StepRow({ step }: { step: JobStep }) {
       <span className={`step-state ${complete ? "complete" : running ? "active" : step.status === "failed" ? "failed" : ""}`}>
         {complete ? <Check size={15} /> : running ? <LoaderCircle className="spin" size={15} /> : <CircleDashed size={15} />}
       </span>
-      <div><strong>{STEP_LABELS[step.step_key] ?? step.step_key}</strong><small>{step.error?.message ?? stepStatusText(step.status)}</small></div>
+      <div>
+        <strong>{STEP_LABELS[step.step_key] ?? step.step_key}</strong>
+        <small>{step.error?.message ?? stepProgressText(step, totalHint) ?? stepStatusText(step.status)}</small>
+        {step.item_progress && <span className="item-progress-track"><i style={{ width: `${step.item_progress.percent}%` }} /></span>}
+      </div>
       <code>{step.status}</code>
     </div>
   );
+}
+
+function itemTotalHint(job: Job, step: JobStep): number | null {
+  const value = step.step_key === "analyze_comments"
+    ? job.summary.comments_collected
+    : step.step_key === "analyze_script" ? job.summary.segments_collected : null;
+  return typeof value === "number" ? value : null;
+}
+
+function stepProgressText(step: JobStep, totalHint: number | null): string | null {
+  if (step.item_progress) return itemProgressText(step.step_key, step.item_progress);
+  if (totalHint === null) return null;
+  const unit = step.step_key === "analyze_script" ? "세그먼트" : "댓글·답글";
+  if (step.status === "succeeded") return `${unit} ${formatNumber(totalHint)} / ${formatNumber(totalHint)} 완료`;
+  return `${unit} 총 ${formatNumber(totalHint)}건 · 상세 완료 수 미기록(기존 작업)`;
 }
 
 function HistoryPage() {

@@ -7,6 +7,13 @@ export interface JobStep {
   started_at: string | null;
   finished_at: string | null;
   metrics: Record<string, unknown>;
+  item_progress: {
+    total: number;
+    completed: number;
+    succeeded: number;
+    failed: number;
+    percent: number;
+  } | null;
   error: { code: string | null; message: string | null } | null;
 }
 
