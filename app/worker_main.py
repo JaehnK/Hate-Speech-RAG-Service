@@ -82,6 +82,7 @@ def main() -> None:
         session_factory,
         handlers=handlers,
         poll_interval_seconds=settings.worker_poll_interval_seconds,
+        stale_after_seconds=settings.worker_stale_after_seconds,
     )
     worker.run_forever()
 

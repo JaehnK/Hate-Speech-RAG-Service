@@ -58,6 +58,7 @@ class JobOrchestrator:
         step.status = "running"
         step.attempt_count += 1
         step.started_at = utcnow()
+        step.heartbeat_at = step.started_at
         self._log(job.id, step.id, "info", "step_started", step.step_key)
         self.session.commit()
         try:
@@ -80,6 +81,7 @@ class JobOrchestrator:
         step.error_code = result.error_code
         step.error_message = result.error_message
         step.finished_at = utcnow()
+        step.heartbeat_at = step.finished_at
 
     def _finalize(self, job: AnalysisJob) -> None:
         steps = self.repository.list_steps(job.id)
@@ -93,6 +95,7 @@ class JobOrchestrator:
         finalize.status = "succeeded"
         finalize.attempt_count += 1
         finalize.started_at = finalize.finished_at = job.finished_at
+        finalize.heartbeat_at = job.finished_at
         finalize.metrics = {"final_status": job.status}
 
         if required_failed:
@@ -101,6 +104,7 @@ class JobOrchestrator:
                     step.status = "skipped"
                     step.error_code = "UPSTREAM_REQUIRED_STEP_FAILED"
                     step.finished_at = job.finished_at
+                    step.heartbeat_at = job.finished_at
 
     def _log(self, job_id: UUID, step_id: UUID, level: str, event_type: str, message: str) -> None:
         self.session.add(

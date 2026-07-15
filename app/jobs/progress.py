@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy import case, func, update
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import JobStep
+from app.db.models import JobStep, utcnow
 
 
 class JobProgressReporter(Protocol):
@@ -26,7 +26,13 @@ class DatabaseJobProgressReporter:
             session.execute(
                 update(JobStep)
                 .where(JobStep.job_id == job_id, JobStep.step_key == step_key)
-                .values(items_total=total, items_completed=0, items_succeeded=0, items_failed=0)
+                .values(
+                    items_total=total,
+                    items_completed=0,
+                    items_succeeded=0,
+                    items_failed=0,
+                    heartbeat_at=utcnow(),
+                )
             )
 
     def advance(self, job_id: UUID, step_key: str, succeeded: bool) -> None:
@@ -38,5 +44,6 @@ class DatabaseJobProgressReporter:
                     items_completed=func.coalesce(JobStep.items_completed, 0) + 1,
                     items_succeeded=func.coalesce(JobStep.items_succeeded, 0) + case((succeeded, 1), else_=0),
                     items_failed=func.coalesce(JobStep.items_failed, 0) + case((succeeded, 0), else_=1),
+                    heartbeat_at=utcnow(),
                 )
             )

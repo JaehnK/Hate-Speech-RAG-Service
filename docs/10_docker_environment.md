@@ -256,6 +256,7 @@ Dockerfile 흐름 후보:
 | `APP_ENV` | `dev`, `test`, `prod` |
 | `DATABASE_URL` | PostgreSQL 접속 URL |
 | `ADMIN_TOKEN` | 관리자 API token |
+| `WORKER_STALE_AFTER_SECONDS` | heartbeat가 멈춘 running job을 재대기시키는 기준. 기본 900초 |
 | `YOUTUBE_API_KEY` | YouTube Data API key |
 | `LLM_PROVIDER` | LLM provider |
 | `LLM_MODEL` | LLM model |

@@ -79,6 +79,7 @@ POST /api/analysis-jobs
   -> return job_id
 
 worker loop
+  -> recover running step whose heartbeat is stale
   -> claim pending job
   -> collect_metadata
   -> collect_comments
@@ -101,6 +102,8 @@ MVP 기본 worker는 DB polling 방식이다.
 4. step을 순서대로 실행한다.
 5. 각 step 시작과 종료를 `job_steps`와 `operation_logs`에 기록한다.
 6. 최종적으로 `analysis_jobs.status`를 갱신한다.
+
+worker는 step 시작 시 heartbeat를 기록하고 댓글·자막 RAG item이 끝날 때마다 갱신한다. heartbeat가 `WORKER_STALE_AFTER_SECONDS`보다 오래 멈춘 `running` step은 worker crash로 간주해 `pending`으로 되돌린 뒤 같은 job에서 재실행한다. 정상적으로 heartbeat가 갱신되는 장시간 RAG step은 회수하지 않는다.
 
 동시성 정책:
 
