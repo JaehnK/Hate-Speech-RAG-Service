@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 최종 검증일 | 2026-07-14 |
-| 브랜치 | `chore/live-e2e-validation` |
+| 최종 검증일 | 2026-07-15 |
+| 브랜치 | `chore/live-e2e-validation`, `docs/production-comment-validation` |
 | 실행 모드 | `APP_ENV=production`, `PIPELINE_MODE=production` |
 | 런타임 | PostgreSQL 16 + migration + web + worker Docker Compose |
 | 외부 서비스 | YouTube Data API v3, 공개 자막 adapter, Anthropic, Upstage |
@@ -68,7 +68,29 @@
 
 기계 판독 원본은 Git에서 제외된 `experiments/outputs/live_e2e_evidence.json`에 보관한다.
 
-## 4. 남은 배포 승인 조건
+## 4. 프론트 경유 production 댓글 수집 재검증
+
+Stitch 기반 프론트가 추가된 뒤 `http://localhost:3000/api` reverse proxy를 통해 새 production job을 생성하고 완료까지 확인했다.
+
+| 항목 | 결과 |
+| --- | --- |
+| 영상 ID | `uzpQb_wZdzk` |
+| job ID | `cc9d5bdf-086f-41ed-b0dd-1fc3a6b61315` |
+| report ID | `102ef561-a63f-431d-8a81-a3957e7b0d3e` |
+| 최종 상태 | `succeeded`, progress 100% |
+| 댓글 | 수집 11, 분석 성공 11, 실패 0 |
+| script segment | 수집 37, 분석 성공 37, 실패 0 |
+| 네트워크 | node 11, edge 0 |
+| export | HTML 2,247 bytes, XLSX 28,748 bytes |
+
+추가 확인:
+
+- 댓글 상세 API가 11개 항목을 반환했다.
+- 프론트 report SPA 경로가 HTTP 200을 반환했다.
+- `PIPELINE_MODE=fake`에서는 외부 수집 없이 0건으로 성공 처리됨을 확인하고 로컬 실행 설정을 `production`으로 교정했다.
+- `httpx`와 `httpcore` INFO 로그를 제한한 뒤 worker 로그의 YouTube API key 패턴 검색 결과가 0건이었다.
+
+## 5. 남은 배포 승인 조건
 
 구현 및 외부 API 실행 경로는 배포 직전 상태로 검증됐다. 실제 배포 버튼을 누르기 전 운영 환경에서 다음을 별도로 승인한다.
 
