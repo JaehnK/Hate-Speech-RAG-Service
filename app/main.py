@@ -16,6 +16,16 @@ from app.core.logging import configure_logging
 from app.db.session import build_engine, build_session_factory
 
 
+DEFAULT_CSP = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:"
+DOCS_CSP = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+    "img-src 'self' https: data:; connect-src 'self'"
+)
+DOCS_PATHS = {"/docs", "/redoc", "/docs/oauth2-redirect"}
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
     configure_logging(settings.log_level)
@@ -51,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:"
+        response.headers["Content-Security-Policy"] = DOCS_CSP if request.url.path in DOCS_PATHS else DEFAULT_CSP
         return response
 
     @app.get("/health")
