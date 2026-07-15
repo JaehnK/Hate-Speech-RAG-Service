@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 from typing import Literal
+from uuid import UUID
 
 
 SourceType = Literal["comment", "reply", "script_segment"]
@@ -78,3 +79,26 @@ class RetrievalBundle:
     definitions: tuple[DefinitionSearchResult, ...]
     examples: tuple[ExampleSearchResult, ...]
     failures: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AnalysisItem:
+    source_id: UUID
+    source_type: SourceType
+    text: str
+
+
+@dataclass(frozen=True)
+class AnalysisOutcome:
+    source_id: UUID
+    status: Literal["succeeded", "failed"]
+    result_values: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class StepAttemptContext:
+    job_id: UUID
+    step_id: UUID
+    step_key: str
+    run_id: UUID
+    expected_attempt: int

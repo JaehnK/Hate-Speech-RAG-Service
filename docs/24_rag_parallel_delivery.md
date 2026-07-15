@@ -20,3 +20,21 @@
 - retrieval/RAG/embedding 집중 테스트 14개 통과
 - Ruff와 compileall 통과
 - backend 전체 테스트 79개 통과
+
+## Phase 2. Item checkpoint와 attempt fencing
+
+- 브랜치: `feat/rag-item-checkpoints`
+- 기존 comment/script 결과 unique constraint를 이용한 SQLite/PostgreSQL `ON CONFLICT DO NOTHING` 저장을 추가했다.
+- 결과가 실제 insert된 경우에만 같은 transaction에서 성공/실패 progress counter를 증가시킨다.
+- step 시작·종료 reconcile이 실제 결과 row에서 legacy counter를 복구한다.
+- 기존 결과가 있는 source는 classifier 호출 전에 제외해 worker 재시작 시 누락 item만 재개한다.
+- result 저장과 step 완료에 `job_steps.attempt_count` fencing을 적용했다.
+- 이전 attempt가 늦게 끝나면 결과, step 완료와 job finalize를 덮어쓰지 않는다.
+- 기존 별도 `DatabaseJobProgressReporter`는 result store에 통합했다.
+
+검증 결과:
+
+- checkpoint/progress/pipeline 집중 테스트 11개 통과
+- PostgreSQL 동시 duplicate insert race 통과
+- Ruff와 compileall 통과
+- backend 전체 테스트 82개 통과, PostgreSQL opt-in 테스트 1개 기본 skip

@@ -6,11 +6,13 @@ import logging
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, JobStep, OperationLog, utcnow
 from app.db.repositories import AnalysisJobRepository
+from app.jobs.exceptions import StaleStepExecution
 
 
 logger = logging.getLogger(__name__)
@@ -48,21 +50,32 @@ class JobOrchestrator:
             if handler is None:
                 self._finish_step(step, StepResult(status="skipped", error_code="STEP_NOT_CONFIGURED"))
                 continue
-            if not self._run_step(job, step, handler) and step.is_required:
+            succeeded = self._run_step(job, step, handler)
+            if succeeded is None:
+                return
+            if not succeeded and step.is_required:
                 break
 
         self._finalize(job)
         self.session.commit()
 
-    def _run_step(self, job: AnalysisJob, step: JobStep, handler: StepHandler) -> bool:
+    def _run_step(self, job: AnalysisJob, step: JobStep, handler: StepHandler) -> bool | None:
         step.status = "running"
         step.attempt_count += 1
         step.started_at = utcnow()
         step.heartbeat_at = step.started_at
         self._log(job.id, step.id, "info", "step_started", step.step_key)
         self.session.commit()
+        expected_attempt = step.attempt_count
+        step_id = step.id
+        step_key = step.step_key
         try:
             result = handler(self.session, job)
+        except StaleStepExecution:
+            self.session.rollback()
+            self._log(job.id, step_id, "warning", "stale_step_result_discarded", step_key)
+            self.session.commit()
+            return None
         except DomainError as exc:
             self.session.rollback()
             result = StepResult("failed", error_code=exc.code, error_message=exc.message)
@@ -70,10 +83,35 @@ class JobOrchestrator:
             logger.exception("unexpected job step failure", extra={"job_id": str(job.id), "step_key": step.step_key})
             self.session.rollback()
             result = StepResult("failed", error_code="UNEXPECTED_ERROR", error_message="단계 실행 중 오류가 발생했습니다.")
-        self._finish_step(step, result)
-        self._log(job.id, step.id, "info" if result.status == "succeeded" else "warning", "step_finished", step.step_key)
+        if not self._finish_step_if_current(step_id, expected_attempt, result):
+            self.session.rollback()
+            self._log(job.id, step_id, "warning", "stale_step_result_discarded", step_key)
+            self.session.commit()
+            return None
+        self._log(job.id, step_id, "info" if result.status == "succeeded" else "warning", "step_finished", step_key)
         self.session.commit()
         return result.status == "succeeded"
+
+    def _finish_step_if_current(self, step_id: UUID, expected_attempt: int, result: StepResult) -> bool:
+        finished_at = utcnow()
+        statement = (
+            update(JobStep)
+            .where(
+                JobStep.id == step_id,
+                JobStep.status == "running",
+                JobStep.attempt_count == expected_attempt,
+            )
+            .values(
+                status=result.status,
+                metrics=result.metrics,
+                error_code=result.error_code,
+                error_message=result.error_message,
+                finished_at=finished_at,
+                heartbeat_at=finished_at,
+            )
+            .returning(JobStep.id)
+        )
+        return self.session.scalar(statement) is not None
 
     def _finish_step(self, step: JobStep, result: StepResult) -> None:
         step.status = result.status

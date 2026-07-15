@@ -4,13 +4,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
+from app.analysis.models import StepAttemptContext
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
 from app.collectors.transcript import TranscriptCollector
 from app.core.errors import DomainError
-from app.db.models import AnalysisJob, AnalysisRun, ApiQuotaEvent, CommentSnapshot, TranscriptSegment, TranscriptSnapshot
+from app.db.models import AnalysisJob, AnalysisRun, ApiQuotaEvent, CommentSnapshot, JobStep, TranscriptSegment, TranscriptSnapshot
 from app.jobs.orchestrator import StepResult
-from app.jobs.progress import JobProgressReporter
 
 
 def build_collection_analysis_handlers(
@@ -20,7 +20,6 @@ def build_collection_analysis_handlers(
     comment_analyzer: CommentAnalyzer,
     script_analyzer: ScriptAnalyzer,
     analysis_run_values: dict,
-    progress_reporter: JobProgressReporter | None = None,
 ) -> dict:
     def collect_metadata(session: Session, job: AnalysisJob) -> StepResult:
         metadata_collector.collect(session, job)
@@ -59,7 +58,9 @@ def build_collection_analysis_handlers(
         count = session.scalar(select(func.count()).select_from(CommentSnapshot).where(CommentSnapshot.job_id == job.id))
         if not count:
             return StepResult("skipped", error_code="COMMENTS_UNAVAILABLE")
-        return StepResult(metrics=comment_analyzer.analyze(session, _run(session, job), progress_reporter))
+        context = _context(session, job, "analyze_comments")
+        session.commit()
+        return StepResult(metrics=comment_analyzer.analyze(context))
 
     def analyze_script(session: Session, job: AnalysisJob) -> StepResult:
         if _step_status(session, job, "collect_transcript") != "succeeded":
@@ -72,7 +73,9 @@ def build_collection_analysis_handlers(
         )
         if not count:
             return StepResult("skipped", error_code="CAPTION_NOT_AVAILABLE")
-        return StepResult(metrics=script_analyzer.analyze(session, _run(session, job), progress_reporter))
+        context = _context(session, job, "analyze_script")
+        session.commit()
+        return StepResult(metrics=script_analyzer.analyze(context))
 
     return {
         "collect_metadata": collect_metadata,
@@ -92,9 +95,21 @@ def _run(session: Session, job: AnalysisJob) -> AnalysisRun:
 
 
 def _step_status(session: Session, job: AnalysisJob, step_key: str) -> str | None:
-    from app.db.models import JobStep
-
     return session.scalar(select(JobStep.status).where(JobStep.job_id == job.id, JobStep.step_key == step_key))
+
+
+def _context(session: Session, job: AnalysisJob, step_key: str) -> StepAttemptContext:
+    run = _run(session, job)
+    step = session.scalar(select(JobStep).where(JobStep.job_id == job.id, JobStep.step_key == step_key))
+    if step is None:
+        raise DomainError("JOB_STEP_NOT_FOUND", "분석 단계를 찾을 수 없습니다.")
+    return StepAttemptContext(
+        job_id=job.id,
+        step_id=step.id,
+        step_key=step.step_key,
+        run_id=run.id,
+        expected_attempt=step.attempt_count,
+    )
 
 
 def _quota_event(session: Session, job: AnalysisJob, operation: str, status: str, error_code: str | None = None) -> None:
