@@ -56,6 +56,10 @@ def query_definition_documents(
         embedding_function=embedding_function,
     )
     result = collection.query(query_texts=[query_text], n_results=n_results)
+    return parse_definition_query_result(result)
+
+
+def parse_definition_query_result(result: dict[str, Any]) -> list[DefinitionSearchResult]:
     ids = result.get("ids", [[]])[0]
     documents = result.get("documents", [[]])[0]
     metadatas = result.get("metadatas", [[]])[0]
@@ -119,6 +123,10 @@ def query_example_documents(
         embedding_function=embedding_function,
     )
     result = collection.query(query_texts=[query_text], n_results=n_results)
+    return parse_example_query_result(result)
+
+
+def parse_example_query_result(result: dict[str, Any]) -> list[ExampleSearchResult]:
     ids = result.get("ids", [[]])[0]
     documents = result.get("documents", [[]])[0]
     metadatas = result.get("metadatas", [[]])[0]
@@ -147,8 +155,9 @@ def _get_collection(
     collection_name: str,
     reset: bool = False,
     embedding_function: Any | None = None,
+    client: Any | None = None,
 ) -> Any:
-    client = chromadb.PersistentClient(path=str(persist_directory))
+    client = client or chromadb.PersistentClient(path=str(persist_directory))
     if reset and collection_name in _collection_names(client):
         client.delete_collection(collection_name)
 

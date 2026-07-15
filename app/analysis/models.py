@@ -71,3 +71,10 @@ class ExampleSearchResult:
     mapped_categories: tuple[str, ...]
     is_hate_speech: bool
     distance: float | None
+
+
+@dataclass(frozen=True)
+class RetrievalBundle:
+    definitions: tuple[DefinitionSearchResult, ...]
+    examples: tuple[ExampleSearchResult, ...]
+    failures: tuple[str, ...] = ()

@@ -61,26 +61,31 @@ class UpstageEmbeddingClient:
         api_key: str | None,
         base_url: str = DEFAULT_UPSTAGE_EMBEDDING_BASE_URL,
         timeout: float = 30.0,
+        http_client: httpx.Client | None = None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url
-        self.timeout = timeout
+        self.http_client = http_client or httpx.Client(timeout=timeout)
+        self._owns_http_client = http_client is None
 
     def embed(self, texts: list[str], model: str) -> list[list[float]]:
         if not self.api_key:
             raise ValueError("Upstage API key is required for embeddings.")
 
-        with httpx.Client(timeout=self.timeout) as client:
-            response = client.post(
-                self.base_url,
-                headers={"Authorization": f"Bearer {self.api_key}"},
-                json={"model": model, "input": texts},
-            )
-            response.raise_for_status()
-            payload = response.json()
+        response = self.http_client.post(
+            self.base_url,
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            json={"model": model, "input": texts},
+        )
+        response.raise_for_status()
+        payload = response.json()
 
         rows = sorted(payload["data"], key=lambda row: row.get("index", 0))
         return [row["embedding"] for row in rows]
+
+    def close(self) -> None:
+        if self._owns_http_client:
+            self.http_client.close()
 
 
 class UpstageEmbeddingFunction:
@@ -129,6 +134,11 @@ class UpstageEmbeddingFunction:
 
     def embed_query(self, input: list[str]) -> list[list[float]]:
         return self.client.embed(input, model=self.query_model)
+
+    def close(self) -> None:
+        close = getattr(self.client, "close", None)
+        if close is not None:
+            close()
 
 
 def create_embedding_function(

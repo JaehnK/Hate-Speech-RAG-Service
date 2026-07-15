@@ -58,6 +58,9 @@ class AnthropicLlmClient:
             usage=_message_usage(message),
         )
 
+    def close(self) -> None:
+        self.client.close()
+
 
 def _message_text(message) -> str:
     texts = []
