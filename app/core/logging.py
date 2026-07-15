@@ -6,6 +6,8 @@ SENSITIVE_KEYS = ("api_key", "token", "secret", "authorization")
 
 def configure_logging(level: str) -> None:
     logging.basicConfig(level=level.upper(), format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    for logger_name in ("httpx", "httpcore"):
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 
 def mask_sensitive(value: object) -> object:
