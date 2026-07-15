@@ -4,10 +4,14 @@ from app.analysis.embeddings import UpstageEmbeddingFunction, create_embedding_f
 class FakeEmbeddingClient:
     def __init__(self) -> None:
         self.calls = []
+        self.close_calls = 0
 
     def embed(self, texts: list[str], model: str) -> list[list[float]]:
         self.calls.append((texts, model))
         return [[float(len(text))] for text in texts]
+
+    def close(self) -> None:
+        self.close_calls += 1
 
 
 def test_upstage_embedding_uses_passage_and_query_models() -> None:
@@ -20,6 +24,8 @@ def test_upstage_embedding_uses_passage_and_query_models() -> None:
         (["문서"], "solar-embedding-1-large-passage"),
         (["질문"], "solar-embedding-1-large-query"),
     ]
+    embedding.close()
+    assert client.close_calls == 1
 
 
 def test_embedding_factory_supports_hash_and_upstage() -> None:

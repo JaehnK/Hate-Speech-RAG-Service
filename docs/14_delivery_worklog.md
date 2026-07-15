@@ -245,3 +245,10 @@
 - provider gate/retry, SIGTERM drain, jobs 진행 로그, 기존 job 호환과 sequential rollback 방식을 확정했다.
 - 구현을 retrieval 재사용, item checkpoint, job 내부 병렬화, provider backpressure 네 브랜치로 나누고 단계별 merge gate를 기록했다.
 - 검증: diff check, 문서 교차 참조와 code fence 확인, 현재 job/RAG/embedding/vector store 회귀 테스트 17개 통과.
+
+# 2026-07-15 RAG dual retrieval 재사용 구현
+
+- 브랜치: `perf/rag-dual-retrieval-reuse`
+- query embedding 1회 재사용, 장기 provider/Chroma client 생명주기와 worker resource 정리를 구현했다.
+- 상세 변경과 검증은 `docs/24_rag_parallel_delivery.md`에 누적 기록한다.
+- 검증: diff check, Ruff, compileall, 집중 테스트 14개와 backend 전체 테스트 79개 통과.

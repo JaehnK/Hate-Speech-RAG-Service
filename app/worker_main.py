@@ -26,6 +26,7 @@ def main() -> None:
     session_factory = build_session_factory(build_engine(settings.database_url))
     handlers = build_fake_handlers()
     handlers.update(build_reporting_handlers())
+    classifier = None
     if settings.pipeline_mode == "production":
         youtube = YouTubeApiClient(settings.youtube_api_key)
         classifier = RagClassifier(
@@ -78,13 +79,17 @@ def main() -> None:
                 progress_reporter=DatabaseJobProgressReporter(session_factory),
             )
         )
-    worker = JobWorker(
-        session_factory,
-        handlers=handlers,
-        poll_interval_seconds=settings.worker_poll_interval_seconds,
-        stale_after_seconds=settings.worker_stale_after_seconds,
-    )
-    worker.run_forever()
+    try:
+        worker = JobWorker(
+            session_factory,
+            handlers=handlers,
+            poll_interval_seconds=settings.worker_poll_interval_seconds,
+            stale_after_seconds=settings.worker_stale_after_seconds,
+        )
+        worker.run_forever()
+    finally:
+        if classifier is not None:
+            classifier.close()
 
 
 if __name__ == "__main__":

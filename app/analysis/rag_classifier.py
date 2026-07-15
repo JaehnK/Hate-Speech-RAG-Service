@@ -13,7 +13,7 @@ from app.analysis.models import ValidationResult
 from app.analysis.observability import NoopObservabilityClient, ObservabilityClient
 from app.analysis.prompt_template import PROMPT_VERSION, build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
-from app.analysis.vector_store import query_definition_documents, query_example_documents
+from app.analysis.retriever import DualVectorRetriever
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 
@@ -53,10 +53,10 @@ class RagClassifier:
         example_k: int = 6,
         example_min_similarity: float = DEFAULT_EXAMPLE_MIN_SIMILARITY,
         definition_corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
+        retriever: DualVectorRetriever | None = None,
     ) -> None:
-        self.persist_directory = persist_directory
         self.llm_client = llm_client
-        self.embedding_function = embedding_function
+        self.retriever = retriever or DualVectorRetriever(persist_directory, embedding_function)
         self.observability = observability or NoopObservabilityClient()
         self.taxonomy_k = taxonomy_k
         self.definition_k = definition_k
@@ -65,9 +65,6 @@ class RagClassifier:
         self.definition_corpus_version = definition_corpus_version
 
     def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
-        definitions: list[DefinitionSearchResult] = []
-        examples: list[ExampleSearchResult] = []
-        retrieval_failures = []
         with self.observability.observation(
             "rag.retrieval",
             as_type="retriever",
@@ -75,30 +72,22 @@ class RagClassifier:
             metadata={"source_type": source_type},
         ):
             try:
-                definitions = query_definition_documents(
-                    self.persist_directory,
+                bundle = self.retriever.retrieve(
                     _retrieval_query(input_text, source_type),
-                    n_results=self.taxonomy_k + self.definition_k,
-                    embedding_function=self.embedding_function,
+                    definition_n=self.taxonomy_k + self.definition_k,
+                    example_n=self.example_k,
                 )
-            except Exception:
-                retrieval_failures.append("definitions")
-            try:
-                examples = query_example_documents(
-                    self.persist_directory,
-                    _retrieval_query(input_text, source_type),
-                    n_results=self.example_k,
-                    embedding_function=self.embedding_function,
-                )
-            except Exception:
-                retrieval_failures.append("examples")
+            except Exception as exc:
+                raise ClassificationError("both RAG vector stores are unavailable") from exc
+            definitions = list(bundle.definitions)
+            examples = list(bundle.examples)
             examples = [
                 result
                 for result in examples
                 if _example_similarity(result) >= self.example_min_similarity
             ]
 
-        if len(retrieval_failures) == 2:
+        if len(bundle.failures) == 2:
             raise ClassificationError("both RAG vector stores are unavailable")
         context_status = _context_status(definitions, examples)
 
@@ -146,6 +135,13 @@ class RagClassifier:
             prompt = _retry_prompt(prompt, validation)
 
         raise ClassificationError(f"LLM output failed validation: {last_validation.errors}")
+
+    def close(self) -> None:
+        self.retriever.close()
+        close = getattr(self.llm_client, "close", None)
+        if close is not None:
+            close()
+        self.observability.flush()
 
 
 def _retrieval_query(input_text: str, source_type: SourceType) -> str:
