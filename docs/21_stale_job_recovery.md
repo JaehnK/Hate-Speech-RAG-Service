@@ -32,3 +32,11 @@
 - recovery 후 step `attempt_count`가 증가한다.
 - recovery operation log가 남는다.
 - SQLite와 PostgreSQL에서 heartbeat migration이 왕복 가능하다.
+
+## 개발 환경 적용 결과
+
+- PostgreSQL migration `c42f3a91e8b0` head 적용 완료
+- `WORKER_STALE_AFTER_SECONDS=900` 주입 확인
+- stale recovery method가 포함된 worker image 재빌드 및 재기동 완료
+- 삭제 대상 job의 API 404 확인
+- backend 76개 테스트와 dev/test/prod Compose config 통과
