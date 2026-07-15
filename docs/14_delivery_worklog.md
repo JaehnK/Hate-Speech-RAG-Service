@@ -130,3 +130,10 @@
 - RAG 교정: example 본문/라벨 전달 누락 수정, `example_min_similarity=0.40` 적용 후 합성 smoke 15/15 성공·정확도/F1/안정성 1.000
 - 최종 게이트: Ruff, compileall, pytest 69개, dependency audit, dev/test/prod Compose config 통과
 - 증적: `docs/17_live_validation_evidence.md`
+
+### `fix/swagger-docs-csp`
+
+- 범위: `/docs`, `/redoc`, OAuth redirect에만 Swagger CDN script/style CSP 허용
+- 원인: 전역 CSP가 FastAPI Swagger UI의 `cdn.jsdelivr.net` script를 차단해 빈 화면 발생
+- 보안 경계: 일반 API와 보고서 응답의 기존 strict CSP는 유지
+- 검증: docs HTML asset URL과 route별 CSP 회귀 테스트, 실제 컨테이너 `/docs` 확인
