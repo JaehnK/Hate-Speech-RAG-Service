@@ -189,6 +189,7 @@
 - 예상하지 못한 worker step 예외에 traceback 로깅을 추가했다.
 - 상세 진단과 동시 처리 확장 경계는 `docs/20_rag_job_progress_diagnosis.md`에 기록했다.
 - 검증: diff check, Ruff, compileall, backend 74개 테스트, frontend 4개 테스트와 production build, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config, 대상 jobs 화면 브라우저 렌더링 통과.
+- 개발 PostgreSQL을 migration head로 올리고 새 progress reporter가 포함된 worker를 재빌드·재기동했다. 비용이 발생하는 대상 영상 재분석은 자동 실행하지 않았다.
 
 # 2026-07-15 RAG 방법론 가독성 개선
 
