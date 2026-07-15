@@ -14,8 +14,10 @@ from app.analysis.observability import NoopObservabilityClient, ObservabilityCli
 from app.analysis.prompt_template import PROMPT_VERSION, build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.retriever import DualVectorRetriever
+from app.analysis.retry import RetryCancelled
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
+from app.jobs.exceptions import WorkerShutdownRequested
 
 
 DEFAULT_EXAMPLE_MIN_SIMILARITY = 0.4
@@ -54,6 +56,7 @@ class RagClassifier:
         example_min_similarity: float = DEFAULT_EXAMPLE_MIN_SIMILARITY,
         definition_corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
         retriever: DualVectorRetriever | None = None,
+        should_stop=None,
     ) -> None:
         self.llm_client = llm_client
         self.retriever = retriever or DualVectorRetriever(persist_directory, embedding_function)
@@ -63,8 +66,11 @@ class RagClassifier:
         self.example_k = example_k
         self.example_min_similarity = example_min_similarity
         self.definition_corpus_version = definition_corpus_version
+        self.should_stop = should_stop or (lambda: False)
 
     def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
+        if self.should_stop():
+            raise WorkerShutdownRequested
         with self.observability.observation(
             "rag.retrieval",
             as_type="retriever",
@@ -77,6 +83,8 @@ class RagClassifier:
                     definition_n=self.taxonomy_k + self.definition_k,
                     example_n=self.example_k,
                 )
+            except RetryCancelled as exc:
+                raise WorkerShutdownRequested from exc
             except Exception as exc:
                 raise ClassificationError("both RAG vector stores are unavailable") from exc
             definitions = list(bundle.definitions)
@@ -102,6 +110,8 @@ class RagClassifier:
         last_validation = ValidationResult(valid=False, errors=("not_attempted",))
         response = LlmResponse(text="", model=self.llm_client.model, usage={})
         for attempt in range(1, 3):
+            if self.should_stop():
+                raise WorkerShutdownRequested
             with self.observability.observation(
                 "rag.classification",
                 as_type="generation",
@@ -111,6 +121,8 @@ class RagClassifier:
             ):
                 try:
                     response = self.llm_client.complete(prompt)
+                except RetryCancelled as exc:
+                    raise WorkerShutdownRequested from exc
                 except Exception as exc:
                     raise ClassificationError("LLM classification request failed") from exc
 

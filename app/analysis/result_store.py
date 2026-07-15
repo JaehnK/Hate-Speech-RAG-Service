@@ -12,6 +12,7 @@ from app.db.models import (
     CommentAnalysisResult,
     CommentSnapshot,
     JobStep,
+    OperationLog,
     ScriptAnalysisResult,
     TranscriptSegment,
     TranscriptSnapshot,
@@ -142,6 +143,20 @@ class AnalysisResultStore:
     def heartbeat(self, context: StepAttemptContext) -> None:
         with self.session_factory.begin() as session:
             _fence(session, context)
+
+    def log_progress(self, context: StepAttemptContext, payload: dict[str, int]) -> None:
+        with self.session_factory.begin() as session:
+            _fence(session, context)
+            session.add(
+                OperationLog(
+                    job_id=context.job_id,
+                    job_step_id=context.step_id,
+                    level="info",
+                    event_type="rag_progress",
+                    message=context.step_key,
+                    metadata_json=payload,
+                )
+            )
 
 
 def _fence(session: Session, context: StepAttemptContext) -> None:

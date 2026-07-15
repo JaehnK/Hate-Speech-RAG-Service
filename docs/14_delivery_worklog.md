@@ -266,3 +266,10 @@
 - classifier pool, bounded executor, 동일 sequential rollback 경로와 signal 기반 step release를 구현했다.
 - RAG 실행 모드/item 동시성/heartbeat/timeout을 환경과 runtime에 연결하고 run provenance에 기록했다. provider gate/retry는 다음 구현 단계로 남겼다.
 - 검증: diff check, Ruff, compileall, 집중 테스트 21개, dev/test/prod Compose config, backend 전체 테스트 87개 통과(기본 opt-in 1개 skip).
+
+# 2026-07-15 RAG provider backpressure와 관측성 구현
+
+- 브랜치: `feat/rag-provider-backpressure`
+- Upstage/Anthropic별 semaphore, retry 분류, `Retry-After`/backoff와 stop-aware retry를 구현했다.
+- RAG 진행 상황, provider retry와 token usage를 throttled operation log로 저장했다.
+- 검증: diff check, Ruff, compileall, 집중 테스트 26개, dev/test/prod Compose config, backend 전체 테스트 94개 통과(기본 opt-in 1개 skip).

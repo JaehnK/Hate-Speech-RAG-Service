@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from contextlib import nullcontext
 from hashlib import sha256
 import math
 import os
 import re
 from typing import Protocol
+from threading import BoundedSemaphore
 
 import httpx
+
+from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
 DEFAULT_UPSTAGE_EMBEDDING_MODEL = "solar-embedding-1-large"
@@ -62,21 +66,39 @@ class UpstageEmbeddingClient:
         base_url: str = DEFAULT_UPSTAGE_EMBEDDING_BASE_URL,
         timeout: float = 30.0,
         http_client: httpx.Client | None = None,
+        gate: BoundedSemaphore | None = None,
+        retry_policy: RetryPolicy | None = None,
+        on_retry=None,
+        should_stop=None,
     ) -> None:
         self.api_key = api_key
         self.base_url = base_url
         self.http_client = http_client or httpx.Client(timeout=timeout)
         self._owns_http_client = http_client is None
+        self.gate = gate
+        self.retry_policy = retry_policy or RetryPolicy(max_attempts=1)
+        self.on_retry = on_retry
+        self.should_stop = should_stop
 
     def embed(self, texts: list[str], model: str) -> list[list[float]]:
         if not self.api_key:
             raise ValueError("Upstage API key is required for embeddings.")
 
-        response = self.http_client.post(
-            self.base_url,
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json={"model": model, "input": texts},
+        return self.retry_policy.run(
+            lambda: self._embed_once(texts, model),
+            is_retryable=_retryable_http_error,
+            retry_after=_http_retry_after,
+            on_retry=self.on_retry,
+            should_stop=self.should_stop,
         )
+
+    def _embed_once(self, texts: list[str], model: str) -> list[list[float]]:
+        with (self.gate if self.gate is not None else nullcontext()):
+            response = self.http_client.post(
+                self.base_url,
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={"model": model, "input": texts},
+            )
         response.raise_for_status()
         payload = response.json()
 
@@ -147,6 +169,10 @@ def create_embedding_function(
     api_key: str | None = None,
     base_url: str = DEFAULT_UPSTAGE_EMBEDDING_BASE_URL,
     timeout: float = 30.0,
+    gate: BoundedSemaphore | None = None,
+    retry_policy: RetryPolicy | None = None,
+    on_retry=None,
+    should_stop=None,
 ):
     if provider == "hash":
         return HashEmbeddingFunction()
@@ -155,7 +181,15 @@ def create_embedding_function(
             api_key=api_key,
             model=model,
             base_url=base_url,
-            client=UpstageEmbeddingClient(api_key=api_key, base_url=base_url, timeout=timeout),
+            client=UpstageEmbeddingClient(
+                api_key=api_key,
+                base_url=base_url,
+                timeout=timeout,
+                gate=gate,
+                retry_policy=retry_policy,
+                on_retry=on_retry,
+                should_stop=should_stop,
+            ),
         )
     raise ValueError(f"unsupported embedding provider: {provider}")
 
@@ -191,3 +225,15 @@ def _upstage_model_for(model: str, mode: str) -> str:
     if model.endswith("-passage"):
         return f"{model[:-8]}-{mode}"
     return f"{model}-{mode}"
+
+
+def _retryable_http_error(exc: Exception) -> bool:
+    if isinstance(exc, httpx.TransportError):
+        return True
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in {429, 500, 502, 503, 504}
+
+
+def _http_retry_after(exc: Exception) -> float | None:
+    if not isinstance(exc, httpx.HTTPStatusError):
+        return None
+    return parse_retry_after(exc.response.headers.get("Retry-After"))

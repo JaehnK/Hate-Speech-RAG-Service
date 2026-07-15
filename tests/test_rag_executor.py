@@ -56,12 +56,16 @@ def test_parallel_runtime_is_bounded_and_faster_than_sequential() -> None:
     sequential.run(items, lambda _outcome: None, lambda: None)
     sequential_elapsed = monotonic() - sequential_started
     parallel_started = monotonic()
-    parallel.run(items, lambda _outcome: None, lambda: None)
+    progress = []
+    parallel.run(items, lambda _outcome: None, lambda: None, progress.append)
     parallel_elapsed = monotonic() - parallel_started
 
     assert sequential_state["max_active"] == 1
     assert parallel_state["max_active"] == 4
     assert parallel_elapsed * 3 < sequential_elapsed
+    assert progress[-1]["completed"] == 40
+    assert progress[-1]["item_concurrency"] == 4
+    assert progress[-1]["in_flight"] == 0
 
 
 def test_parallel_runtime_persists_every_out_of_order_result() -> None:

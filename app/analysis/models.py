@@ -93,6 +93,8 @@ class AnalysisOutcome:
     source_id: UUID
     status: Literal["succeeded", "failed"]
     result_values: dict[str, Any]
+    usage: dict[str, int] = field(default_factory=dict)
+    validation_attempts: int = 0
 
 
 @dataclass(frozen=True)
