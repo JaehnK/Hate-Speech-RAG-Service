@@ -160,3 +160,12 @@
 - 브랜치: `fix/hero-line-breaks`
 - 분석 요청 화면 제목을 `YouTube 영상`과 `혐오표현 분석` 두 줄로 고정했다.
 - 설명 문구도 쉼표 뒤에서 두 줄로 고정해 화면 폭에 따른 어색한 단어 단위 줄바꿈을 제거했다.
+
+# 2026-07-15 RAG 방법론 페이지
+
+- 브랜치: `feat/rag-methodology-page`
+- Stitch MCP의 기존 `YouTube Hate Speech Analyzer` 프로젝트와 VoxGuard 디자인 시스템을 기준으로 `RAG 방법론 & 재현성` 화면을 먼저 설계했다.
+- Stitch 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
+- `/rag-methodology`에 호출 파이프라인, dual-vector 검색, 프롬프트 구조, 실행 설정, 검증 규칙, 재현 체크리스트를 구현했다.
+- 데스크톱 사이드바와 상단 메뉴에 진입점을 추가하고, 모바일 전용 메뉴 및 단일 열 레이아웃을 추가했다.
+- 정적 렌더링 회귀 테스트, Vitest 전체 테스트, TypeScript/Vite production build, 1440px/500px 브라우저 렌더링을 검증했다.
