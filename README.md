@@ -88,3 +88,5 @@ docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 Stitch 기반 프론트 구조, 화면/API 매핑, Docker 실행 및 검증 기록은 `docs/18_stitch_frontend_delivery.md`에 정리되어 있다.
 
 실제 dual-vector 검색, 전체 prompt, validation/retry, 저장되는 provenance와 재현 절차는 `docs/19_rag_methodology_reproducibility.md`를 따른다.
+
+RAG item 병렬 처리의 ledger, lease, rate limit과 단계별 검증 계획은 `docs/22_rag_parallel_processing_plan.md`를 따른다.

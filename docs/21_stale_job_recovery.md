@@ -22,7 +22,7 @@
 
 - stale 후보는 `FOR UPDATE SKIP LOCKED`로 선택해 여러 worker가 같은 job을 동시에 회수하지 않게 한다.
 - 현재 분석 결과는 step transaction 마지막에 저장되므로 worker crash 시 미완료 transaction이 rollback되고 같은 step을 안전하게 다시 실행할 수 있다.
-- 향후 item 결과를 개별 commit하거나 분산 queue로 전환하면 item idempotency key를 먼저 도입해야 한다.
+- 향후 item 결과를 개별 commit하거나 분산 queue로 전환하면 item idempotency key를 먼저 도입해야 한다. ledger, lease와 진행률 집계 방식은 `docs/22_rag_parallel_processing_plan.md`를 따른다.
 - RAG가 아닌 장시간 step은 시작 heartbeat만 가진다. 해당 step이 stale 기준보다 오래 걸릴 가능성이 생기면 주기 heartbeat를 추가해야 한다.
 
 ## 성공 기준
