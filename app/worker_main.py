@@ -1,4 +1,3 @@
-from app.core.config import load_settings
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.observability import LangfuseConfig, build_observability_client
@@ -10,6 +9,8 @@ from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLEC
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
 from app.collectors.transcript import PublicTranscriptProvider, TranscriptCollector
+from app.core.config import load_settings
+from app.core.logging import configure_logging
 from app.db.session import build_engine, build_session_factory
 from app.external.youtube import YouTubeApiClient
 from app.jobs.fake_pipeline import build_fake_handlers
@@ -20,6 +21,7 @@ from app.reporting.pipeline import build_reporting_handlers
 
 def main() -> None:
     settings = load_settings()
+    configure_logging(settings.log_level)
     handlers = build_fake_handlers()
     handlers.update(build_reporting_handlers())
     if settings.pipeline_mode == "production":

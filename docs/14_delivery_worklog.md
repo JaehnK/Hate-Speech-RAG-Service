@@ -145,3 +145,12 @@
 - 프론트의 분석 요청, job polling, 브라우저 이력, report, HTML/XLSX export를 FastAPI에 연결했다.
 - 개발 Vite proxy와 배포 Nginx reverse proxy를 구성해 별도 CORS 허용 없이 동일 출처로 통신한다.
 - 상세 작업 시퀀스와 검증 증적은 `docs/18_stitch_frontend_delivery.md`에 기록했다.
+
+# 2026-07-15 production 댓글 수집 모드 및 secret 로그 점검
+
+- 브랜치: `fix/http-client-secret-logging`
+- 댓글 0건의 원인이 API 키 누락이 아니라 로컬 `.env`의 `PIPELINE_MODE` 미설정에 따른 `fake` 기본값임을 확인했다.
+- 로컬 실행 설정을 `PIPELINE_MODE=production`으로 전환하고 web/worker 모두 production handler를 사용하도록 재기동했다.
+- YouTube commentThreads API가 대상 영상에서 댓글을 반환함을 확인했다.
+- HTTP client INFO 로그가 query string의 API 키를 출력할 수 있어 `httpx`와 `httpcore` 로그 레벨을 WARNING으로 제한했다.
+- 실제 값이 로그에 한 번 노출된 YouTube API 키는 교체 후 새 분석을 실행해야 한다.
