@@ -1,13 +1,14 @@
 import signal
-from threading import Event
+from threading import BoundedSemaphore, Event
 
 from app.analysis.embeddings import create_embedding_function
-from app.analysis.executor import RagRuntime
+from app.analysis.executor import RagRuntime, RuntimeMetrics
 from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.observability import LangfuseConfig, build_observability_client
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
 from app.analysis.result_store import AnalysisResultStore
+from app.analysis.retry import RetryPolicy
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
@@ -37,12 +38,21 @@ def main() -> None:
     if settings.pipeline_mode == "production":
         youtube = YouTubeApiClient(settings.youtube_api_key)
         slot_count = settings.rag_item_concurrency if settings.rag_execution_mode == "parallel" else 1
+        metrics = RuntimeMetrics()
+        embedding_gate = BoundedSemaphore(settings.rag_embedding_concurrency)
+        llm_gate = BoundedSemaphore(settings.rag_llm_concurrency)
+        retry_policy = RetryPolicy(max_attempts=settings.rag_item_max_attempts)
         runtime = RagRuntime(
-            [_build_classifier(settings) for _index in range(slot_count)],
+            [
+                _build_classifier(settings, stop_event, embedding_gate, llm_gate, retry_policy, metrics)
+                for _index in range(slot_count)
+            ],
             mode=settings.rag_execution_mode,
             item_concurrency=settings.rag_item_concurrency,
             heartbeat_interval_seconds=settings.rag_heartbeat_interval_seconds,
+            shutdown_grace_seconds=settings.rag_shutdown_grace_seconds,
             stop_event=stop_event,
+            metrics=metrics,
         )
         result_store = AnalysisResultStore(session_factory)
         handlers.update(
@@ -85,7 +95,14 @@ def main() -> None:
             runtime.close()
 
 
-def _build_classifier(settings: Settings) -> RagClassifier:
+def _build_classifier(
+    settings: Settings,
+    stop_event: Event,
+    embedding_gate: BoundedSemaphore,
+    llm_gate: BoundedSemaphore,
+    retry_policy: RetryPolicy,
+    metrics: RuntimeMetrics,
+) -> RagClassifier:
     return RagClassifier(
         settings.chroma_persist_directory,
         AnthropicLlmClient(
@@ -94,6 +111,10 @@ def _build_classifier(settings: Settings) -> RagClassifier:
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
             timeout=settings.rag_request_timeout_seconds,
+            gate=llm_gate,
+            retry_policy=retry_policy,
+            on_retry=lambda _exc, _attempt, _delay: metrics.increment_retry("llm"),
+            should_stop=stop_event.is_set,
         ),
         embedding_function=create_embedding_function(
             provider=settings.embedding_provider,
@@ -101,6 +122,10 @@ def _build_classifier(settings: Settings) -> RagClassifier:
             api_key=settings.embedding_api_key,
             base_url=settings.upstage_embedding_base_url,
             timeout=settings.rag_request_timeout_seconds,
+            gate=embedding_gate,
+            retry_policy=retry_policy,
+            on_retry=lambda _exc, _attempt, _delay: metrics.increment_retry("embedding"),
+            should_stop=stop_event.is_set,
         ),
         observability=build_observability_client(
             LangfuseConfig(
@@ -111,6 +136,7 @@ def _build_classifier(settings: Settings) -> RagClassifier:
                 capture_io=settings.langfuse_capture_io,
             )
         ),
+        should_stop=stop_event.is_set,
     )
 
 

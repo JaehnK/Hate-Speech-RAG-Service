@@ -8,7 +8,7 @@ from app.analysis.models import StepAttemptContext
 from app.analysis.result_store import AnalysisResultStore
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.db.base import Base
-from app.db.models import AnalysisRun, CommentAnalysisResult, CommentSnapshot, JobStep, ScriptAnalysisResult, TranscriptSegment, TranscriptSnapshot
+from app.db.models import AnalysisRun, CommentAnalysisResult, CommentSnapshot, JobStep, OperationLog, ScriptAnalysisResult, TranscriptSegment, TranscriptSnapshot
 from app.db.repositories import AnalysisJobRepository
 from app.db.session import build_engine, build_session_factory
 
@@ -91,6 +91,9 @@ def test_comment_and_script_analyzers_record_every_item(tmp_path) -> None:
     with factory() as session:
         assert [row.status for row in session.scalars(select(CommentAnalysisResult).order_by(CommentAnalysisResult.created_at))] == ["succeeded", "failed"]
         assert [row.status for row in session.scalars(select(ScriptAnalysisResult).order_by(ScriptAnalysisResult.created_at))] == ["succeeded", "failed"]
+        progress_logs = list(session.scalars(select(OperationLog).where(OperationLog.event_type == "rag_progress")))
+        assert len(progress_logs) == 2
+        assert {row.metadata_json["total"] for row in progress_logs} == {2}
 
 
 def test_comment_analyzer_persists_long_hate_type(tmp_path) -> None:

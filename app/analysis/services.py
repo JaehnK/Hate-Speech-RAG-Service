@@ -17,6 +17,7 @@ class CommentAnalyzer:
             items,
             lambda outcome: self.result_store.persist(context, "comment", outcome),
             lambda: self.result_store.heartbeat(context),
+            lambda payload: self.result_store.log_progress(context, {"total": total, **payload}),
         )
         progress = self.result_store.reconcile(context, "comment", total)
         return {"comments_analyzed": total, "succeeded": progress["succeeded"], "failed": progress["failed"]}
@@ -34,6 +35,7 @@ class ScriptAnalyzer:
             items,
             lambda outcome: self.result_store.persist(context, "script", outcome),
             lambda: self.result_store.heartbeat(context),
+            lambda payload: self.result_store.log_progress(context, {"total": total, **payload}),
         )
         progress = self.result_store.reconcile(context, "script", total)
         return {"script_segments_analyzed": total, "succeeded": progress["succeeded"], "failed": progress["failed"]}

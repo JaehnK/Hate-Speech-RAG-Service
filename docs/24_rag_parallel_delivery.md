@@ -56,3 +56,23 @@
 - concurrency 4에서 40개 fake I/O가 순차 대비 3배 이상 개선
 - Ruff, compileall과 dev/test/prod Compose config 통과
 - backend 전체 테스트 87개 통과, PostgreSQL opt-in 테스트 1개 기본 skip
+
+## Phase 4. Provider backpressure와 관측성
+
+- 브랜치: `feat/rag-provider-backpressure`
+- worker runtime에 Upstage/Anthropic 전용 `BoundedSemaphore`를 두어 item 동시성과 provider 동시성을 분리했다.
+- timeout/transport, 429와 일시적 5xx만 최대 시도 내에서 재시도하고 non-retry 4xx는 즉시 실패한다.
+- 429 `Retry-After`를 우선하고, 없으면 0.5초 기반 exponential backoff와 jitter를 사용한다.
+- backoff 동안 provider semaphore를 반납해 다른 item 호출을 막지 않는다.
+- stop event를 provider/validation retry 전에 확인해 종료 요청 뒤 새 외부 호출을 시작하지 않는다.
+- runtime progress를 10건 또는 5초 단위와 step 종료 시 `rag_progress` operation log에 기록한다.
+- progress metadata에는 완료/성공/실패/in-flight, concurrency, provider retry, token usage와 elapsed time이 포함된다.
+- signal drain에 grace deadline과 provider request timeout을 연결했다.
+
+검증 결과:
+
+- retry/provider gate/progress/shutdown 집중 테스트 26개 통과
+- Upstage 429 `Retry-After`, 401 non-retry와 동시 HTTP gate 검증
+- Anthropic rate limit `Retry-After` 검증
+- Ruff, compileall과 dev/test/prod Compose config 통과
+- backend 전체 테스트 94개 통과, PostgreSQL opt-in 테스트 1개 기본 skip
