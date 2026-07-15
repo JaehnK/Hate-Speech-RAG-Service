@@ -103,6 +103,11 @@ job의 단계별 상태를 저장한다.
 | error_code | text nullable | 실패 코드 |
 | error_message | text nullable | 마스킹된 실패 메시지 |
 | metrics | jsonb | 단계별 수량, 소요 시간, 외부 호출 수 |
+| items_total | int nullable | item 단위 분석의 전체 수 |
+| items_completed | int | 완료 item 수 |
+| items_succeeded | int | 성공 item 수 |
+| items_failed | int | 실패 item 수 |
+| heartbeat_at | timestamptz nullable | worker 생존 및 진행 확인 시각 |
 | started_at | timestamptz nullable | 시작 시각 |
 | finished_at | timestamptz nullable | 종료 시각 |
 

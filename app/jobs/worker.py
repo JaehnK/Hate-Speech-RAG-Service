@@ -1,5 +1,6 @@
 import time
 from collections.abc import Callable
+from datetime import timedelta
 
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -15,14 +16,18 @@ class JobWorker:
         session_factory: sessionmaker[Session],
         handlers: dict[str, StepHandler] | None = None,
         poll_interval_seconds: float = 2.0,
+        stale_after_seconds: int = 900,
     ) -> None:
         self.session_factory = session_factory
         self.handlers = handlers or build_fake_handlers()
         self.poll_interval_seconds = poll_interval_seconds
+        self.stale_after_seconds = stale_after_seconds
 
     def run_once(self) -> bool:
         with self.session_factory.begin() as session:
-            job = AnalysisJobRepository(session).claim_pending()
+            repository = AnalysisJobRepository(session)
+            repository.recover_stale_running(utcnow() - timedelta(seconds=self.stale_after_seconds))
+            job = repository.claim_pending()
             if job is None:
                 return False
             job.status = "running"

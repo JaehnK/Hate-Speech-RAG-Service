@@ -59,6 +59,7 @@ class JobStep(Base):
     items_completed: Mapped[int] = mapped_column(Integer, default=0)
     items_succeeded: Mapped[int] = mapped_column(Integer, default=0)
     items_failed: Mapped[int] = mapped_column(Integer, default=0)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

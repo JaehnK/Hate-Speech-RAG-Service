@@ -198,3 +198,13 @@
 - 데스크톱 파이프라인과 재현 체크리스트를 4/3열에서 2열로 완화해 확대된 텍스트가 겹치지 않도록 했다.
 - 모바일은 단일 열 구조를 유지하고 제목 크기를 확대했다.
 - 검증: frontend 4개 테스트, TypeScript/Vite production build, 1440px/500px 브라우저 렌더링 통과.
+
+# 2026-07-15 Worker stale job 자동 회수
+
+- 브랜치: `fix/stale-job-recovery`
+- 중단된 job `ca375d25-3fd7-470f-a6de-eb4f6671a2d6`과 비-cascade operation/quota 기록을 transaction으로 삭제했다.
+- 사용되지 않던 `WORKER_STALE_AFTER_SECONDS`를 worker claim 경로에 연결했다.
+- step heartbeat와 RAG item별 갱신을 추가하고 stale step만 같은 job에서 재실행하도록 했다.
+- active heartbeat는 회수하지 않고 recovery attempt와 operation log를 보존한다.
+- 상세 동작과 향후 분산 처리 경계는 `docs/21_stale_job_recovery.md`에 기록했다.
+- 검증: diff check, Ruff, compileall, backend 76개 테스트, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config 통과.

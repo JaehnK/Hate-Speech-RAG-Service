@@ -2,6 +2,7 @@ x-app-environment: &app-environment
   APP_ENV: ${APP_ENV:-development}
   DATABASE_URL: postgresql+psycopg://hatespeech:${POSTGRES_PASSWORD:-hatespeech}@postgres:5432/hatespeech
   ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
+  WORKER_STALE_AFTER_SECONDS: ${WORKER_STALE_AFTER_SECONDS:-900}
   PIPELINE_MODE: ${PIPELINE_MODE:-fake}
   YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
   LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
