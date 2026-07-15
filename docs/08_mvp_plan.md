@@ -287,15 +287,19 @@ MVP 기본값:
 
 작업:
 
+- 동일 query embedding을 definition/example collection에 재사용
+- Upstage HTTP client와 Chroma client/collection handle 재사용
 - 기존 결과 unique constraint를 재시작 checkpoint로 사용
-- RAG 결과를 item별 짧은 transaction으로 저장
-- 완료 event 증가 방식의 진행률을 저장 결과 집계 방식으로 전환
+- RAG 결과 insert와 조건부 progress 증가를 item별 짧은 transaction으로 저장
+- step 시작·종료 시 저장 결과로 progress projection 재조정
 - 동시성 1의 호환 모드 후 bounded thread executor 연결
 - provider별 concurrency gate와 429 backoff 적용
 - sequential feature flag와 rollback 경로 유지
 
 검증:
 
+- dual retrieval의 embedding 호출은 retry 없이 item당 한 번이다.
+- client 생성 수는 classifier 생명주기당 한 번이다.
 - worker 재시작과 중복 완료에도 item 결과와 완료 수가 하나다.
 - 설정한 in-flight 상한을 넘지 않는다.
 - fake I/O 100건, 동시성 4에서 순차 대비 wall time이 3배 이상 개선된다.
