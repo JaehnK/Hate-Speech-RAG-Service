@@ -227,3 +227,12 @@
 - 기존 결과 unique constraint를 재시작 checkpoint로 사용하고, thread는 외부 호출만 수행하며 coordinator가 item별 짧은 transaction으로 저장하도록 단순화했다.
 - RAG가 아닌 pipeline step은 계속 순차 실행하고, 모든 RAG future의 결과 저장이 끝난 뒤에만 다음 step으로 이동하도록 성공 기준을 보강했다.
 - 검증: diff check, 범위 문구 교차 확인, job progress/pipeline 회귀 테스트 6개 통과.
+
+# 2026-07-15 RAG 병렬 처리 효율 계획 보강
+
+- 브랜치: `docs/refine-rag-parallel-efficiency`
+- 사용자 수용에 따라 병렬화 전에 동일 query embedding을 dual collection에 재사용하고 외부 client 연결을 재사용하는 단계를 추가했다.
+- item 결과의 실제 insert와 progress 증가를 같은 transaction으로 묶고, step 시작·종료 때만 전체 결과와 재조정하도록 DB 작업량을 제한했다.
+- baseline, retrieval 중복 제거, item checkpoint, bounded parallelism, provider rollout 순서로 구현 단계를 재배치했다.
+- item 950개 기준 embedding 호출 1,900회에서 950회로 감소, classifier 생명주기당 client 1회 생성이라는 정량 검증 기준을 추가했다.
+- 검증: diff check, 단계·정량 기준 교차 확인, job progress/pipeline 회귀 테스트 6개 통과.
