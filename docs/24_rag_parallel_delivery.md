@@ -38,3 +38,21 @@
 - PostgreSQL 동시 duplicate insert race 통과
 - Ruff와 compileall 통과
 - backend 전체 테스트 82개 통과, PostgreSQL opt-in 테스트 1개 기본 skip
+
+## Phase 3. Job 내부 bounded parallelism
+
+- 브랜치: `feat/rag-intra-job-parallelism`
+- worker process 수명의 classifier pool과 RAG step 수명의 bounded `ThreadPoolExecutor`를 구현했다.
+- executor는 최대 동시성만큼만 future를 유지하고 완료될 때마다 다음 item 하나를 제출한다.
+- provider thread는 immutable DTO만 처리하고 결과 DB transaction은 coordinator가 순서대로 실행한다.
+- `sequential`과 `parallel` 모드가 같은 checkpoint/persistence 경로를 사용한다.
+- SIGTERM/SIGINT stop event 뒤 신규 item 제출을 중단하고 현재 active item을 drain한 뒤 step/job을 즉시 `pending`으로 release한다.
+- RAG 설정 surface를 Settings, `.env.example`과 Compose에 추가하고 실행 모드, item concurrency, heartbeat와 request timeout을 runtime에 연결했다. provider gate/retry와 grace 상한 적용은 Phase 4 범위다.
+- analysis run의 retriever config에 실제 execution mode와 item concurrency를 기록한다.
+
+검증 결과:
+
+- bounded executor/config/shutdown/pipeline 집중 테스트 21개 통과
+- concurrency 4에서 40개 fake I/O가 순차 대비 3배 이상 개선
+- Ruff, compileall과 dev/test/prod Compose config 통과
+- backend 전체 테스트 87개 통과, PostgreSQL opt-in 테스트 1개 기본 skip

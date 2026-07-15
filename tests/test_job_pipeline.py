@@ -9,6 +9,7 @@ from app.core.errors import DomainError
 from app.db.base import Base
 from app.db.models import JobStep, OperationLog, utcnow
 from app.jobs.fake_pipeline import build_fake_handlers
+from app.jobs.exceptions import WorkerShutdownRequested
 from app.jobs.orchestrator import StepResult
 from app.jobs.service import AnalysisJobService
 from app.jobs.worker import JobWorker
@@ -157,3 +158,27 @@ def test_stale_step_attempt_cannot_finish_or_finalize_job(tmp_path) -> None:
         assert steps["finalize_job"].status == "pending"
         discarded = session.scalar(select(OperationLog).where(OperationLog.event_type == "stale_step_result_discarded"))
         assert discarded is not None
+
+
+def test_worker_shutdown_releases_current_step_for_immediate_resume(tmp_path) -> None:
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'shutdown.db'}"))
+    Base.metadata.create_all(app.state.engine)
+    with app.state.session_factory() as session:
+        job_id = AnalysisJobService(session).create_job("abcdefghijk").id
+
+    def stop_worker(_session, _job) -> StepResult:
+        raise WorkerShutdownRequested
+
+    handlers = build_fake_handlers()
+    handlers["collect_metadata"] = stop_worker
+    assert JobWorker(app.state.session_factory, handlers=handlers).run_once()
+
+    with app.state.session_factory() as session:
+        service = AnalysisJobService(session)
+        assert service.get_job(job_id).status == "pending"
+        steps = {step.step_key: step for step in service.get_steps(job_id)}
+        assert steps["collect_metadata"].status == "pending"
+        assert steps["collect_metadata"].heartbeat_at is None
+        assert steps["finalize_job"].status == "pending"
+        released = session.scalar(select(OperationLog).where(OperationLog.event_type == "step_released_on_shutdown"))
+        assert released is not None

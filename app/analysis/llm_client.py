@@ -34,6 +34,7 @@ class AnthropicLlmClient:
         model: str = DEFAULT_ANTHROPIC_MODEL,
         max_tokens: int = 1200,
         temperature: float = 0.0,
+        timeout: float = 30.0,
         client=None,
     ) -> None:
         if client is None and not api_key:
@@ -42,7 +43,7 @@ class AnthropicLlmClient:
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
-        self.client = client or anthropic.Anthropic(api_key=api_key)
+        self.client = client or anthropic.Anthropic(api_key=api_key, timeout=timeout)
 
     def complete(self, prompt: str) -> LlmResponse:
         message = self.client.messages.create(

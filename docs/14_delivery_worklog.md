@@ -259,3 +259,10 @@
 - item별 멱등 결과 저장, progress atomic update/reconcile, 누락 item resume와 stale attempt fencing을 구현했다.
 - SQLite 집중 테스트와 실제 개발 PostgreSQL의 동시 duplicate insert race를 검증했다.
 - 검증: diff check, Ruff, compileall, 집중 테스트 11개, PostgreSQL integration 1개, backend 전체 테스트 82개 통과(기본 opt-in 1개 skip).
+
+# 2026-07-15 Job 내부 RAG bounded parallelism 구현
+
+- 브랜치: `feat/rag-intra-job-parallelism`
+- classifier pool, bounded executor, 동일 sequential rollback 경로와 signal 기반 step release를 구현했다.
+- RAG 실행 모드/item 동시성/heartbeat/timeout을 환경과 runtime에 연결하고 run provenance에 기록했다. provider gate/retry는 다음 구현 단계로 남겼다.
+- 검증: diff check, Ruff, compileall, 집중 테스트 21개, dev/test/prod Compose config, backend 전체 테스트 87개 통과(기본 opt-in 1개 skip).

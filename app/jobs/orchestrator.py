@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, JobStep, OperationLog, utcnow
 from app.db.repositories import AnalysisJobRepository
-from app.jobs.exceptions import StaleStepExecution
+from app.jobs.exceptions import StaleStepExecution, WorkerShutdownRequested
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,12 @@ class JobOrchestrator:
         step_key = step.step_key
         try:
             result = handler(self.session, job)
+        except WorkerShutdownRequested:
+            self.session.rollback()
+            self._release_step(job.id, step_id, expected_attempt)
+            self._log(job.id, step_id, "warning", "step_released_on_shutdown", step_key)
+            self.session.commit()
+            return None
         except StaleStepExecution:
             self.session.rollback()
             self._log(job.id, step_id, "warning", "stale_step_result_discarded", step_key)
@@ -112,6 +118,31 @@ class JobOrchestrator:
             .returning(JobStep.id)
         )
         return self.session.scalar(statement) is not None
+
+    def _release_step(self, job_id: UUID, step_id: UUID, expected_attempt: int) -> None:
+        statement = (
+            update(JobStep)
+            .where(
+                JobStep.id == step_id,
+                JobStep.status == "running",
+                JobStep.attempt_count == expected_attempt,
+            )
+            .values(
+                status="pending",
+                error_code=None,
+                error_message=None,
+                started_at=None,
+                finished_at=None,
+                heartbeat_at=None,
+            )
+            .returning(JobStep.id)
+        )
+        if self.session.scalar(statement) is not None:
+            self.session.execute(
+                update(AnalysisJob)
+                .where(AnalysisJob.id == job_id, AnalysisJob.status == "running")
+                .values(status="pending", finished_at=None)
+            )
 
     def _finish_step(self, step: JobStep, result: StepResult) -> None:
         step.status = result.status

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from sqlalchemy import select
 
 from app.analysis.rag_classifier import ClassificationError
+from app.analysis.executor import RagRuntime
 from app.analysis.models import StepAttemptContext
 from app.analysis.result_store import AnalysisResultStore
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
@@ -75,12 +76,13 @@ def test_comment_and_script_analyzers_record_every_item(tmp_path) -> None:
         script_context = _context(session, job.id, run.id, "analyze_script")
 
     store = AnalysisResultStore(factory)
-    assert CommentAnalyzer(FakeClassifier(), store).analyze(comment_context) == {
+    runtime = RagRuntime([FakeClassifier()])
+    assert CommentAnalyzer(runtime, store).analyze(comment_context) == {
         "comments_analyzed": 2,
         "succeeded": 1,
         "failed": 1,
     }
-    assert ScriptAnalyzer(FakeClassifier(), store).analyze(script_context) == {
+    assert ScriptAnalyzer(runtime, store).analyze(script_context) == {
         "script_segments_analyzed": 2,
         "succeeded": 1,
         "failed": 1,
@@ -120,7 +122,7 @@ def test_comment_analyzer_persists_long_hate_type(tmp_path) -> None:
         session.flush()
         context = _context(session, job.id, run.id, "analyze_comments")
 
-    CommentAnalyzer(FakeClassifier(), AnalysisResultStore(factory)).analyze(context)
+    CommentAnalyzer(RagRuntime([FakeClassifier()]), AnalysisResultStore(factory)).analyze(context)
 
     with factory() as session:
         result = session.scalar(select(CommentAnalysisResult))
@@ -157,7 +159,7 @@ def test_comment_analyzer_resumes_only_missing_items(tmp_path) -> None:
         context = _context(session, job.id, run.id, "analyze_comments")
 
     classifier = FakeClassifier()
-    analyzer = CommentAnalyzer(classifier, AnalysisResultStore(factory))
+    analyzer = CommentAnalyzer(RagRuntime([classifier]), AnalysisResultStore(factory))
     assert analyzer.analyze(context)["succeeded"] == 2
     assert analyzer.analyze(context)["succeeded"] == 2
     assert classifier.calls == ["one", "two"]

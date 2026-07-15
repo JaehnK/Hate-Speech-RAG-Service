@@ -146,11 +146,17 @@ def create_embedding_function(
     model: str = DEFAULT_UPSTAGE_EMBEDDING_MODEL,
     api_key: str | None = None,
     base_url: str = DEFAULT_UPSTAGE_EMBEDDING_BASE_URL,
+    timeout: float = 30.0,
 ):
     if provider == "hash":
         return HashEmbeddingFunction()
     if provider == "upstage":
-        return UpstageEmbeddingFunction(api_key=api_key, model=model, base_url=base_url)
+        return UpstageEmbeddingFunction(
+            api_key=api_key,
+            model=model,
+            base_url=base_url,
+            client=UpstageEmbeddingClient(api_key=api_key, base_url=base_url, timeout=timeout),
+        )
     raise ValueError(f"unsupported embedding provider: {provider}")
 
 
