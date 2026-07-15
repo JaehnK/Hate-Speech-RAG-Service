@@ -137,3 +137,11 @@
 - 원인: 전역 CSP가 FastAPI Swagger UI의 `cdn.jsdelivr.net` script를 차단해 빈 화면 발생
 - 보안 경계: 일반 API와 보고서 응답의 기존 strict CSP는 유지
 - 검증: docs HTML asset URL과 route별 CSP 회귀 테스트, 실제 컨테이너 `/docs` 확인
+# 2026-07-15 Stitch 프론트엔드 구현
+
+- 브랜치: `feat/stitch-frontend`
+- Stitch MCP에서 `YouTube Hate Speech Analyzer`의 분석 요청, 상태, 이력, 보고서 화면과 VoxGuard 디자인 시스템을 읽었다.
+- 별도 React/Vite 프론트와 개발/배포 Docker target을 추가했다.
+- 프론트의 분석 요청, job polling, 브라우저 이력, report, HTML/XLSX export를 FastAPI에 연결했다.
+- 개발 Vite proxy와 배포 Nginx reverse proxy를 구성해 별도 CORS 허용 없이 동일 출처로 통신한다.
+- 상세 작업 시퀀스와 검증 증적은 `docs/18_stitch_frontend_delivery.md`에 기록했다.

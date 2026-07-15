@@ -27,7 +27,13 @@ uv run python -m app.worker_main
 docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-호스트 포트가 사용 중이면 `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
+프론트는 `http://localhost:3000`, 백엔드 API 문서는 `http://localhost:8000/docs`에서 확인한다. 호스트 포트가 사용 중이면 `FRONTEND_PORT=13000`, `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
+
+프론트만 다시 빌드하고 시작하려면 다음을 실행한다.
+
+```bash
+docker compose -f compose.yaml -f compose.dev.yaml up -d --build frontend
+```
 
 테스트 환경:
 
@@ -78,3 +84,5 @@ docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 ```
 
 실제 API E2E 절차와 배포 전 체크리스트는 `docs/15_predeploy_runbook.md`, 최종 외부 검증 증적은 `docs/17_live_validation_evidence.md`를 따른다.
+
+Stitch 기반 프론트 구조, 화면/API 매핑, Docker 실행 및 검증 기록은 `docs/18_stitch_frontend_delivery.md`에 정리되어 있다.

@@ -1,4 +1,19 @@
 services:
+  frontend:
+    build:
+      target: development
+    command: ["npm", "run", "dev"]
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
   web:
     ports:
       - "${WEB_PORT:-8000}:8000"
