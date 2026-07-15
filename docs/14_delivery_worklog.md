@@ -273,3 +273,12 @@
 - Upstage/Anthropic별 semaphore, retry 분류, `Retry-After`/backoff와 stop-aware retry를 구현했다.
 - RAG 진행 상황, provider retry와 token usage를 throttled operation log로 저장했다.
 - 검증: diff check, Ruff, compileall, 집중 테스트 26개, dev/test/prod Compose config, backend 전체 테스트 94개 통과(기본 opt-in 1개 skip).
+
+# 2026-07-15 RAG 병렬 처리 배포 전 통합 검증
+
+- 브랜치: `chore/rag-parallel-predeploy-validation`
+- 개발 worker image를 재빌드하고 `parallel`, item/Upstage/Anthropic 동시성 2가 container에 적용됐는지 확인했다.
+- 실제 Upstage/Anthropic 병렬 smoke 2건이 모두 성공했으며 input 3,662/output 445 token과 provider retry 0회를 확인했다.
+- 실행 중인 worker와 공유 PostgreSQL 통합 테스트의 job claim 경합을 별도 `test/rag-postgres-worker-isolation` 브랜치에서 격리하고 병합했다.
+- 검증: diff check, Ruff, compileall, dev/test/prod Compose config, backend 전체 테스트 94개 통과(기본 opt-in 1개 skip), 실제 PostgreSQL duplicate insert race 1개 통과, worker container 정상 기동.
+- 외부 환경 배포와 트래픽 전환 직전 단계에서 종료했다.

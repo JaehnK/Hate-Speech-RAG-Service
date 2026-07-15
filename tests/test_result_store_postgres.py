@@ -7,7 +7,7 @@ from sqlalchemy import delete, select
 
 from app.analysis.models import AnalysisOutcome, StepAttemptContext
 from app.analysis.result_store import AnalysisResultStore
-from app.db.models import AnalysisJob, AnalysisRun, CommentAnalysisResult, CommentSnapshot, JobStep
+from app.db.models import AnalysisJob, AnalysisRun, CommentAnalysisResult, CommentSnapshot, JobStep, OperationLog
 from app.db.repositories import AnalysisJobRepository
 from app.db.session import build_engine, build_session_factory
 
@@ -22,6 +22,7 @@ def test_postgres_result_insert_is_idempotent() -> None:
     try:
         with factory.begin() as session:
             job = AnalysisJobRepository(session).create("abcdefghijk", "abcdefghijk")
+            job.status = "running"
             comment = CommentSnapshot(
                 job_id=job.id,
                 youtube_video_id="abcdefghijk",
@@ -73,4 +74,5 @@ def test_postgres_result_insert_is_idempotent() -> None:
     finally:
         if job_id is not None:
             with factory.begin() as session:
+                session.execute(delete(OperationLog).where(OperationLog.job_id == job_id))
                 session.execute(delete(AnalysisJob).where(AnalysisJob.id == job_id))
