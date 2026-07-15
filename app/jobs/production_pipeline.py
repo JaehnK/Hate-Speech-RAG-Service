@@ -10,6 +10,7 @@ from app.collectors.transcript import TranscriptCollector
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, AnalysisRun, ApiQuotaEvent, CommentSnapshot, TranscriptSegment, TranscriptSnapshot
 from app.jobs.orchestrator import StepResult
+from app.jobs.progress import JobProgressReporter
 
 
 def build_collection_analysis_handlers(
@@ -19,6 +20,7 @@ def build_collection_analysis_handlers(
     comment_analyzer: CommentAnalyzer,
     script_analyzer: ScriptAnalyzer,
     analysis_run_values: dict,
+    progress_reporter: JobProgressReporter | None = None,
 ) -> dict:
     def collect_metadata(session: Session, job: AnalysisJob) -> StepResult:
         metadata_collector.collect(session, job)
@@ -57,7 +59,7 @@ def build_collection_analysis_handlers(
         count = session.scalar(select(func.count()).select_from(CommentSnapshot).where(CommentSnapshot.job_id == job.id))
         if not count:
             return StepResult("skipped", error_code="COMMENTS_UNAVAILABLE")
-        return StepResult(metrics=comment_analyzer.analyze(session, _run(session, job)))
+        return StepResult(metrics=comment_analyzer.analyze(session, _run(session, job), progress_reporter))
 
     def analyze_script(session: Session, job: AnalysisJob) -> StepResult:
         if _step_status(session, job, "collect_transcript") != "succeeded":
@@ -70,7 +72,7 @@ def build_collection_analysis_handlers(
         )
         if not count:
             return StepResult("skipped", error_code="CAPTION_NOT_AVAILABLE")
-        return StepResult(metrics=script_analyzer.analyze(session, _run(session, job)))
+        return StepResult(metrics=script_analyzer.analyze(session, _run(session, job), progress_reporter))
 
     return {
         "collect_metadata": collect_metadata,

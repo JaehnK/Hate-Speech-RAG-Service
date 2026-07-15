@@ -212,6 +212,7 @@ MVP 기본 worker는 DB polling 방식이다.
 - 각 댓글에 대해 유사 혐오표현 예시와 관련 정의 문서를 검색한다.
 - 각 댓글별 분석 결과를 `comment_analysis_results`에 저장한다.
 - 실패한 댓글은 항목별 실패로 기록한다.
+- 전체/완료/성공/실패 item counter를 `job_steps`에 별도 transaction으로 갱신한다.
 
 성공 기준:
 
@@ -227,7 +228,7 @@ MVP 기본 worker는 DB polling 방식이다.
 정책:
 
 - 댓글 수가 많아도 MVP에서는 전체 댓글 분석을 목표로 한다.
-- batch size는 구현 설정값으로 둔다.
+- 현재 item 분류는 순차 실행한다. 진행 counter는 원자적 증가 방식으로 두어 향후 병렬 실행에서도 같은 API contract를 유지한다.
 
 ### analyze_script
 

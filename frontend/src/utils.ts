@@ -16,3 +16,11 @@ export function ratioPercent(count: number, total: number): number {
 export function reportIdFromPath(path: string | null): string | null {
   return path?.split("/").filter(Boolean).at(-1) ?? null;
 }
+
+export function itemProgressText(
+  stepKey: string,
+  progress: { total: number; completed: number; succeeded: number; failed: number },
+): string {
+  const unit = stepKey === "analyze_script" ? "세그먼트" : "댓글·답글";
+  return `${unit} ${formatNumber(progress.completed)} / ${formatNumber(progress.total)} 완료 · 성공 ${formatNumber(progress.succeeded)} · 실패 ${formatNumber(progress.failed)}`;
+}

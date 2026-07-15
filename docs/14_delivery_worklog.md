@@ -178,3 +178,14 @@
 - corpus/license/embedding 구성, run/item provenance, 실험 명령, 결정성 한계와 점검표를 추가했다.
 - runtime 상수와 문서의 핵심 식별자가 함께 변경되는지 확인하는 회귀 테스트를 추가했다.
 - 검증: diff check, Ruff, compileall, backend 72개 테스트, frontend 3개 테스트와 production build, dev/test/prod Compose config 통과.
+
+# 2026-07-15 RAG job 진행률 및 저장 실패 교정
+
+- 브랜치: `feat/rag-job-progress`
+- production worker와 같은 설정의 Anthropic 최소 호출에서 input 36/output 13 token 사용을 확인했다.
+- 대상 job의 댓글 404건 rollback 원인이 64자를 넘은 `hate_type`의 PostgreSQL 저장 실패임을 확인하고 컬럼을 `TEXT`로 변경했다.
+- 댓글·자막 item 진행률을 별도 atomic transaction으로 저장하고 job API, 단계 목록, live process log에 노출했다.
+- 기존 job은 확인 가능한 수집 총량과 legacy counter 안내를 표시하도록 했다.
+- 예상하지 못한 worker step 예외에 traceback 로깅을 추가했다.
+- 상세 진단과 동시 처리 확장 경계는 `docs/20_rag_job_progress_diagnosis.md`에 기록했다.
+- 검증: diff check, Ruff, compileall, backend 74개 테스트, frontend 4개 테스트와 production build, SQLite/PostgreSQL migration 왕복, dev/test/prod Compose config, 대상 jobs 화면 브라우저 렌더링 통과.
