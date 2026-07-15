@@ -169,3 +169,12 @@
 - `/rag-methodology`에 호출 파이프라인, dual-vector 검색, 프롬프트 구조, 실행 설정, 검증 규칙, 재현 체크리스트를 구현했다.
 - 데스크톱 사이드바와 상단 메뉴에 진입점을 추가하고, 모바일 전용 메뉴 및 단일 열 레이아웃을 추가했다.
 - 정적 렌더링 회귀 테스트, Vitest 전체 테스트, TypeScript/Vite production build, 1440px/500px 브라우저 렌더링을 검증했다.
+
+# 2026-07-15 RAG 재현성 문서
+
+- 브랜치: `docs/rag-reproducibility`
+- 현재 구현을 기준으로 API/worker 실행 경계, item별 동기 호출, dual-vector 검색과 degraded mode를 문서화했다.
+- system/user prompt, output contract, validation과 단일 retry를 재현 가능한 형태로 기록했다.
+- corpus/license/embedding 구성, run/item provenance, 실험 명령, 결정성 한계와 점검표를 추가했다.
+- runtime 상수와 문서의 핵심 식별자가 함께 변경되는지 확인하는 회귀 테스트를 추가했다.
+- 검증: diff check, Ruff, compileall, backend 72개 테스트, frontend 3개 테스트와 production build, dev/test/prod Compose config 통과.
