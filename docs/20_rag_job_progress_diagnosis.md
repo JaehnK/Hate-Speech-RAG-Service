@@ -43,3 +43,10 @@
 ## 현재 job에 대한 해석
 
 기존 job은 새 counter 도입 전에 실행됐기 때문에 댓글 404건 중 정확한 중간 완료 숫자를 사후 복원할 수 없다. PostgreSQL의 404건 bulk INSERT와 실행 시간을 보면 분류 호출 후 저장 단계에서 실패한 것은 확인되지만, 성공/실패 수를 추측해 DB에 기록하지 않는다. 자막 33건은 저장 결과와 step 상태로 완료를 확인할 수 있다.
+
+## 개발 환경 적용 결과
+
+- PostgreSQL을 migration `b6dd8f31c7e2` head까지 적용했다.
+- 새 `DatabaseJobProgressReporter`가 포함된 worker image를 다시 빌드하고 worker를 재기동했다.
+- 기존 job API와 jobs 화면은 `partial_success` 및 legacy counter 안내를 정상 표시한다.
+- 새 분석은 별도 요청하지 않았다. 같은 영상 재분석은 Anthropic/Upstage 비용을 다시 발생시키므로 사용자가 새 job을 생성할 때 교정된 저장 경로와 진행 counter가 적용된다.
