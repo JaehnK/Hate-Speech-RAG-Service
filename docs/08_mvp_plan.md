@@ -306,6 +306,7 @@ MVP 기본값:
 - RAG 이외 pipeline step은 기존처럼 순차 실행된다.
 - 댓글과 자막의 기존 API·보고서 결과 계약이 유지된다.
 - 상세 구현·배포 순서는 `docs/22_rag_parallel_processing_plan.md`를 따른다.
+- 파일별 변경, transaction/fencing과 테스트 구현은 `docs/23_rag_parallel_technical_design.md`를 따른다.
 
 ## Phase 8. 댓글 분석
 
