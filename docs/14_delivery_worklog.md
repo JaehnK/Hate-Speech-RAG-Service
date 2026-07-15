@@ -236,3 +236,12 @@
 - baseline, retrieval 중복 제거, item checkpoint, bounded parallelism, provider rollout 순서로 구현 단계를 재배치했다.
 - item 950개 기준 embedding 호출 1,900회에서 950회로 감소, classifier 생명주기당 client 1회 생성이라는 정량 검증 기준을 추가했다.
 - 검증: diff check, 단계·정량 기준 교차 확인, job progress/pipeline 회귀 테스트 6개 통과.
+
+# 2026-07-15 RAG 병렬 처리 기술 구현안
+
+- 브랜치: `docs/rag-parallel-technical-design`
+- 현재 Settings, worker/orchestrator, analyzer, progress, 결과 unique constraint, Chroma 1.5.9와 SQLAlchemy 2.0.51 계약을 기준으로 세부 설계를 작성했다.
+- dual retriever, classifier pool, bounded coordinator, result store와 attempt fencing의 인터페이스 및 transaction 순서를 정의했다.
+- provider gate/retry, SIGTERM drain, jobs 진행 로그, 기존 job 호환과 sequential rollback 방식을 확정했다.
+- 구현을 retrieval 재사용, item checkpoint, job 내부 병렬화, provider backpressure 네 브랜치로 나누고 단계별 merge gate를 기록했다.
+- 검증: diff check, 문서 교차 참조와 code fence 확인, 현재 job/RAG/embedding/vector store 회귀 테스트 17개 통과.

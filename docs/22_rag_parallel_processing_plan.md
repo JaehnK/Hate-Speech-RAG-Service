@@ -213,3 +213,5 @@ executor에는 최대 동시 실행 수만큼만 item을 제출하고, 하나가
 - provider rate limit을 넘기는 무제한 fan-out이 없다.
 - sequential rollback 경로가 검증된다.
 - backend 전체 테스트, fake E2E와 dev/test/prod Compose config가 통과한 뒤 merge한다.
+
+파일·클래스·transaction·thread 경계와 단계별 브랜치/테스트의 구체 구현은 `docs/23_rag_parallel_technical_design.md`를 따른다.
