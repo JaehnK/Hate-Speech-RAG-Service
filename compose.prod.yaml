@@ -1,4 +1,13 @@
 services:
+  frontend:
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    ports:
+      - "${FRONTEND_PORT:-3000}:8080"
+
   web:
     restart: unless-stopped
     read_only: true

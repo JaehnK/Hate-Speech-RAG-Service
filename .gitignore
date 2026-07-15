@@ -12,6 +12,13 @@ __pycache__/
 .pytest_cache/
 .coverage
 
+# Frontend local artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
 # Local vector stores
 .chroma/
 data/vectorstores/

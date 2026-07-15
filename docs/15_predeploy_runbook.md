@@ -35,6 +35,11 @@ uv run pip-audit --ignore-vuln PYSEC-2026-311
 uv run alembic upgrade head
 uv run alembic downgrade base
 uv run alembic upgrade head
+cd frontend
+npm ci
+npm run test
+npm run build
+npm audit
 ```
 
 운영 DB에서는 downgrade를 실행하지 않고 staging의 빈 DB에서만 왕복 검증한다.
@@ -50,6 +55,8 @@ uv run alembic upgrade head
 5. report page, JSON 상세 API, network, HTML/XLSX export를 확인한다.
 6. 댓글 비활성 영상과 자막 없는 영상으로 `partial_success` 경로를 각각 확인한다.
 7. 로그, 관리자 API, report/export 파일에서 secret 문자열이 검색되지 않는지 확인한다.
+8. 프론트의 분석 요청, job polling, report 화면, HTML/XLSX 다운로드를 동일 출처 `/api` 경로로 확인한다.
+9. `/history`, `/jobs/{id}`, `/reports/{id}`를 직접 열어 SPA fallback이 동작하는지 확인한다.
 
 실행 중인 production 후보 서비스에 대해 다음 runner로 세 시나리오와 HTML/XLSX export, 관리자 surface, secret scan을 한 번에 검증한다. 비용을 제한하려면 정상 영상은 댓글 수가 적은 공개 영상을 선택한다.
 
@@ -96,3 +103,4 @@ uv run python -m experiments.evaluate_results \
 - 관리자 token 교체 및 접근 제한
 - worker 단일 job claim 동시성 확인
 - 정상/부분 실패 E2E 증적 보관
+- 프론트 production 이미지의 read-only 기동, healthcheck, CSP와 API reverse proxy 확인

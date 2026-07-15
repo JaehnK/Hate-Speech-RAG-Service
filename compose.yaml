@@ -14,6 +14,14 @@ x-app-environment: &app-environment
   REPORT_STORAGE_DIR: /data/reports
 
 services:
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    depends_on:
+      web:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     environment:
