@@ -283,22 +283,23 @@ MVP 기본값:
 
 목표:
 
-- 댓글과 자막 RAG가 같은 멱등 item 계약 위에서 제한된 동시성으로 실행될 수 있게 한다.
+- job을 점유한 단일 worker 내부에서 댓글과 자막 RAG만 제한된 동시성으로 실행할 수 있게 한다.
 
 작업:
 
-- item ledger, unique key, claim lease와 heartbeat 구현
-- 결과 저장과 item terminal 전이를 item별 transaction으로 원자화
-- 완료 event 증가 방식의 진행률을 terminal item 집계 방식으로 전환
+- 기존 결과 unique constraint를 재시작 checkpoint로 사용
+- RAG 결과를 item별 짧은 transaction으로 저장
+- 완료 event 증가 방식의 진행률을 저장 결과 집계 방식으로 전환
 - 동시성 1의 호환 모드 후 bounded thread executor 연결
 - provider별 concurrency gate와 429 backoff 적용
 - sequential feature flag와 rollback 경로 유지
 
 검증:
 
-- 중복 claim과 worker 재시작에도 item 결과와 완료 수가 하나다.
+- worker 재시작과 중복 완료에도 item 결과와 완료 수가 하나다.
 - 설정한 in-flight 상한을 넘지 않는다.
 - fake I/O 100건, 동시성 4에서 순차 대비 wall time이 3배 이상 개선된다.
+- RAG 이외 pipeline step은 기존처럼 순차 실행된다.
 - 댓글과 자막의 기존 API·보고서 결과 계약이 유지된다.
 - 상세 구현·배포 순서는 `docs/22_rag_parallel_processing_plan.md`를 따른다.
 

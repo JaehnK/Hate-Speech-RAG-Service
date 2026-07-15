@@ -38,7 +38,7 @@
 
 ## 동시 처리 고려
 
-진행률은 analyzer가 계산한 절대값을 덮어쓰지 않고 DB에서 `+ 1`로 갱신하므로 현재 순차 실행에서 counter가 역행하지 않는다. 다만 병렬 재시도나 분산 queue의 중복 delivery에서는 과대 집계될 수 있다. 병렬화 전 item ledger와 idempotency key를 도입하고 terminal item 집계 방식으로 전환하는 계획은 `docs/22_rag_parallel_processing_plan.md`에 정의했다.
+진행률은 analyzer가 계산한 절대값을 덮어쓰지 않고 DB에서 `+ 1`로 갱신하므로 현재 순차 실행에서 counter가 역행하지 않는다. 다만 job 내부 병렬 실행의 중복 완료에서는 과대 집계될 수 있다. 병렬화 전 기존 결과 unique constraint를 checkpoint로 사용하고 저장 결과 집계 방식으로 전환하는 계획은 `docs/22_rag_parallel_processing_plan.md`에 정의했다.
 
 ## 현재 job에 대한 해석
 

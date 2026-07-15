@@ -216,5 +216,14 @@
 - 현재 순차 RAG loop, 단일 SQLAlchemy session, 원자 증가 progress counter와 stale step recovery의 병렬화 제약을 확인했다.
 - item ledger, lease token, idempotent result persistence와 terminal item 기반 progress projection을 병렬 실행의 선행 조건으로 정했다.
 - 동기 provider adapter에 맞춘 bounded thread executor, provider별 concurrency gate, 429 backoff와 sequential rollback 경로를 단계화했다.
-- 단일 worker 병렬화 뒤 여러 worker 분산 claim으로 확장하는 순서와 단계별 정량 성공 기준을 `docs/22_rag_parallel_processing_plan.md`에 기록했다.
+- 최초 계획에는 단일 worker 병렬화 뒤 여러 worker 분산 claim으로 확장하는 범위도 포함했다. 아래 범위 교정에서 사용자 요구에 맞게 제거했다.
 - 검증: diff check, 문서 교차 참조, job progress/pipeline 회귀 테스트 6개 통과.
+
+# 2026-07-15 RAG 병렬 처리 범위 교정
+
+- 브랜치: `docs/scope-rag-intra-job-parallelism`
+- 기존 job 비동기 처리 안에서 `analyze_comments`, `analyze_script`의 RAG item 호출만 병렬화하는 것으로 범위를 고정했다.
+- 여러 worker의 item 분산 claim, RAG 전용 queue/service와 별도 item lease table을 계획에서 제거했다.
+- 기존 결과 unique constraint를 재시작 checkpoint로 사용하고, thread는 외부 호출만 수행하며 coordinator가 item별 짧은 transaction으로 저장하도록 단순화했다.
+- RAG가 아닌 pipeline step은 계속 순차 실행하고, 모든 RAG future의 결과 저장이 끝난 뒤에만 다음 step으로 이동하도록 성공 기준을 보강했다.
+- 검증: diff check, 범위 문구 교차 확인, job progress/pipeline 회귀 테스트 6개 통과.
