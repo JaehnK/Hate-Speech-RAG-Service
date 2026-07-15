@@ -154,3 +154,9 @@
 - YouTube commentThreads API가 대상 영상에서 댓글을 반환함을 확인했다.
 - HTTP client INFO 로그가 query string의 API 키를 출력할 수 있어 `httpx`와 `httpcore` 로그 레벨을 WARNING으로 제한했다.
 - 실제 값이 로그에 한 번 노출된 YouTube API 키는 교체 후 새 분석을 실행해야 한다.
+
+# 2026-07-15 프론트 hero 줄바꿈 교정
+
+- 브랜치: `fix/hero-line-breaks`
+- 분석 요청 화면 제목을 `YouTube 영상`과 `혐오표현 분석` 두 줄로 고정했다.
+- 설명 문구도 쉼표 뒤에서 두 줄로 고정해 화면 폭에 따른 어색한 단어 단위 줄바꿈을 제거했다.

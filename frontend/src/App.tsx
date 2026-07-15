@@ -125,8 +125,8 @@ function AnalysisRequestPage() {
         <div className="hero-grid" />
         <div className="hero-content">
           <span className="eyebrow">Precision Analysis Engine</span>
-          <h1>YouTube 영상<br className="mobile-break" /> 혐오표현 분석</h1>
-          <p className="hero-copy">댓글과 공개 자막을 수집하고, RAG 기반 근거와 함께 혐오표현을 분류해 보고서를 생성합니다.</p>
+          <h1><span>YouTube 영상</span><span>혐오표현 분석</span></h1>
+          <p className="hero-copy"><span>댓글과 공개 자막을 수집하고,</span><span>RAG 기반 근거와 함께 혐오표현을 분류해 보고서를 생성합니다.</span></p>
           <form className="analysis-form" onSubmit={submit}>
             <div className="analysis-input">
               <LinkIcon size={20} />
