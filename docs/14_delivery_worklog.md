@@ -308,3 +308,10 @@
 - 프론트는 최대 200건씩 불러와 scroll 목록으로 표시하고 초과 데이터는 이어서 불러온다.
 - canonical category의 한국어 표시와 빈 목록·오류·loading 상태를 유지했다.
 - 검증: 실제 보고서 66/66건과 상위 좋아요 232→155→65→53→45 확인, frontend 10개·backend 95개 테스트, Ruff, compileall, dev/test/prod Compose config와 production frontend image build 통과.
+
+# 2026-07-16 보고서 레이아웃과 History 썸네일
+
+- 브랜치: `feat/report-layout-history-thumbnails`
+- 카테고리 분포와 전체 혐오 댓글 panel 높이를 고정해 같은 높이로 맞췄다.
+- 카테고리 label/count 글자 크기를 키우고 7개 이하는 그대로, 8개 이상은 category 영역에만 scroll을 적용했다.
+- History가 완료 job의 report를 조회해 실제 YouTube thumbnail과 영상 제목을 표시하도록 수정했다.
