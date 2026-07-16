@@ -9,6 +9,14 @@ describe("RAG methodology page", () => {
 
     expect(html).toContain("category-rag-v0.3.0");
     expect(html).toContain("definition-corpus-2026-07-16-v0.3");
+    expect(html).toContain("Embedding 비용·마이그레이션");
+    expect(html).toContain("2026-08-31 UTC");
+    expect(html).toContain("$0.10");
+    expect(html).toContain("$0.02");
+    expect(html).toContain("2026-07-20 UTC");
+    expect(html).toContain("Blue/green 재색인");
+    expect(html).toContain("legacy 전체 vector 적재는 보류");
+    expect(html).toContain("https://www.upstage.ai/pricing/api");
     expect(html).toContain("Write reasoning in Korean");
     expect(html).toContain("claude-haiku-4-5-20251001");
     expect(html).toContain("hate_speech_definitions");

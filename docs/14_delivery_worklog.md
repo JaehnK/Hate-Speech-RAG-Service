@@ -372,3 +372,11 @@
 - RAG 방법론 화면과 기준 문서에 13개 상세 판정 가이드를 공개했다.
 - corpus reset 중 발견한 공백-only example을 loader에서 제외하고 production collection 재생성 절차를 검증했다.
 - 상세 작업 순서와 검증 증적은 `docs/28_detailed_taxonomy_v03.md`에 기록했다.
+
+# 2026-07-16 Upstage Embed 2 전환 사전 문서화
+
+- 브랜치: `feat/detailed-taxonomy-v03`
+- legacy Embed의 2026-08-31 UTC 종료, USD 0.10/1M token과 Embed 2의 2026-07-20 UTC까지 무료·이후 USD 0.02/1M token 정책을 Upstage 공식 가격표로 확인했다.
+- 진행 중이던 legacy 전체 vector 적재를 중단하고, RAG 방법론 화면에 비용·종료 일정과 migration gate를 추가했다.
+- model ID/API 계약 확인, 고정 평가셋 비교, 별도 collection 전량 재색인, blue/green 전환과 rollback 보존을 후속 순서로 명시했다.
+- 서로 다른 embedding model의 vector를 같은 collection에 혼합하지 않는 것을 정합성 원칙으로 고정했다.
