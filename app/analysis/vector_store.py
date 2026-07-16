@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -89,7 +88,6 @@ def ingest_example_documents(
     collection_name: str = EXAMPLE_COLLECTION_NAME,
     reset: bool = False,
     embedding_function: Any | None = None,
-    embedding_concurrency: int = 1,
 ) -> int:
     collection = _get_collection(
         persist_directory,
@@ -105,8 +103,6 @@ def ingest_example_documents(
         ids=[document.doc_id for document in documents],
         documents=[document.text for document in documents],
         metadatas=[_example_metadata(document) for document in documents],
-        embedding_function=embedding_function,
-        embedding_concurrency=embedding_concurrency,
     )
     return collection.count()
 
@@ -222,35 +218,11 @@ def _upsert_batches(
     documents: list[str],
     metadatas: list[dict],
     batch_size: int = UPSERT_BATCH_SIZE,
-    embedding_function: Any | None = None,
-    embedding_concurrency: int = 1,
 ) -> None:
-    if embedding_concurrency <= 1:
-        for start in range(0, len(ids), batch_size):
-            end = start + batch_size
-            collection.upsert(
-                ids=ids[start:end],
-                documents=documents[start:end],
-                metadatas=metadatas[start:end],
-            )
-        return
-
-    if embedding_function is None:
-        raise ValueError("embedding_function is required for concurrent embedding")
-
-    window_size = batch_size * embedding_concurrency
-    with ThreadPoolExecutor(max_workers=embedding_concurrency) as executor:
-        for window_start in range(0, len(ids), window_size):
-            batches = []
-            for start in range(window_start, min(window_start + window_size, len(ids)), batch_size):
-                end = start + batch_size
-                future = executor.submit(embedding_function, input=documents[start:end])
-                batches.append((start, end, future))
-
-            for start, end, future in batches:
-                collection.upsert(
-                    ids=ids[start:end],
-                    documents=documents[start:end],
-                    metadatas=metadatas[start:end],
-                    embeddings=future.result(),
-                )
+    for start in range(0, len(ids), batch_size):
+        end = start + batch_size
+        collection.upsert(
+            ids=ids[start:end],
+            documents=documents[start:end],
+            metadatas=metadatas[start:end],
+        )

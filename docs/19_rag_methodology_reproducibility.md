@@ -123,7 +123,6 @@ Return corrected valid JSON only.
 - 검색 query: `solar-embedding-1-large-query`
 - Chroma distance space: cosine
 - upsert batch size: 100
-- corpus bootstrap embedding concurrency: 2; embedding batch 두 개만 병렬 생성하고 Chroma upsert는 원래 batch 순서대로 수행
 
 `HashEmbeddingFunction`은 256차원 결정적 local smoke/test 용도다. production 품질 재현에 사용하는 embedding과 같지 않다.
 
@@ -332,8 +331,6 @@ docker compose --profile tools run --rm corpus
 ```
 
 `--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. `--reset`은 해당 collection을 삭제 후 다시 만든다.
-
-전체 bootstrap은 Upstage의 일시적 429/5xx에 최대 3회 backoff retry를 적용한다. example embedding은 동시성 2의 bounded window로 생성하지만 collection write는 순차 수행해 17만 건 전체 적재 시 메모리와 write 경합을 제한한다.
 
 ### 10.2 서비스 job 재실행
 

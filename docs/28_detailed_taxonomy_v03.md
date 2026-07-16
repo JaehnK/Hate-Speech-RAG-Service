@@ -17,8 +17,7 @@
 6. `/rag-methodology`에 13개 category의 포함 기준과 제외·경계를 공개하고 사회과학·재현 섹션 번호를 재정렬했다.
 7. `docs/11`, `docs/12`, `docs/13`, `docs/19`의 corpus와 판정 계약을 코드 기준으로 동기화했다.
 8. corpus reset 과정에서 발견한 K-HATERS 공백-only row 1건을 loader에서 제외하고 regression test를 추가했다.
-9. 17만 건 순차 embedding의 장시간 병목을 해소하기 위해 bootstrap에 bounded concurrency 2와 429/5xx retry를 추가했다. embedding batch 두 개만 병렬 생성하고 Chroma write는 batch 순서를 유지한다.
-10. production Upstage embedding으로 definition/example collection을 reset·재생성한 뒤 count와 taxonomy 검색을 확인한다.
+9. production Upstage embedding으로 definition/example collection을 reset·재생성한 뒤 count와 taxonomy 검색을 확인한다.
 
 ## 판정 구조
 
@@ -43,8 +42,6 @@ docker compose --profile tools build corpus
 docker compose --profile tools run --rm corpus
 ```
 
-bootstrap 기본값은 batch size 100, embedding concurrency 2다. `--limit-per-dataset`은 연결 smoke에서만 사용하고 배포 전 검증은 전체 유효 example 172,157개를 적재한다.
-
 이전 analysis run은 당시 저장된 prompt/corpus 설정을 보존한다. 새 run부터 `definition-corpus-2026-07-16-v0.3`과 `retriever_config.taxonomy_version=v0.3.0`을 기록한다.
 
 ## 검증 기준
@@ -56,7 +53,6 @@ bootstrap 기본값은 batch size 100, embedding concurrency 2다. `--limit-per-
 - 방법론 화면에 새 corpus version, 공통 threshold와 13개 상세 card가 표시된다.
 - Ruff, backend 전체 test, frontend 전체 test와 production build가 통과한다.
 - production Chroma에서 내부 taxonomy 23개와 example 172,157개를 확인한다.
-- concurrent embedding은 동시에 최대 2개 batch만 실행하고 upsert 결과의 ID/embedding 대응과 batch 순서를 보존한다.
 
 ## 검증 결과
 
@@ -65,6 +61,5 @@ bootstrap 기본값은 batch size 100, embedding concurrency 2다. `--limit-per-
 - backend 전체 test: `99 passed, 1 skipped` (공백 row 수정 전 실행; 최종 전체 회귀에서 재확인)
 - frontend test: `11 passed`
 - frontend production build: 통과
-- bootstrap hash smoke: 내부 정의 23개 + 외부 정의 8개 + example 적재, concurrency 2 통과
-- bootstrap/vector store 집중 test: `11 passed`
 - Chroma 재생성·검색 smoke: 진행 중
+

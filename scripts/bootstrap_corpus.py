@@ -7,7 +7,6 @@ from app.analysis.definition_ingest import ingest_manifest_definitions
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.example_ingest import ingest_manifest_examples
 from app.analysis.rag_ingest import ingest_internal_taxonomy
-from app.analysis.retry import RetryPolicy
 from app.core.config import load_settings
 
 
@@ -17,7 +16,6 @@ def main() -> None:
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--persist-directory", default=None)
     parser.add_argument("--limit-per-dataset", type=int, default=None)
-    parser.add_argument("--embedding-concurrency", type=int, default=2)
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
 
@@ -28,7 +26,6 @@ def main() -> None:
         model=settings.embedding_model,
         api_key=settings.embedding_api_key,
         base_url=settings.upstage_embedding_base_url,
-        retry_policy=RetryPolicy(),
     )
     internal_count = ingest_internal_taxonomy(
         persist_directory,
@@ -48,7 +45,6 @@ def main() -> None:
         limit_per_dataset=args.limit_per_dataset,
         reset=args.reset,
         embedding_function=embedding,
-        embedding_concurrency=args.embedding_concurrency,
     )
     print(
         json.dumps(
@@ -61,7 +57,6 @@ def main() -> None:
                 "examples_loaded": examples_loaded,
                 "example_collection_count": example_count,
                 "limited": args.limit_per_dataset is not None,
-                "embedding_concurrency": args.embedding_concurrency,
             },
             ensure_ascii=False,
         )

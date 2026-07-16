@@ -371,5 +371,4 @@
 - `no_target` 충돌을 validator에서 강제하고 새 run이 taxonomy version을 저장하도록 했다.
 - RAG 방법론 화면과 기준 문서에 13개 상세 판정 가이드를 공개했다.
 - corpus reset 중 발견한 공백-only example을 loader에서 제외하고 production collection 재생성 절차를 검증했다.
-- 전체 corpus 재생성 시간을 줄이되 정합성을 유지하도록 embedding 동시성 2, 순차 Chroma write와 provider retry를 bootstrap에 적용했다.
 - 상세 작업 순서와 검증 증적은 `docs/28_detailed_taxonomy_v03.md`에 기록했다.
