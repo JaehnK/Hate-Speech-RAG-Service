@@ -315,3 +315,10 @@
 - 카테고리 분포와 전체 혐오 댓글 panel 높이를 고정해 같은 높이로 맞췄다.
 - 카테고리 label/count 글자 크기를 키우고 7개 이하는 그대로, 8개 이상은 category 영역에만 scroll을 적용했다.
 - History가 완료 job의 report를 조회해 실제 YouTube thumbnail과 영상 제목을 표시하도록 수정했다.
+
+# 2026-07-16 네트워크 전체 지표와 edge 상세
+
+- 브랜치: `feat/network-metrics-edge-details`
+- 네트워크 영역의 좌측 1/3에 전체/연결/고립 작성자, 답글·혐오 관계, 평균 차수와 방향 밀도를 표시했다.
+- 같은 source/target의 답글 edge를 집계해 빈도에 따라 굵기를 조절하고 혐오 포함 edge를 구분했다.
+- edge 선택 시 작성자 방향, 답글 빈도, 혐오 답글 수·비율과 실제 선 굵기를 표시하도록 했다.
