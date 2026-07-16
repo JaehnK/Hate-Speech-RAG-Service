@@ -10,6 +10,9 @@
 - distance: cosine
 - 대상 collection: `hate_speech_definitions`, `hate_speech_examples`
 - 실행 container: `hatespeechraw-embed2-reindex`
+- 시작 시각: 2026-07-16 21:44 KST
+- 설정 commit: `1bd9c2f`
+- 현재 상태: detached background 실행 중, worker 정지 유지
 
 실제 API key로 query/passage alias와 endpoint가 각각 HTTP 200, 4096차원 vector를 반환하는 것을 확인한 뒤 설정을 변경했다.
 
@@ -31,4 +34,3 @@ docker logs --tail=100 hatespeechraw-embed2-reindex
 ```
 
 `Exited (0)`과 bootstrap JSON summary가 확인되기 전에는 완료로 판단하지 않는다. 실패 시 container log를 기준으로 원인을 수정하고 collection을 다시 reset한다.
-
