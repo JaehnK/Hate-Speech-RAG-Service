@@ -15,5 +15,11 @@ describe("RAG methodology page", () => {
     expect(html).toContain("example score ≥ 0.40");
     expect(html).toContain("Chain-of-thought");
     expect(html).toContain("definition_docs_used");
+    expect(html).toContain("사회과학적 해석 단위");
+    expect(html).toContain("구성타당도");
+    expect(html).toContain("선택 편향");
+    expect(html).toContain("인과관계");
+    expect(html).toContain("개인 제재");
+    expect(html).toContain("주장하면 안 되는 것");
   });
 });

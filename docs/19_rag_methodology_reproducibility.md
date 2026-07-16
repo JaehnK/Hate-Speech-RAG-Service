@@ -2,7 +2,7 @@
 
 ## 1. 문서 목적과 기준 시점
 
-이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 dual-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-15 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
+이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 dual-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-16 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
 
 - 프론트 요약 화면: `/rag-methodology`
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
@@ -12,7 +12,7 @@
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
 
-## 2. 실행 경계: 비동기 job, 동기 item 분류
+## 2. 실행 경계: 비동기 job, 설정 기반 병렬 item 분류
 
 클라이언트가 `POST /api/analysis-jobs`를 호출하면 API는 job을 저장하고 HTTP 202를 즉시 반환한다. 별도 worker가 pending job을 가져가 다음 단계를 순서대로 실행한다.
 
@@ -27,12 +27,13 @@
 9. `build_report_snapshot`
 10. `finalize_job`
 
-따라서 HTTP 요청 관점에서는 비동기 background job이다. 반면 worker 한 프로세스 안에서는 다음 작업이 현재 동기적이다.
+따라서 HTTP 요청 관점에서는 비동기 background job이다. worker 내부의 댓글 단계와 자막 단계는 서로 순차적이지만, 각 단계의 item은 `RAG_EXECUTION_MODE` 설정에 따라 실행한다.
 
-- 댓글과 답글은 DB 조회 순서대로 한 건씩 분류한다.
-- 자막 세그먼트는 `segment_index` 순서대로 한 건씩 분류한다.
-- 한 item의 definition 검색, example 검색, Anthropic 호출은 blocking 호출로 순차 실행한다.
-- item 간 batch 또는 병렬 LLM 호출은 사용하지 않는다.
+- 현재 개발 실행값은 `parallel`, item 동시성은 2다. 실제 run 값은 report의 `analysis_config.retriever_config`에서 확인한다.
+- bounded thread pool이 댓글·답글 item을 병렬 분류하고, 댓글 단계 완료 후 자막 item을 병렬 분류한다.
+- 한 item 내부의 embedding, definition/example collection query, Anthropic 호출은 blocking 순차 실행이다.
+- embedding과 LLM provider에는 각각 별도 동시성 gate와 retry/backoff를 적용한다.
+- `sequential` 모드는 동일한 저장·검증 경로를 사용하는 rollback 설정으로 유지한다.
 
 댓글 수집 또는 자막 수집은 선택 단계다. 한쪽이 실패하거나 자료가 없으면 그 분석 단계만 skip될 수 있고, 필수 단계가 성공하면 job/report는 `partial_success`가 될 수 있다.
 
@@ -264,9 +265,42 @@ Validator는 아래를 error로 처리한다.
 
 현재 item DB row에는 token usage, retry attempt 수, 실제 retrieval 전체 목록과 distance, embedding API revision을 저장하지 않는다. `similar_cases_used`와 `definition_docs_used`는 LLM이 출력한 evidence field이며, retriever 결과와의 일치 여부를 validator가 강제하지 않는다. 엄밀한 감사를 위해서는 Langfuse I/O capture를 별도 운영 정책에 따라 활성화하거나 실험 JSONL을 보존해야 한다.
 
-## 8. 재현 절차
+## 8. 사회과학적 해석 단위와 함의
 
-### 8.1 환경과 corpus 고정
+### 8.1 분석 단위와 조작화
+
+기본 분석 단위는 작성자가 아니라 수집 시점의 댓글·답글·자막이라는 **발화**다. 작성자별 수치와 네트워크 node는 발화 결과를 관계 단위로 집계한 값이며 개인의 성향, 정체성, 위험도를 진단하는 값이 아니다.
+
+혐오표현이라는 이론적 개념은 13개 category와 정치적 대상의 `state/non_state × authority/regime/community` 축으로 조작화한다. 이 taxonomy는 비교 가능한 측정을 위한 분석 도구이며, 사회집단의 고정된 속성이나 법적 정의 그 자체가 아니다. `other`, `no_target`, `unclassified`를 분리한 것도 불확실한 대상을 강제로 보호속성 category에 넣지 않기 위한 측정 규칙이다.
+
+Dual-vector RAG의 정의 문서는 구성개념의 일관성을 높이고 유사 사례는 경계 사례의 비교 가능성을 높인다. 하지만 검색 유사도, 모델의 한국어 `reasoning`, 검색된 사례는 판정 경로를 감사하기 위한 근거이지 사실의 증명이나 사람 판단의 대체물이 아니다.
+
+### 8.2 집계와 네트워크를 읽는 범위
+
+| 산출값 | 해석할 수 있는 것 | 주장하면 안 되는 것 |
+| --- | --- | --- |
+| 혐오 댓글 비율 | 수집·분석에 성공한 발화 중 모델 판정 비율 | YouTube 전체 또는 사회 전체의 혐오 수준 |
+| category 분포 | 모델이 판정한 혐오 발화 내부의 상대적 구성 | 특정 집단이 객관적으로 더 공격받는다는 모집단 일반화 |
+| 답글 빈도와 edge | 수집된 답글 관계의 반복과 혐오 발화 포함 정도 | 노출, 동조, 설득 또는 혐오 확산의 인과효과 |
+| 연결도와 중심성 | 수집된 subgraph 안에서의 구조적 위치 | 실제 영향력, 극단성, 조직성 또는 작성자 의도 |
+| RAG 사유와 근거 | 모델 판정의 설명·참조 경로 | 법적 판단, 객관적 진실 또는 사람 검토의 대체 |
+
+따라서 보고서는 기술통계와 탐색적 관계 분석을 제공한다. 정책 변화, 영상 내용 또는 특정 행위자가 혐오발언을 **야기했다**는 인과 주장은 현재 관찰자료와 파이프라인만으로 식별할 수 없다.
+
+## 9. 타당도, 편향과 연구 윤리
+
+- **구성타당도:** taxonomy가 풍자, 은어, 인용, 교차정체성 등 개념의 모든 양상을 포괄하지 못할 수 있다. category별 사람 검토 표본으로 과소·과대 포착을 확인해야 한다.
+- **선택 편향:** 공개 상태로 수집 가능한 댓글만 관찰하며 삭제, 비공개, API 누락, 수집 시점 이후의 댓글은 제외된다. 표본 비율을 영상 시청자나 플랫폼 이용자 모집단으로 일반화하지 않는다.
+- **차별적 측정 오차:** 방언, 신조어, 반어와 집단 내부 재전유 표현에서 오분류율이 다를 수 있다. 전체 정확도만 아니라 category·언어집단별 오류를 점검해야 한다.
+- **시간 타당도:** model, prompt, corpus, YouTube 정책이 달라지면 시점 간 차이에 측정도구 변화가 섞인다. 종단 비교에서는 버전을 고정하거나 교차 재분석한다.
+- **인과관계 경계:** reply edge와 중심성은 관계의 존재를 기술할 뿐 영향, 확산, 공모를 추정하지 않는다. 인과 추론에는 별도의 연구 설계와 교란 통제가 필요하다.
+- **연구 윤리:** 작성자 식별자는 최소 수집·가명화하고 원문 접근 범위를 제한한다. 모델 출력은 개인 제재, 수사, 채용 등 자동 의사결정의 단독 근거로 사용하지 않는다.
+
+실제 연구나 정책 보고에는 목적에 맞는 sampling frame, 사람 코더 간 일치도, category별 precision/recall과 불확실성, 누락·실패율을 함께 제시한다.
+
+## 10. 재현 절차
+
+### 10.1 환경과 corpus 고정
 
 `.env`에 production provider와 key를 설정한 뒤 lockfile 기준 의존성을 설치한다.
 
@@ -289,7 +323,7 @@ docker compose --profile tools run --rm corpus
 
 `--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. `--reset`은 해당 collection을 삭제 후 다시 만든다.
 
-### 8.2 서비스 job 재실행
+### 10.2 서비스 job 재실행
 
 ```bash
 curl -X POST http://localhost:8000/api/analysis-jobs \
@@ -299,7 +333,7 @@ curl -X POST http://localhost:8000/api/analysis-jobs \
 
 반환된 `status_url`을 polling한다. 완료 후 report API의 `analysis_config`와 item API의 `rag_context_status`, evidence field를 함께 보존한다. 결과 비교 시에는 YouTube 원천 snapshot, model 이름, prompt/corpus version, collection을 모두 동일하게 맞춘다.
 
-### 8.3 네 variant 품질 실험
+### 10.3 네 variant 품질 실험
 
 동일 입력으로 LLM only, definition only, example only, dual RAG를 비교한다.
 
@@ -316,7 +350,7 @@ uv run python -m experiments.evaluate_results \
 
 평가기는 coverage, binary accuracy, category micro precision/recall/F1, 반복 안정성을 출력한다. 실제 배포 판단에는 합성 smoke만 사용하지 말고 독립적인 실제 gold set과 사람 검토를 포함한다.
 
-## 9. 재현 체크리스트와 알려진 한계
+## 11. 재현 체크리스트와 알려진 한계
 
 실행 전:
 
@@ -340,12 +374,12 @@ uv run python -m experiments.evaluate_results \
 - Upstage embedding 서비스의 내부 revision도 저장하지 않는다.
 - Chroma collection 자체의 content hash/snapshot ID는 analysis run에 저장하지 않는다.
 - retrieval 동점 순서와 외부 API 결과 변경은 context를 바꿀 수 있다.
-- worker의 item 분류는 순차 실행이므로 corpus가 크면 처리 시간이 선형으로 증가한다.
+- item 병렬성은 동시성 상한 안에서만 증가하며 provider rate limit과 item별 길이에 따라 처리 시간이 달라진다.
 - prompt validator는 evidence가 실제 검색 결과에 속하는지 검증하지 않는다.
 
 이 한계 때문에 현재 목표는 “동일 설정에서 결과를 설명하고 비교 가능한 실행”이며, 암호학적으로 동일한 결과의 완전 결정적 재생은 아니다.
 
-## 10. 코드 기준표
+## 12. 코드 기준표
 
 | 관심사 | 기준 파일 |
 | --- | --- |
