@@ -10,6 +10,7 @@ from app.analysis.embeddings import DEFAULT_UPSTAGE_EMBEDDING_MODEL
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.example_loaders import load_example_documents
 from app.analysis.license_policy import DEFAULT_EXAMPLE_LICENSE_TIERS
+from app.analysis.retry import RetryPolicy
 from app.analysis.vector_store import EXAMPLE_COLLECTION_NAME, ingest_example_documents
 
 
@@ -23,6 +24,7 @@ def ingest_manifest_examples(
     limit_per_dataset: int | None = None,
     reset: bool = False,
     embedding_function=None,
+    embedding_concurrency: int = 1,
 ) -> tuple[int, int]:
     documents = load_example_documents(
         manifest_path=manifest_path,
@@ -37,6 +39,7 @@ def ingest_manifest_examples(
         collection_name=collection_name,
         reset=reset,
         embedding_function=embedding_function,
+        embedding_concurrency=embedding_concurrency,
     )
     return len(documents), count
 
@@ -65,6 +68,7 @@ def main() -> None:
         default=os.getenv("UPSTAGE_EMBEDDING_BASE_URL", DEFAULT_UPSTAGE_EMBEDDING_BASE_URL),
     )
     parser.add_argument("--limit-per-dataset", type=int, default=None)
+    parser.add_argument("--embedding-concurrency", type=int, default=1)
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
 
@@ -74,6 +78,7 @@ def main() -> None:
         model=args.embedding_model,
         api_key=os.getenv("EMBEDDING_API_KEY") or os.getenv("UPSTAGE_API_KEY"),
         base_url=args.embedding_base_url,
+        retry_policy=RetryPolicy(),
     )
     loaded_count, collection_count = ingest_manifest_examples(
         manifest_path=Path(args.manifest_path),
@@ -85,6 +90,7 @@ def main() -> None:
         limit_per_dataset=args.limit_per_dataset,
         reset=args.reset,
         embedding_function=embedding_function,
+        embedding_concurrency=args.embedding_concurrency,
     )
     print(
         json.dumps(
