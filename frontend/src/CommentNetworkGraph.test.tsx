@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { buildNetworkElements, CommentNetworkGraph } from "./CommentNetworkGraph";
+import { buildNetworkElements, buildNetworkMetrics, CommentNetworkGraph } from "./CommentNetworkGraph";
 import type { CommentNetwork } from "./types";
 
 const network: CommentNetwork = {
@@ -36,6 +36,17 @@ describe("comment network graph", () => {
   it("can include isolated authors", () => {
     const nodes = buildNetworkElements(network, true).filter((element) => element.group === "nodes");
     expect(nodes).toHaveLength(3);
+  });
+
+  it("aggregates repeated reply edges and exposes network metrics", () => {
+    const repeated = { ...network, edges: [...network.edges, { ...network.edges[0], is_hate_speech: false }] };
+    const edges = buildNetworkElements(repeated, false).filter((element) => element.group === "edges");
+    const metrics = buildNetworkMetrics(repeated);
+
+    expect(edges).toHaveLength(1);
+    expect(edges[0].data.edgeDetails).toMatchObject({ frequency: 2, hateCount: 1, hateRatio: 0.5 });
+    expect(metrics).toMatchObject({ nodeCount: 3, edgeCount: 2, connectedNodes: 2, isolatedNodes: 1, hateNodes: 1, hateEdges: 1 });
+    expect(metrics.density).toBeCloseTo(1 / 6 * 100);
   });
 
   it("renders an explicit empty state without a browser canvas", () => {
