@@ -347,3 +347,11 @@
 - 실제 Upstage+Anthropic 호출에서 prompt v0.3.0, 한국어 사유, validator 통과를 확인했다.
 - 실제 XLSX의 두 `분석 사유` header와 브라우저 History의 실제 thumbnail/title을 확인했다.
 - 상세 요구사항 대응과 검증 증적은 `docs/26_report_analysis_predeploy_validation.md`에 기록했다.
+
+# 2026-07-16 Figma 기반 RAG 호출 흐름도
+
+- 브랜치: `feat/figma-rag-pipeline-flowchart`
+- Figma MCP로 비동기 Job, item 병렬 RAG, 집계·보고서의 세 phase FigJam flowchart를 설계했다.
+- 기존 8개 card 나열을 실제 fan-out/fan-in, similarity 분기, JSON validation과 교정 retry, 부분 성공 합류가 보이는 SVG로 교체했다.
+- 데스크톱은 전체 흐름을 한 번에 표시하고 모바일은 글자 크기를 유지한 채 diagram 영역만 좌우 이동하도록 했다.
+- FigJam 원본과 코드 대응, 도형·edge 의미는 `docs/27_figma_rag_pipeline_flowchart.md`에 기록했다.

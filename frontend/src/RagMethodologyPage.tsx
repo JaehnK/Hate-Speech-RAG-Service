@@ -1,20 +1,14 @@
 import {
-  ArrowRight,
-  Binary,
   BookOpenCheck,
   Boxes,
-  BrainCircuit,
   CheckCircle2,
   Code2,
   Database,
   FileJson2,
-  Filter,
   GitBranch,
-  Layers3,
   LockKeyhole,
   Network,
   RefreshCcw,
-  Save,
   Scale,
   ServerCog,
   Settings2,
@@ -24,16 +18,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-const PIPELINE = [
-  ["01", "입력 구성", "input_text + source_type", Code2],
-  ["02", "검색 질의", "text\\nsource_type=...", Binary],
-  ["03", "이중 검색", "definitions + examples", GitBranch],
-  ["04", "유사도 필터", "example score ≥ 0.40", Filter],
-  ["05", "프롬프트 조립", "rules + 3 contexts", Layers3],
-  ["06", "Claude 분류", "valid JSON only", BrainCircuit],
-  ["07", "검증·교정", "최대 2회 시도", RefreshCcw],
-  ["08", "결과 저장", "판정 + 근거 참조", Save],
-] as const;
+import { RagPipelineFlow } from "./RagPipelineFlow";
 
 const RUNTIME = [
   ["LLM", "claude-haiku-4-5-20251001"],
@@ -101,16 +86,8 @@ export function RagMethodologyPage() {
       </header>
 
       <MethodSection number="01" title="호출 파이프라인" icon={<GitBranch size={18} />}>
-        <p className="section-intro">API는 분석 job을 202로 접수하고, background worker가 각 입력을 아래 순서대로 처리합니다.</p>
-        <div className="rag-pipeline">
-          {PIPELINE.map(([number, title, detail, Icon], index) => (
-            <div className="rag-pipeline-step" key={number}>
-              <div className="rag-step-head"><span>{number}</span><Icon size={17} /></div>
-              <strong>{title}</strong><code>{detail}</code>
-              {index < PIPELINE.length - 1 && <ArrowRight className="rag-step-arrow" size={16} />}
-            </div>
-          ))}
-        </div>
+        <p className="section-intro">API 접수와 item 병렬 처리, 이중 검색의 분기, 검증 실패 시 교정 재시도, 부분 성공의 합류를 실제 실행 순서로 표시합니다.</p>
+        <RagPipelineFlow />
       </MethodSection>
 
       <MethodSection number="02" title="Evidence stores" icon={<Database size={18} />}>

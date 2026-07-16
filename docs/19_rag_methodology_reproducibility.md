@@ -6,6 +6,7 @@
 
 - 프론트 요약 화면: `/rag-methodology`
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
+- 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - prompt version: `category-rag-v0.3.0`
 - taxonomy version: `v0.2.0`
 - definition corpus version: `definition-corpus-2026-07-09-v0.2`
@@ -38,6 +39,8 @@
 댓글 수집 또는 자막 수집은 선택 단계다. 한쪽이 실패하거나 자료가 없으면 그 분석 단계만 skip될 수 있고, 필수 단계가 성공하면 job/report는 `partial_success`가 될 수 있다.
 
 ## 3. 한 item의 호출 파이프라인
+
+프론트 방법론 화면은 API 접수부터 report 생성까지의 전체 흐름을 세 phase flowchart로 표시한다. 아래 절은 그중 `Item별 Dual-Vector RAG` phase의 입력과 호출 계약을 재현 가능한 수준으로 풀어 쓴 것이다. Figma 설계와 웹 구현의 대응은 `docs/27_figma_rag_pipeline_flowchart.md`에 기록한다.
 
 ### 3.1 입력 정규화
 
