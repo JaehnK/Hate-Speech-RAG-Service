@@ -338,3 +338,12 @@
 - 혐오 비율·category 분포·network 지표·RAG 근거별로 허용되는 해석과 금지되는 주장을 대응시켰다.
 - 구성타당도, 선택 편향, 차별적 측정 오차, 시간 비교, 인과관계와 연구 윤리의 한계를 문서와 화면에 동일하게 반영했다.
 - 현재 RAG item 병렬 실행 계약과 재현 문서에 남아 있던 과거 순차 실행 설명을 실제 구현에 맞게 수정했다.
+
+# 2026-07-16 보고서·RAG 개선 배포 전 통합 검증
+
+- 브랜치: `chore/report-analysis-predeploy-validation`
+- Ruff, compileall, backend 전체 `96 passed, 1 skipped`, frontend `11 passed`와 production build를 통과했다.
+- dev/test/prod Compose 정합성을 확인하고 개발 frontend/web/worker를 새 이미지로 재생성했다.
+- 실제 Upstage+Anthropic 호출에서 prompt v0.3.0, 한국어 사유, validator 통과를 확인했다.
+- 실제 XLSX의 두 `분석 사유` header와 브라우저 History의 실제 thumbnail/title을 확인했다.
+- 상세 요구사항 대응과 검증 증적은 `docs/26_report_analysis_predeploy_validation.md`에 기록했다.
