@@ -307,3 +307,4 @@
 - comments API에 `sort=like_count`와 응답 `total`을 추가해 좋아요 내림차순과 안정적인 offset pagination을 제공했다.
 - 프론트는 최대 200건씩 불러와 scroll 목록으로 표시하고 초과 데이터는 이어서 불러온다.
 - canonical category의 한국어 표시와 빈 목록·오류·loading 상태를 유지했다.
+- 검증: 실제 보고서 66/66건과 상위 좋아요 232→155→65→53→45 확인, frontend 10개·backend 95개 테스트, Ruff, compileall, dev/test/prod Compose config와 production frontend image build 통과.
