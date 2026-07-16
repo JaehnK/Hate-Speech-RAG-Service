@@ -195,13 +195,42 @@ button:disabled { cursor: wait; opacity: .65; }
 .case-card footer small { color: var(--muted); font-weight: 500; }
 .clean-state { min-height: 330px; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--success); text-align: center; }
 .clean-state p { margin: 0; color: var(--muted); font-size: 11px; }
-.network-panel { min-height: 300px; }
-.network-visual { position: relative; height: 255px; margin: 14px; overflow: hidden; display: grid; place-items: center; color: var(--primary); background-color: #f8fafc; background-image: radial-gradient(#b5becd 1px, transparent 1px); background-size: 18px 18px; border: 1px solid #e0e3e5; }
-.network-visual > div { position: relative; z-index: 2; padding: 17px 24px; display: grid; place-items: center; gap: 5px; background: rgba(255,255,255,.92); border: 1px solid var(--outline); box-shadow: var(--shadow); }
-.network-visual strong { font-size: 12px; }
-.network-visual p { margin: 0; color: var(--muted); font: 500 10px "JetBrains Mono", monospace; }
-.network-node { position: absolute; width: 17px; height: 17px; border: 4px solid #fff; border-radius: 50%; background: var(--crimson); box-shadow: 0 0 0 1px var(--outline); }
-.node-a { left: 17%; top: 28%; }.node-b { right: 20%; top: 22%; }.node-c { left: 26%; bottom: 19%; }.node-d { right: 13%; bottom: 25%; }
+.network-panel { min-height: 560px; overflow: hidden; }
+.network-workspace { padding: 14px; }
+.network-toolbar { min-height: 48px; padding: 8px 11px; display: flex; align-items: center; gap: 16px; background: var(--surface-low); border: 1px solid #e0e3e5; border-bottom: 0; }
+.network-counts { display: grid; grid-template-columns: auto auto; gap: 2px 6px; align-items: baseline; white-space: nowrap; }
+.network-counts strong { color: var(--primary); font: 700 12px "JetBrains Mono", monospace; }
+.network-counts span { color: var(--muted); font-size: 9px; }
+.network-scope { padding: 2px; display: flex; background: #e9edf3; border-radius: 4px; }
+.network-scope button { padding: 6px 9px; color: var(--muted); background: transparent; border: 0; border-radius: 3px; font-size: 9px; font-weight: 700; cursor: pointer; }
+.network-scope button.active { color: var(--primary); background: #fff; box-shadow: 0 1px 3px rgba(23,35,63,.12); }
+.network-legend { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; color: var(--muted); font-size: 9px; }
+.network-legend span { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.network-legend i { width: 9px; height: 9px; display: inline-block; border-radius: 50%; }
+.network-legend i.normal { background: var(--primary); }
+.network-legend i.risk { background: var(--crimson); }
+.network-legend i.edge { width: 15px; height: 2px; background: #9aa8bd; border-radius: 0; }
+.network-stage { position: relative; height: 430px; overflow: hidden; background-color: #f8fafc; background-image: radial-gradient(#c7cfdb 1px, transparent 1px); background-size: 18px 18px; border: 1px solid #e0e3e5; }
+.network-canvas { position: absolute; inset: 0; cursor: grab; }
+.network-canvas:active { cursor: grabbing; }
+.network-controls { position: absolute; z-index: 4; top: 12px; left: 12px; display: grid; overflow: hidden; background: #fff; border: 1px solid var(--outline); border-radius: 5px; box-shadow: var(--shadow); }
+.network-controls button { width: 34px; height: 34px; display: grid; place-items: center; color: var(--primary); background: #fff; border: 0; border-bottom: 1px solid #e0e3e5; cursor: pointer; }
+.network-controls button:last-child { border-bottom: 0; }
+.network-controls button:hover { color: var(--crimson); background: var(--surface-low); }
+.network-details { position: absolute; z-index: 5; top: 12px; right: 12px; width: min(260px, calc(100% - 72px)); padding: 16px; background: rgba(255,255,255,.96); border: 1px solid var(--outline); border-top: 3px solid var(--crimson); border-radius: 5px; box-shadow: 0 12px 30px rgba(23,35,63,.16); backdrop-filter: blur(8px); }
+.network-details > button { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; color: var(--muted); background: transparent; border: 0; cursor: pointer; }
+.network-details > small { color: var(--crimson); font: 700 8px "JetBrains Mono", monospace; letter-spacing: .08em; }
+.network-details > strong { max-width: calc(100% - 24px); margin: 6px 0 13px; display: block; overflow: hidden; color: var(--primary); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.network-details dl { margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #e0e3e5; }
+.network-details dl div { padding: 8px 5px; text-align: center; border-right: 1px solid #e0e3e5; border-bottom: 1px solid #e0e3e5; }
+.network-details dl div:nth-child(3n) { border-right: 0; }
+.network-details dl div:nth-child(n+4) { border-bottom: 0; }
+.network-details dt { color: var(--muted); font-size: 8px; }
+.network-details dd { margin: 4px 0 0; color: var(--primary); font: 700 11px "JetBrains Mono", monospace; }
+.network-help { margin: 9px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.network-state { min-height: 450px; margin: 14px; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--primary); background: var(--surface-low); border: 1px solid #e0e3e5; text-align: center; }
+.network-state p { margin: 0; color: var(--muted); font-size: 10px; }
+.network-state.network-error { color: var(--crimson); }
 .muted { color: var(--muted); font-size: 11px; }
 .state-card { min-height: 300px; display: grid; place-items: center; align-content: center; gap: 12px; color: var(--primary); text-align: center; }
 .state-card a { padding: 9px 13px; color: #fff; background: var(--primary); border-radius: 4px; font-size: 12px; }
@@ -323,6 +352,10 @@ button:disabled { cursor: wait; opacity: .65; }
   .export-actions { grid-column: 1 / -1; }
   .export-actions button { flex: 1; justify-content: center; }
   .donut-wrap { flex-direction: column; }
+  .network-toolbar { align-items: flex-start; flex-wrap: wrap; }
+  .network-legend { width: 100%; margin-left: 0; justify-content: flex-start; }
+  .network-stage { height: 380px; }
+  .network-help { font-size: 9px; }
   .rag-method-header h1 { font-size: 30px; }
   .rag-pipeline, .evidence-grid, .prompt-columns, .reproduction-grid { grid-template-columns: 1fr; }
   .rag-step-arrow { display: none; }

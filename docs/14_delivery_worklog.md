@@ -282,3 +282,12 @@
 - 실행 중인 worker와 공유 PostgreSQL 통합 테스트의 job claim 경합을 별도 `test/rag-postgres-worker-isolation` 브랜치에서 격리하고 병합했다.
 - 검증: diff check, Ruff, compileall, dev/test/prod Compose config, backend 전체 테스트 94개 통과(기본 opt-in 1개 skip), 실제 PostgreSQL duplicate insert race 1개 통과, worker container 정상 기동.
 - 외부 환경 배포와 트래픽 전환 직전 단계에서 종료했다.
+
+# 2026-07-16 상호작용 댓글 네트워크
+
+- 브랜치: `feat/interactive-comment-network`
+- 보고서의 정적 네트워크 플레이스홀더를 실제 `/api/reports/{id}/network` node/edge 데이터로 교체했다.
+- Cytoscape.js CoSE layout으로 node drag, pan, zoom, fit, relayout과 node 상세 panel을 구현했다.
+- 혐오표현 포함 node/edge를 구분하고 연결 중심/전체 node 전환으로 고립 작성자가 많은 그래프의 가독성을 확보했다.
+- 그래프 엔진을 dynamic import해 일반 화면의 초기 bundle과 분리했다.
+- 상세 설계와 검증 증적은 `docs/25_interactive_comment_network.md`에 기록했다.

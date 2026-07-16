@@ -86,6 +86,34 @@ export interface Report {
   links: Record<string, string>;
 }
 
+export interface CommentNetworkNode {
+  node_key: string;
+  node_type: string;
+  label: string | null;
+  comment_count: number;
+  hate_speech_count: number;
+  hate_speech_ratio: number;
+  metrics: Record<string, unknown>;
+}
+
+export interface CommentNetworkEdge {
+  source_node_key: string;
+  target_node_key: string;
+  edge_type: string;
+  weight: number;
+  is_hate_speech: boolean | null;
+}
+
+export interface CommentNetwork {
+  network_id: string;
+  status: string;
+  graph_type: string;
+  directed: boolean;
+  summary: Record<string, unknown>;
+  nodes: CommentNetworkNode[];
+  edges: CommentNetworkEdge[];
+}
+
 export interface ExportStatus {
   export_id: string;
   report_id: string;

@@ -1,4 +1,4 @@
-import { type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -25,10 +25,10 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getExport, getJob, getReport } from "./api";
+import { ApiError, createExport, createJob, getExport, getJob, getReport, getReportNetwork } from "./api";
 import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
-import type { Job, JobStep, Report, StoredJob } from "./types";
+import type { CommentNetwork, Job, JobStep, Report, StoredJob } from "./types";
 import { formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
@@ -43,6 +43,8 @@ const STEP_LABELS: Record<string, string> = {
   build_report_snapshot: "보고서 생성",
   finalize_job: "분석 완료 처리",
 };
+
+const CommentNetworkGraph = lazy(() => import("./CommentNetworkGraph").then((module) => ({ default: module.CommentNetworkGraph })));
 
 export default function App() {
   return (
@@ -327,10 +329,17 @@ function HistoryCard({ job }: { job: Job }) {
 function ReportPage() {
   const { reportId = "" } = useParams();
   const [report, setReport] = useState<Report | null>(null);
+  const [network, setNetwork] = useState<CommentNetwork | null>(null);
+  const [networkError, setNetworkError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
 
-  useEffect(() => { getReport(reportId).then(setReport).catch((cause) => setError(errorMessage(cause))); }, [reportId]);
+  useEffect(() => {
+    let active = true;
+    void getReport(reportId).then((value) => { if (active) setReport(value); }).catch((cause) => { if (active) setError(errorMessage(cause)); });
+    void getReportNetwork(reportId).then((value) => { if (active) setNetwork(value); }).catch((cause) => { if (active) setNetworkError(errorMessage(cause)); });
+    return () => { active = false; };
+  }, [reportId]);
 
   async function exportReport(format: "html" | "xlsx") {
     setExporting(format);
@@ -352,8 +361,6 @@ function ReportPage() {
   const summary = report.comment_analysis_summary;
   const hateRatio = ratioPercent(summary.hate_speech_count, summary.total);
   const categories = Object.entries(summary.category_distribution).sort((a, b) => b[1] - a[1]);
-  const nodeCount = Number(report.network_summary.node_count ?? 0);
-  const edgeCount = Number(report.network_summary.edge_count ?? 0);
   return (
     <div className="page-wrap report-page">
       {report.failure_summary.length > 0 && <div className="report-warning"><AlertTriangle size={18} /> 일부 분석이 건너뛰어졌습니다. 아래 결과는 수집 가능한 데이터 기준입니다.</div>}
@@ -393,10 +400,9 @@ function ReportPage() {
       </div>
       <section className="panel network-panel">
         <PanelTitle icon={<Network size={18} />} title="댓글 네트워크 분석" />
-        <div className="network-visual" aria-label={`노드 ${nodeCount}개, 연결 ${edgeCount}개`}>
-          <span className="network-node node-a" /><span className="network-node node-b" /><span className="network-node node-c" /><span className="network-node node-d" />
-          <div><Network size={32} /><strong>Relationship Graph</strong><p>{formatNumber(nodeCount)} Nodes · {formatNumber(edgeCount)} Connections</p></div>
-        </div>
+        {network ? <Suspense fallback={<div className="network-state"><LoaderCircle className="spin" size={25} /><strong>그래프 엔진을 준비하는 중입니다.</strong></div>}><CommentNetworkGraph network={network} /></Suspense> : networkError ? (
+          <div className="network-state network-error"><AlertTriangle size={25} /><strong>네트워크를 표시할 수 없습니다.</strong><p>{networkError}</p></div>
+        ) : <div className="network-state"><LoaderCircle className="spin" size={25} /><strong>네트워크 데이터를 불러오는 중입니다.</strong></div>}
       </section>
     </div>
   );
