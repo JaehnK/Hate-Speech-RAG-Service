@@ -284,14 +284,26 @@ function stepProgressText(step: JobStep, totalHint: number | null): string | nul
 function HistoryPage() {
   const stored = useMemo(() => getStoredJobs(), []);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [reports, setReports] = useState<Record<string, Report>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     Promise.allSettled(stored.map((item) => getJob(item.jobId))).then((results) => {
-      setJobs(results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []));
+      const loadedJobs = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+      if (!active) return;
+      setJobs(loadedJobs);
       setLoading(false);
+      void Promise.allSettled(loadedJobs.map(async (job) => {
+        const reportId = reportIdFromPath(job.links.report_api);
+        return reportId ? [job.job_id, await getReport(reportId)] as const : null;
+      })).then((reportResults) => {
+        if (!active) return;
+        setReports(Object.fromEntries(reportResults.flatMap((result) => result.status === "fulfilled" && result.value ? [result.value] : [])));
+      });
     });
+    return () => { active = false; };
   }, [stored]);
 
   const visible = jobs.filter((job) => job.youtube_video_id.toLowerCase().includes(query.toLowerCase()) || job.job_id.includes(query));
@@ -303,21 +315,21 @@ function HistoryPage() {
       {loading ? <LoadingState label="분석 이력을 불러오는 중입니다" /> : visible.length === 0 ? (
         <EmptyState stored={stored} />
       ) : (
-        <div className="history-grid">{visible.map((job) => <HistoryCard job={job} key={job.job_id} />)}</div>
+        <div className="history-grid">{visible.map((job) => <HistoryCard job={job} report={reports[job.job_id]} key={job.job_id} />)}</div>
       )}
     </div>
   );
 }
 
-function HistoryCard({ job }: { job: Job }) {
+function HistoryCard({ job, report }: { job: Job; report?: Report }) {
   const reportId = reportIdFromPath(job.links.report_api);
   const destination = reportId ? `/reports/${reportId}` : `/jobs/${job.job_id}`;
   return (
     <article className="history-card">
-      <div className="history-thumbnail"><Youtube size={36} /><span>{job.youtube_video_id}</span></div>
+      <div className="history-thumbnail">{report?.video.thumbnail_url ? <img src={report.video.thumbnail_url} alt={`${report.video.title ?? job.youtube_video_id} 썸네일`} /> : <><Youtube size={36} /><span>{job.youtube_video_id}</span></>}</div>
       <div className="history-card-body">
         <StatusBadge status={job.status} />
-        <h2>YouTube Video · {job.youtube_video_id}</h2>
+        <h2>{report?.video.title ?? `YouTube Video · ${job.youtube_video_id}`}</h2>
         <p>{formatDate(job.created_at)}</p>
         <div className="history-meta"><span>진행률 <strong>{job.progress.percent}%</strong></span><span>단계 <strong>{job.steps.length}</strong></span></div>
         <Link to={destination}>{reportId ? "보고서 보기" : "작업 상태 보기"} <ArrowRight size={16} /></Link>
@@ -413,7 +425,7 @@ function ReportPage() {
             <div className="donut" style={{ "--ratio": `${Math.min(hateRatio, 100) * 3.6}deg` } as CSSProperties}><span><strong>{formatNumber(summary.total)}</strong>분석</span></div>
             <div className="legend"><p><i className="normal" />정상 <strong>{(100 - hateRatio).toFixed(1)}%</strong></p><p><i className="risk" />혐오표현 <strong>{hateRatio.toFixed(1)}%</strong></p></div>
           </div>
-          <div className="category-list">{categories.length ? categories.map(([name, count]) => <div key={name}><span>{categoryLabel(name)}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
+          <div className={`category-list ${categories.length > 7 ? "scrollable" : ""}`}>{categories.length ? categories.map(([name, count]) => <div key={name}><span>{categoryLabel(name)}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
         </section>
         <section className="panel cases-panel">
           <PanelTitle icon={<AlertTriangle size={18} />} title="전체 혐오 댓글" />
