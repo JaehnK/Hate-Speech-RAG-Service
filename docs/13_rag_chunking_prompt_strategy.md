@@ -255,7 +255,7 @@ prompt에는 검색 결과를 슬롯별로 분리해 넣는다.
 초기 prompt version:
 
 ```text
-category-rag-v0.2.0
+category-rag-v0.3.0
 ```
 
 prompt version이 바뀌면 analysis run에 기록한다.
@@ -326,7 +326,7 @@ LLM은 다음 순서를 따라야 한다.
 }
 ```
 
-`reasoning`은 보고서용 요약 근거다.
+`reasoning`은 1~2문장의 한국어 보고서용 요약 근거다. 저장 전 한글 포함 여부를 검증하며, 조건을 충족하지 못하면 기존 LLM 재시도 경로를 따른다.
 
 chain-of-thought 또는 장문의 내부 추론을 저장하지 않는다.
 

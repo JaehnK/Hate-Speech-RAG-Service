@@ -7,7 +7,8 @@ describe("RAG methodology page", () => {
   it("publishes the production prompt and retrieval contract", () => {
     const html = renderToStaticMarkup(<RagMethodologyPage />);
 
-    expect(html).toContain("category-rag-v0.2.0");
+    expect(html).toContain("category-rag-v0.3.0");
+    expect(html).toContain("Write reasoning in Korean");
     expect(html).toContain("claude-haiku-4-5-20251001");
     expect(html).toContain("hate_speech_definitions");
     expect(html).toContain("hate_speech_examples");

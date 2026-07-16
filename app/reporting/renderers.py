@@ -59,7 +59,7 @@ class ExcelExporter:
             summary.append([key, value])
 
         comments = workbook.create_sheet("comment_analysis")
-        comments.append(["youtube_comment_id", "is_reply", "text", "status", "is_hate_speech", "categories", "reasoning"])
+        comments.append(["youtube_comment_id", "is_reply", "text", "status", "is_hate_speech", "categories", "분석 사유"])
         for comment, result in session.execute(
             select(CommentSnapshot, CommentAnalysisResult)
             .join(CommentAnalysisResult, CommentAnalysisResult.comment_snapshot_id == CommentSnapshot.id)
@@ -68,7 +68,7 @@ class ExcelExporter:
             comments.append([comment.youtube_comment_id, comment.is_reply, comment.text_original, result.status, result.is_hate_speech, _json(result.categories), result.reasoning])
 
         scripts = workbook.create_sheet("script_analysis")
-        scripts.append(["segment_index", "start_seconds", "end_seconds", "text", "status", "is_hate_speech", "categories", "reasoning"])
+        scripts.append(["segment_index", "start_seconds", "end_seconds", "text", "status", "is_hate_speech", "categories", "분석 사유"])
         for segment, result in session.execute(
             select(TranscriptSegment, ScriptAnalysisResult)
             .join(ScriptAnalysisResult, ScriptAnalysisResult.transcript_segment_id == TranscriptSegment.id)
