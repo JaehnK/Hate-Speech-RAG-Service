@@ -16,6 +16,8 @@ def test_prompt_contains_contract_without_hate_assumption() -> None:
     assert "Do not assume the input is hate speech." in prompt
     assert "주어질 문장은 모두 혐오표현" not in prompt
     assert '"definition_docs_used"' in prompt
+    assert "Write reasoning in Korean" in prompt
+    assert '"reasoning": "1-2 sentence Korean report-ready summary"' in prompt
 
 
 def test_prompt_rejects_unknown_source_type() -> None:

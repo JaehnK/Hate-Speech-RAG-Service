@@ -37,6 +37,8 @@ def test_network_report_html_and_excel_builders(tmp_path) -> None:
         workbook = load_workbook(BytesIO(ExcelExporter().render(session, report)))
         assert workbook.sheetnames == ["summary", "comment_analysis", "script_analysis", "network_nodes", "network_edges"]
         assert workbook["comment_analysis"].max_row == 3
+        assert workbook["comment_analysis"].cell(1, 7).value == "분석 사유"
+        assert workbook["script_analysis"].cell(1, 8).value == "분석 사유"
 
 
 @pytest.mark.asyncio

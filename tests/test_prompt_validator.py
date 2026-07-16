@@ -72,3 +72,13 @@ def test_unknown_category_is_invalid() -> None:
 
     assert not result.valid
     assert "unknown_categories:animal" in result.errors
+
+
+def test_reasoning_must_be_korean() -> None:
+    payload = _base_payload()
+    payload["reasoning"] = "This is an English explanation."
+
+    result = validate_classification_output(payload)
+
+    assert not result.valid
+    assert "reasoning_must_be_korean" in result.errors

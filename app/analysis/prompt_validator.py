@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -61,6 +62,10 @@ def validate_classification_output(
         errors.append("similar_cases_used_must_be_list")
     if not isinstance(payload.get("definition_docs_used", []), list):
         errors.append("definition_docs_used_must_be_list")
+
+    reasoning = payload.get("reasoning")
+    if not isinstance(reasoning, str) or not re.search(r"[가-힣]", reasoning):
+        errors.append("reasoning_must_be_korean")
 
     return ValidationResult(valid=not errors, errors=tuple(errors), warnings=tuple(warnings))
 
