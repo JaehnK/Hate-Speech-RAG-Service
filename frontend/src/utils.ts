@@ -1,5 +1,25 @@
 export const TERMINAL_STATUSES = new Set(["succeeded", "partial_success", "failed"]);
 
+const CATEGORY_LABELS: Record<string, string> = {
+  gender: "성별",
+  age: "연령",
+  identity: "정체성",
+  profanity: "욕설",
+  state_authority: "국가 권위체",
+  non_state_authority: "비국가 권위체",
+  state_regime: "국가 제도",
+  non_state_regime: "비국가 제도",
+  state_community: "국가 공동체",
+  non_state_community: "비국가 공동체",
+  no_target: "대상 없음",
+  other: "기타",
+  unclassified: "미분류",
+};
+
+export function categoryLabel(category: string): string {
+  return CATEGORY_LABELS[category] ?? `알 수 없는 분류 (${category})`;
+}
+
 export function formatNumber(value: number | null | undefined): string {
   return new Intl.NumberFormat("ko-KR").format(value ?? 0);
 }

@@ -29,7 +29,7 @@ import { ApiError, createExport, createJob, getExport, getJob, getReport, getRep
 import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
 import type { CommentNetwork, Job, JobStep, Report, StoredJob } from "./types";
-import { formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
+import { categoryLabel, formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
   validate_input: "입력 검증",
@@ -385,7 +385,7 @@ function ReportPage() {
             <div className="donut" style={{ "--ratio": `${Math.min(hateRatio, 100) * 3.6}deg` } as CSSProperties}><span><strong>{formatNumber(summary.total)}</strong>분석</span></div>
             <div className="legend"><p><i className="normal" />정상 <strong>{(100 - hateRatio).toFixed(1)}%</strong></p><p><i className="risk" />혐오표현 <strong>{hateRatio.toFixed(1)}%</strong></p></div>
           </div>
-          <div className="category-list">{categories.length ? categories.map(([name, count]) => <div key={name}><span>{name}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
+          <div className="category-list">{categories.length ? categories.map(([name, count]) => <div key={name}><span>{categoryLabel(name)}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
         </section>
         <section className="panel cases-panel">
           <PanelTitle icon={<AlertTriangle size={18} />} title="대표 탐지 사례" />
@@ -393,7 +393,7 @@ function ReportPage() {
             <article className="case-card" key={comment.youtube_comment_id}>
               <div><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></div>
               <p>{comment.text}</p>
-              <footer><span>{comment.categories.join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></footer>
+              <footer><span>{comment.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></footer>
             </article>
           )) : <div className="clean-state"><ShieldCheck size={32} /><strong>대표 혐오표현 사례 없음</strong><p>현재 보고서에서 표시할 탐지 사례가 없습니다.</p></div>}
         </section>

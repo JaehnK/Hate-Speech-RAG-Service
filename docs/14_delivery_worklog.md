@@ -291,3 +291,11 @@
 - 혐오표현 포함 node/edge를 구분하고 연결 중심/전체 node 전환으로 고립 작성자가 많은 그래프의 가독성을 확보했다.
 - 그래프 엔진을 dynamic import해 일반 화면의 초기 bundle과 분리했다.
 - 상세 설계와 검증 증적은 `docs/25_interactive_comment_network.md`에 기록했다.
+
+# 2026-07-16 보고서 카테고리 한국어 표시
+
+- 브랜치: `feat/korean-category-labels`
+- API와 저장소의 13개 canonical 영문 category code는 변경하지 않고 보고서 표시 계층에만 한국어 label을 적용했다.
+- 카테고리 분포와 대표 탐지 사례가 같은 공통 mapping을 사용하도록 했다.
+- RAG 방법론의 prompt contract code는 재현성을 위해 영문을 유지했다.
+- 알 수 없는 미래 category는 원본 code를 포함한 한국어 fallback으로 표시해 데이터 손실을 막았다.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { itemProgressText, ratioPercent, reportIdFromPath } from "./utils";
+import { categoryLabel, itemProgressText, ratioPercent, reportIdFromPath } from "./utils";
 
 describe("report helpers", () => {
   it("extracts a report id from an API path", () => {
@@ -18,5 +18,16 @@ describe("report helpers", () => {
       .toBe("댓글·답글 127 / 404 완료 · 성공 125 · 실패 2");
     expect(itemProgressText("analyze_script", { total: 33, completed: 10, succeeded: 10, failed: 0 }))
       .toContain("세그먼트 10 / 33 완료");
+  });
+
+  it("translates canonical category codes for display", () => {
+    expect(categoryLabel("identity")).toBe("정체성");
+    expect(categoryLabel("state_authority")).toBe("국가 권위체");
+    expect(categoryLabel("non_state_community")).toBe("비국가 공동체");
+    expect(categoryLabel("unclassified")).toBe("미분류");
+  });
+
+  it("preserves an unknown category code in the fallback label", () => {
+    expect(categoryLabel("future_category")).toBe("알 수 없는 분류 (future_category)");
   });
 });
