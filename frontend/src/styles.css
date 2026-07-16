@@ -348,6 +348,24 @@ button:disabled { cursor: wait; opacity: .65; }
 .category-contract > span { display: block; margin-bottom: 10px; color: var(--muted); font: 600 10px "JetBrains Mono", monospace; text-transform: uppercase; }
 .category-contract > div { display: flex; flex-wrap: wrap; gap: 4px; }
 .category-contract code { padding: 6px 7px; font-size: 10px; }
+.taxonomy-threshold { padding: 20px 22px; color: #513c09; background: #fff8db; border: 1px solid #eadb9c; border-left: 4px solid #c18b00; border-radius: 5px; }
+.taxonomy-threshold strong { display: block; margin-bottom: 10px; color: var(--primary); font-size: 16px; }
+.taxonomy-threshold p { margin: 7px 0 0; font-size: 14px; line-height: 1.75; }
+.taxonomy-threshold code { color: var(--primary); font: 700 12px "JetBrains Mono", monospace; }
+.taxonomy-groups { margin-top: 26px; display: grid; gap: 30px; }
+.taxonomy-group-header { margin-bottom: 14px; }
+.taxonomy-group-header h3 { margin: 0 0 7px; color: var(--primary); font-size: 19px; }
+.taxonomy-group-header p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.7; }
+.taxonomy-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.taxonomy-card { overflow: hidden; border: 1px solid #dfe3e8; border-radius: 5px; background: #fff; }
+.taxonomy-card header { padding: 14px 16px; display: flex; align-items: center; gap: 10px; background: var(--surface-low); border-bottom: 1px solid #e4e6e8; }
+.taxonomy-card header code { color: var(--crimson); font: 700 11px "JetBrains Mono", monospace; }
+.taxonomy-card header strong { color: var(--primary); font-size: 15px; }
+.taxonomy-card > p { margin: 0; padding: 15px 16px; color: #3f4652; font-size: 14px; line-height: 1.7; }
+.taxonomy-card dl { margin: 0; padding: 0 16px 16px; display: grid; gap: 8px; }
+.taxonomy-card dl div { padding: 10px 12px; background: var(--surface-low); border-left: 2px solid #aab5c6; }
+.taxonomy-card dt { margin-bottom: 4px; color: var(--primary); font-size: 11px; font-weight: 700; }
+.taxonomy-card dd { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
 .social-lens-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .social-lens-grid article { padding: 22px; background: var(--surface-low); border: 1px solid #e0e3e5; border-radius: 5px; }
 .social-lens-grid svg { color: var(--crimson); }
@@ -387,6 +405,7 @@ button:disabled { cursor: wait; opacity: .65; }
   .rag-method-header { align-items: start; flex-direction: column; }
   .rag-badges { justify-content: flex-start; }
   .method-two-column { grid-template-columns: 1fr; }
+  .taxonomy-card-grid { grid-template-columns: 1fr; }
   .validity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .network-content { grid-template-columns: 1fr; }
   .network-overview { border-right: 1px solid #e0e3e5; border-bottom: 0; }

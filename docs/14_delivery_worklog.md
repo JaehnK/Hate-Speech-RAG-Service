@@ -362,3 +362,13 @@
 - 사용자가 재배치한 동일 FigJam root를 다시 읽고 store 순서와 validation retry 흐름의 차이를 확인했다.
 - 사례 Store와 similarity gate를 상단 우선 경로로, 정의 Store를 독립 합류 경로로 옮겼다.
 - 재시도 판단, 교정 Prompt, Claude 재호출을 수정본과 같은 읽기 순서로 재배치하고 실제 화면을 재검증했다.
+
+# 2026-07-16 상세 Taxonomy v0.3
+
+- 브랜치: `feat/detailed-taxonomy-v03`
+- 13개 category를 정의, 포함·제외 기준, 인접 경계, 검색 cue를 가진 구조화 card로 확장했다.
+- 공통 hate threshold, 인용·풍자 예외, 정치적 2축, 복수 선택, `hate_type`, `target_group`을 포함해 내부 taxonomy를 규칙 10개 + category 13개로 구성했다.
+- `no_target` 충돌을 validator에서 강제하고 새 run이 taxonomy version을 저장하도록 했다.
+- RAG 방법론 화면과 기준 문서에 13개 상세 판정 가이드를 공개했다.
+- corpus reset 중 발견한 공백-only example을 loader에서 제외하고 production collection 재생성 절차를 검증했다.
+- 상세 작업 순서와 검증 증적은 `docs/28_detailed_taxonomy_v03.md`에 기록했다.

@@ -8,8 +8,8 @@
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - prompt version: `category-rag-v0.3.0`
-- taxonomy version: `v0.2.0`
-- definition corpus version: `definition-corpus-2026-07-09-v0.2`
+- taxonomy version: `v0.3.0`
+- definition corpus version: `definition-corpus-2026-07-16-v0.3`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
 
@@ -128,7 +128,11 @@ Return corrected valid JSON only.
 
 ### 4.2 Definition collection
 
-내부 taxonomy는 5개 규칙 card와 13개 category card를 생성한다. 외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다.
+내부 taxonomy는 10개 규칙 card와 13개 category card, 총 23개 문서를 생성한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
+
+10개 규칙 card는 허용 category, 공통 hate threshold, 비혐오, `other`, 정치적 2축, 인용·풍자 문맥 예외, 복수 선택, `hate_type`, `target_group`, 배타 충돌 규칙을 각각 고정한다. category별 전체 기준은 `docs/12_category_taxonomy.md`를 기준으로 하며 코드의 `CATEGORY_CARDS`와 corpus 문서 생성 테스트로 동기화한다.
+
+외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다.
 
 외부 Markdown은 heading 단위로 나눈 뒤 문단 경계를 유지하며 최대 3,000자로 제한한다. 40자 미만 section은 제외하고, 정규화한 본문의 SHA-256을 `chunk_hash`와 doc ID 일부에 사용한다.
 
@@ -238,6 +242,8 @@ Validator는 아래를 error로 처리한다.
 - 비혐오인데 `categories`가 정확히 `["unclassified"]`가 아님
 - 혐오인데 category가 비었거나 `unclassified` 포함
 - `other`와 다른 category를 함께 사용
+- `no_target`과 `profanity` 외 target category를 함께 사용
+- `no_target`인데 `target_group`이 null이 아님
 - `similar_cases_used` 또는 `definition_docs_used`가 list가 아님
 - `reasoning`이 문자열이 아니거나 한글을 포함하지 않음
 
@@ -253,7 +259,7 @@ Validator는 아래를 error로 처리한다.
 - embedding provider/model
 - example/definition collection 이름
 - definition corpus version
-- `taxonomy_k`, `definition_k`, `example_k`, `example_min_similarity`
+- `taxonomy_k`, `definition_k`, `example_k`, `example_min_similarity`, taxonomy version
 - comment/script prompt version
 
 ### 7.2 Item result

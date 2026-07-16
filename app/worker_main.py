@@ -10,7 +10,7 @@ from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClass
 from app.analysis.result_store import AnalysisResultStore
 from app.analysis.retry import RetryPolicy
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
-from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
+from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, TAXONOMY_VERSION
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
@@ -75,6 +75,7 @@ def main() -> None:
                         "definition_k": 4,
                         "example_k": 6,
                         "example_min_similarity": DEFAULT_EXAMPLE_MIN_SIMILARITY,
+                        "taxonomy_version": TAXONOMY_VERSION,
                         "execution_mode": settings.rag_execution_mode,
                         "item_concurrency": settings.rag_item_concurrency,
                     },

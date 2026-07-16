@@ -26,7 +26,8 @@ const RUNTIME = [
   ["Max tokens", "1200"],
   ["Embedding", "solar-embedding-1-large"],
   ["Prompt", "category-rag-v0.3.0"],
-  ["Corpus", "definition-corpus-2026-07-09-v0.2"],
+  ["Taxonomy", "v0.3.0"],
+  ["Corpus", "definition-corpus-2026-07-16-v0.3"],
   ["Max attempts", "2"],
   ["Execution", "202 job → worker → item 병렬 실행 (현재 2)"],
 ] as const;
@@ -47,6 +48,40 @@ const ALLOWED_CATEGORIES = [
   "state_regime", "non_state_regime", "state_community", "non_state_community",
   "no_target", "other", "unclassified",
 ];
+
+const TAXONOMY_GROUPS = [
+  {
+    title: "보호 속성·표현 방식",
+    description: "공격의 근거가 되는 보호 속성과 공격의 표현 방식을 구분합니다. 욕설은 표적 category와 함께 선택할 수 있습니다.",
+    cards: [
+      { code: "gender", label: "성별", definition: "성별·성역할·임신·출산·가족 역할을 이유로 한 공격", include: "성별 집단의 열등성 일반화, 성별에 근거한 배제·폭력", exclude: "성별 통계·정책 토론, 개인 행동 비판. 성적지향·성별정체성은 identity" },
+      { code: "age", label: "연령", definition: "나이·연령대·세대 소속을 이유로 한 공격", include: "세대 전체의 무능·해악 일반화, 연령에 따른 권리 배제", exclude: "연령별 특성 설명, 세대 정책·이해관계 비판" },
+      { code: "identity", label: "정체성", definition: "지역·인종·민족·국적·종교·성적지향·성별정체성·장애를 이유로 한 공격", include: "보호 집단 비인간화, 추방·차별·폭력 주장, 집단 멸칭", exclude: "문화·종교 정보, 정치 이념·정당 지지층 공격" },
+      { code: "profanity", label: "욕설", definition: "대상에게 직접 향하는 욕설·비속어·외설적 모욕이라는 표현 방식", include: "직접 욕설·멸칭, 다른 category의 공격을 강화하는 비속어", exclude: "비판 목적의 인용, 대상 없는 단순 감탄. 표적이 없으면 no_target 병기" },
+    ],
+  },
+  {
+    title: "정치적 표적 2축",
+    description: "먼저 state/non-state를 고르고, 이어 authority/regime/community를 고릅니다. 정치적 반대나 정책 비판만으로는 혐오가 아닙니다.",
+    cards: [
+      { code: "state_authority", label: "국가 권위체", definition: "국가기관·법률상 공직자를 직무 주체로 표적화", include: "정부·국회·법원·경찰·공직자 집단 모욕, 제거·폭력 선동", exclude: "결정·수사·판결 비판. 법·절차 자체는 state_regime" },
+      { code: "non_state_authority", label: "비국가 권위체", definition: "정당·후보·언론·기업·시민단체 등 조직과 지도자를 표적화", include: "조직·지도자 집단 모욕, 위협·제거 선동", exclude: "공약·보도 비판. 지지자·구성원은 non_state_community" },
+      { code: "state_regime", label: "국가 제도", definition: "법·정책·선거·사법·행정 제도와 공식 절차를 표적화", include: "국가 제도 전체의 악성 일반화, 폭력적 파괴 선동", exclude: "정책 효과·위헌성 비판과 개정 요구" },
+      { code: "non_state_regime", label: "비국가 제도", definition: "비국가 조직의 규칙·절차·운영 체계를 표적화", include: "경선·공천·편집·플랫폼 규칙 전체의 악성 일반화와 파괴 선동", exclude: "불공정성 비판과 개선 요구. 조직 자체는 non_state_authority" },
+      { code: "state_community", label: "국가 공동체", definition: "국민·시민·유권자라는 정치적 구성원 지위를 표적화", include: "국가 구성원 전체의 무가치 일반화, 권리 박탈·배제 주장", exclude: "여론·투표 결과 비판. 국적·민족 공격은 identity" },
+      { code: "non_state_community", label: "비국가 공동체", definition: "정당 지지층·정치 팬덤·이념 집단·운동 진영을 표적화", include: "지지자 전체의 열등성·위험성 일반화, 추방·폭력 주장", exclude: "특정 주장·시위 행동 비판. 정당·후보 자체는 non_state_authority" },
+    ],
+  },
+  {
+    title: "표적·잔여 판단",
+    description: "표적 식별 가능성과 기존 category의 설명 가능성을 확인한 뒤에만 사용합니다.",
+    cards: [
+      { code: "no_target", label: "대상 없음", definition: "공격 강도는 있으나 수집 문맥에서 표적을 식별할 수 없음", include: "선행 대상 없는 단독 욕설·불특정 위협", exclude: "표적 category와 함께 사용 불가, target_group은 null. profanity만 병기 가능" },
+      { code: "other", label: "기타", definition: "hate threshold는 충족하지만 현재 category로 표적 근거를 표현할 수 없음", include: "직업·외모·경제적 지위 등 미정의 속성에 대한 심각한 공격", exclude: "기존 category로 설명 가능하거나 표적이 없는 사례. 항상 단독 사용" },
+      { code: "unclassified", label: "비혐오·미분류", definition: "비혐오이거나 인용·비판·정보 전달로 hate threshold를 충족하지 않음", include: "행위·정책 비판, 비동조 인용, 중립 정보, 공격으로 확정하기 어려운 표현", exclude: "is_hate_speech=false일 때만 단독 사용" },
+    ],
+  },
+] as const;
 
 const USER_PROMPT = `Prompt version: category-rag-v0.3.0
 Task: Classify the input text for Korean hate speech report generation.
@@ -154,7 +189,34 @@ export function RagMethodologyPage() {
         </MethodSection>
       </div>
 
-      <MethodSection number="06" title="사회과학적 해석 단위" icon={<Users size={18} />}>
+      <MethodSection number="06" title="Taxonomy 판정 가이드" icon={<Boxes size={18} />}>
+        <div className="taxonomy-threshold">
+          <strong>공통 hate threshold</strong>
+          <p>대상의 정체성·소속·지위를 근거로 한 <b>열등성 일반화, 비인간화, 배제·차별, 위협·폭력, 제거·억압 선동, 심각한 직접 모욕</b> 중 하나 이상이 있어야 합니다. 불쾌함, 반대, 풍자, 사실 서술, 정책·행위 비판만으로는 혐오로 분류하지 않습니다.</p>
+          <p><b>문맥 예외:</b> 보도·연구·교육·반박 목적으로 혐오표현을 인용하고 화자가 동조하지 않으면 비혐오입니다. 풍자·반어의 실제 표적이나 태도를 확정할 수 없으면 <code>unclassified</code>를 선택합니다.</p>
+        </div>
+        <div className="taxonomy-groups">
+          {TAXONOMY_GROUPS.map((group) => (
+            <section className="taxonomy-group" key={group.title}>
+              <div className="taxonomy-group-header"><h3>{group.title}</h3><p>{group.description}</p></div>
+              <div className="taxonomy-card-grid">
+                {group.cards.map((card) => (
+                  <article className="taxonomy-card" key={card.code}>
+                    <header><code>{card.code}</code><strong>{card.label}</strong></header>
+                    <p>{card.definition}</p>
+                    <dl>
+                      <div><dt>포함 기준</dt><dd>{card.include}</dd></div>
+                      <div><dt>제외·경계</dt><dd>{card.exclude}</dd></div>
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </MethodSection>
+
+      <MethodSection number="07" title="사회과학적 해석 단위" icon={<Users size={18} />}>
         <p className="section-intro">모델의 판정은 개인의 본질이나 의도를 규정하는 값이 아니라, 수집된 시점의 발화와 답글 관계를 관찰 가능한 지표로 바꾼 결과입니다.</p>
         <div className="social-lens-grid">
           <article><Code2 size={20} /><h3>분석 단위</h3><p>기본 단위는 댓글·답글·자막이라는 <strong>발화</strong>입니다. 작성자 단위 수치는 발화 결과를 집계한 값이며 개인의 성향 진단이 아닙니다.</p></article>
@@ -164,7 +226,7 @@ export function RagMethodologyPage() {
         </div>
       </MethodSection>
 
-      <MethodSection number="07" title="타당도·윤리·주장의 경계" icon={<TriangleAlert size={18} />}>
+      <MethodSection number="08" title="타당도·윤리·주장의 경계" icon={<TriangleAlert size={18} />}>
         <div className="interpretation-boundary"><ShieldAlert size={20} /><p><strong>기술통계의 범위:</strong> 이 보고서는 수집 가능한 공개 댓글 표본을 기술합니다. 모집단 대표성이나 인과관계, 작성자의 고정된 정체성·의도를 추론하지 않습니다.</p></div>
         <div className="scope-table-wrap">
           <table className="scope-table">
@@ -188,7 +250,7 @@ export function RagMethodologyPage() {
         </div>
       </MethodSection>
 
-      <MethodSection number="08" title="재현 체크리스트" icon={<ServerCog size={18} />}>
+      <MethodSection number="09" title="재현 체크리스트" icon={<ServerCog size={18} />}>
         <ol className="reproduction-grid">
           <ReproStep number="01" title="Corpus bootstrap">허용 license corpus를 동일 revision으로 Chroma에 적재합니다.</ReproStep>
           <ReproStep number="02" title="Version freeze">corpus, embedding, LLM, prompt version을 함께 기록합니다.</ReproStep>

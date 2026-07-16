@@ -223,13 +223,12 @@ def _source_path(source: dict[str, Any], root: Path, path_key: str = "local_path
 
 
 def _limit(documents: Iterator[ExampleDocument], limit: int | None) -> list[ExampleDocument]:
-    if limit is None:
-        return list(documents)
-
     limited = []
     for document in documents:
+        if not document.text.strip():
+            continue
         limited.append(document)
-        if len(limited) >= limit:
+        if limit is not None and len(limited) >= limit:
             break
     return limited
 

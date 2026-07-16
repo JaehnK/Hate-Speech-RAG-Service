@@ -82,3 +82,24 @@ def test_reasoning_must_be_korean() -> None:
 
     assert not result.valid
     assert "reasoning_must_be_korean" in result.errors
+
+
+def test_no_target_rejects_target_category_and_group() -> None:
+    payload = _base_payload()
+    payload["categories"] = ["no_target", "non_state_community"]
+
+    result = validate_classification_output(payload)
+
+    assert not result.valid
+    assert "no_target_conflicts_with_target_category" in result.errors
+    assert "no_target_requires_null_target_group" in result.errors
+
+
+def test_no_target_allows_profanity_with_null_group() -> None:
+    payload = _base_payload()
+    payload["categories"] = ["no_target", "profanity"]
+    payload["target_group"] = None
+
+    result = validate_classification_output(payload)
+
+    assert result.valid

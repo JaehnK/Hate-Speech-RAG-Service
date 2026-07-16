@@ -2,8 +2,10 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.1.0 |
-| 작성일시 | 2026-07-09 01:10:12 KST |
+| 버전 | v0.2.0 |
+| 작성일시 | 2026-07-16 KST |
+| taxonomy | v0.3.0 |
+| definition corpus | `definition-corpus-2026-07-16-v0.3` |
 
 ## 문서 목적
 
@@ -151,13 +153,18 @@ seed = 20260709
 | chunk | 내용 |
 | --- | --- |
 | `taxonomy:allowed_categories` | 허용 카테고리 전체 목록 |
+| `taxonomy:hate_threshold` | 혐오 판정에 필요한 공격 강도와 비혐오 경계 |
 | `taxonomy:non_hate_rule` | 비혐오와 `unclassified` 규칙 |
 | `taxonomy:other_rule` | `other` 독점 사용 규칙 |
 | `taxonomy:political_axis` | authority/regime/community와 state/non-state 축 |
-| `category:{category}` | 카테고리별 정의, 포함 기준, 제외 기준 |
+| `taxonomy:context_exception` | 비동조 인용, 보도·연구, 풍자·반어 문맥 예외 |
+| `taxonomy:multi_label_rule` | 복수 category 선택과 중복 금지 기준 |
+| `taxonomy:hate_type` | 표현 방식의 한국어 controlled label 기준 |
+| `taxonomy:target_group` | 표적 명사구의 범위와 null 기준 |
+| `category:{category}` | 카테고리별 정의, 포함·제외 기준, 인접 경계, 검색 cue |
 | `conflict:{rule}` | 충돌 또는 우선순위 규칙 |
 
-내부 taxonomy card는 prompt에 고정 규칙으로도 들어가고, vector retrieval에도 들어간다.
+현재 내부 taxonomy는 10개 규칙 card와 13개 category card, 총 23개 문서이며 vector retrieval에 들어간다. prompt에는 허용 category와 핵심 배타 규칙을 고정하고, 세부 포함·제외·경계는 검색된 card로 제공한다.
 
 ### External Definition Chunking
 
@@ -230,9 +237,7 @@ prompt에는 검색 결과를 슬롯별로 분리해 넣는다.
 | `definition_context` | `hate_speech_definitions` | 4 | 외부 정의/판단 기준 |
 | `example_context` | `hate_speech_examples` | 6 | 유사 한국어 사례 |
 
-`taxonomy_context`는 관련 카테고리 card를 우선 검색한다.
-
-필요하면 `taxonomy:allowed_categories`, `taxonomy:non_hate_rule`, `taxonomy:political_axis`는 검색 없이 항상 prompt에 넣는다.
+현재 구현은 definition collection의 cosine 유사도 상위 8건을 앞 4건과 뒤 4건으로 나누므로 `taxonomy_context`가 항상 내부 card라는 보장은 없다. 내부 card 우선 필터나 고정 주입은 검색 recall 평가 후 별도 변경한다.
 
 ### Reranking
 
@@ -340,6 +345,8 @@ LLM 응답은 저장 전에 검증한다.
 | `is_hate_speech=false`이면 `categories=["unclassified"]` | retry |
 | `is_hate_speech=true`이면 `unclassified` 금지 | retry |
 | `other`는 다른 category와 동시 사용 금지 | retry |
+| `no_target`은 `profanity` 외 target category와 동시 사용 금지 | retry |
+| `no_target`이면 `target_group=null` | retry |
 | `target_group=null`이면 구체 대상 카테고리 근거 확인 | warning 또는 retry |
 | JSON parsing 실패 | retry |
 
