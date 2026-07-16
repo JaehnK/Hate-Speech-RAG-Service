@@ -18,17 +18,17 @@ const NODES: FlowNode[] = [
   { id: "items", type: "input", x: 610, y: 70, width: 150, height: 64, title: "분석 Item 구성", detail: "comment · reply · segment" },
   { id: "pool", type: "pool", x: 810, y: 68, width: 160, height: 68, title: "병렬 Worker Pool", detail: "bounded concurrency" },
   { id: "embed", type: "process", x: 50, y: 320, width: 150, height: 62, title: "검색 Query 임베딩", detail: "Upstage query vector" },
-  { id: "definitions", type: "store", x: 240, y: 235, width: 160, height: 68, title: "정의 Store", detail: "taxonomy 4 + definition 4" },
-  { id: "examples", type: "store", x: 240, y: 410, width: 160, height: 68, title: "사례 Store", detail: "example k=6" },
-  { id: "similarity", type: "decision", x: 430, y: 400, width: 150, height: 96, title: "유사도 0.40 이상?", detail: "score gate" },
+  { id: "examples", type: "store", x: 240, y: 235, width: 160, height: 68, title: "사례 Store", detail: "example k=6" },
+  { id: "definitions", type: "store", x: 240, y: 410, width: 160, height: 68, title: "정의 Store", detail: "taxonomy 4 + definition 4" },
+  { id: "similarity", type: "decision", x: 430, y: 225, width: 150, height: 96, title: "유사도 0.40 이상?", detail: "score gate" },
   { id: "evidence", type: "merge", x: 610, y: 310, width: 90, height: 90, title: "근거", detail: "결합" },
   { id: "prompt", type: "process", x: 735, y: 326, width: 140, height: 60, title: "Prompt 조립", detail: "rules + 3 contexts" },
   { id: "classify", type: "process", x: 910, y: 326, width: 130, height: 60, title: "Claude 분류", detail: "valid JSON" },
   { id: "validate", type: "decision", x: 1050, y: 306, width: 130, height: 100, title: "JSON 계약 통과?", detail: "schema + category" },
-  { id: "correct", type: "process", x: 610, y: 510, width: 140, height: 60, title: "교정 Prompt", detail: "validation errors" },
-  { id: "retry", type: "decision", x: 800, y: 490, width: 140, height: 96, title: "재시도 남음?", detail: "최대 2회" },
+  { id: "retry", type: "decision", x: 610, y: 490, width: 140, height: 96, title: "재시도 남음?", detail: "최대 2회" },
+  { id: "correct", type: "process", x: 800, y: 508, width: 140, height: 60, title: "교정 Prompt", detail: "validation errors" },
   { id: "persist", type: "success", x: 1020, y: 490, width: 150, height: 62, title: "분류 결과 저장", detail: "판정 + RAG 근거" },
-  { id: "fail", type: "failure", x: 800, y: 600, width: 140, height: 48, title: "Item 실패 기록", detail: "LLM_ERROR" },
+  { id: "fail", type: "failure", x: 610, y: 600, width: 140, height: 48, title: "Item 실패 기록", detail: "LLM_ERROR" },
   { id: "aggregate", type: "process", x: 250, y: 735, width: 150, height: 60, title: "판정 결과 집계", detail: "성공 · 실패 포함" },
   { id: "network", type: "process", x: 480, y: 735, width: 150, height: 60, title: "댓글 Network", detail: "node · edge" },
   { id: "report", type: "success", x: 710, y: 735, width: 150, height: 60, title: "분석 보고서", detail: "HTML · XLSX" },
@@ -39,13 +39,13 @@ const EDGES = [
   ["M180 102 H230"], ["M370 102 H420"], ["M560 102 H610"], ["M760 102 H810"],
   ["M970 102 H1000 V180 H125 V320", "critical"],
   ["M200 340 H220 V269 H240"], ["M200 362 H220 V444 H240"],
-  ["M400 269 H565 V340 H610"], ["M400 444 H430"],
-  ["M580 430 H595 V330 H610"], ["M580 468 H600 V380 H610", "optional"],
+  ["M400 269 H430"], ["M400 444 H565 V370 H610"],
+  ["M580 273 H600 V335 H610"], ["M545 300 H590 V380 H610", "optional"],
   ["M700 355 H735"], ["M875 356 H910"], ["M1040 356 H1050"],
-  ["M1115 406 V490", "success"], ["M1115 406 V458 H870 V490", "optional"],
-  ["M800 538 H750", "optional"], ["M680 510 V470 H975 V386", "optional"],
-  ["M870 586 V600", "failure"],
-  ["M1095 552 V680 H325 V735", "success"], ["M870 648 V695 H325 V735", "optional"],
+  ["M1115 406 V490", "success"], ["M1115 406 V458 H680 V490", "optional"],
+  ["M750 538 H800", "optional"], ["M940 538 H975 V386", "optional"],
+  ["M680 586 V600", "failure"],
+  ["M1095 552 V680 H325 V735", "success"], ["M680 648 V695 H325 V735", "optional"],
   ["M400 765 H480"], ["M630 765 H710"], ["M860 765 H960"],
 ] as const;
 
@@ -69,12 +69,12 @@ export function RagPipelineFlow() {
           <g className="flow-edges">
             {EDGES.map(([path, kind = ""], index) => <path className={`flow-edge ${kind}`} d={path} key={index} markerEnd="url(#rag-arrow)" />)}
           </g>
-          <EdgeLabel x={585} y={417}>사용</EdgeLabel>
-          <EdgeLabel x={588} y={482}>제외</EdgeLabel>
+          <EdgeLabel x={588} y={258}>사용</EdgeLabel>
+          <EdgeLabel x={563} y={316}>제외</EdgeLabel>
           <EdgeLabel x={1088} y={450}>통과</EdgeLabel>
-          <EdgeLabel x={995} y={448}>실패</EdgeLabel>
-          <EdgeLabel x={765} y={528}>있음</EdgeLabel>
-          <EdgeLabel x={882} y={606}>없음</EdgeLabel>
+          <EdgeLabel x={900} y={448}>실패</EdgeLabel>
+          <EdgeLabel x={775} y={528}>있음</EdgeLabel>
+          <EdgeLabel x={692} y={606}>없음</EdgeLabel>
           <EdgeLabel x={635} y={688}>부분 성공</EdgeLabel>
 
           {NODES.map((node) => <Node {...node} key={node.id} />)}
