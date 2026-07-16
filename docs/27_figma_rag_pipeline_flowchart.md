@@ -66,3 +66,16 @@ npm run build
 모바일에서는 SVG의 최소 폭을 유지하고 flow container만 가로 이동하도록 해 글자를 축소하지 않는다.
 
 마지막으로 `docker compose -f compose.yaml -f compose.dev.yaml up -d --build frontend`를 실행해 개발 frontend image를 재생성했으며, `/rag-methodology` 응답과 container health가 정상임을 확인했다.
+
+## 6. 사용자 수정 FigJam 동기화
+
+사용자가 FigJam을 직접 다듬은 뒤 같은 file key의 root node를 다시 읽어 웹 구현과 비교했다.
+
+- 동기화 브랜치: `feat/sync-refined-figjam-rag-flow`
+- 세 phase를 위에서 아래로 읽는 구조는 기존 웹 구현과 일치해 유지했다.
+- 수정본처럼 사례 Store를 위에 놓고 `사례 → 유사도 판단 → 근거 결합`을 우선 흐름으로 표시했다.
+- 정의 Store는 별도 검색 결과로 근거 결합에 직접 합류하도록 이동했다.
+- validation 실패 이후 `재시도 판단 → 교정 Prompt → Claude 재호출` 순서가 왼쪽에서 오른쪽으로 읽히도록 재배치했다.
+- FigJam의 매우 넓은 RAG section을 그대로 축소하지 않고, 웹에서는 phase 폭과 글자 크기를 유지하면서 connector 교차를 최소화했다.
+
+동기화 후 frontend test 11건, production build와 1440 × 1500 실제 화면을 다시 확인했다.

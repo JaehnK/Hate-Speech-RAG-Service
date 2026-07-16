@@ -355,3 +355,10 @@
 - 기존 8개 card 나열을 실제 fan-out/fan-in, similarity 분기, JSON validation과 교정 retry, 부분 성공 합류가 보이는 SVG로 교체했다.
 - 데스크톱은 전체 흐름을 한 번에 표시하고 모바일은 글자 크기를 유지한 채 diagram 영역만 좌우 이동하도록 했다.
 - FigJam 원본과 코드 대응, 도형·edge 의미는 `docs/27_figma_rag_pipeline_flowchart.md`에 기록했다.
+
+# 2026-07-16 사용자 수정 FigJam 동기화
+
+- 브랜치: `feat/sync-refined-figjam-rag-flow`
+- 사용자가 재배치한 동일 FigJam root를 다시 읽고 store 순서와 validation retry 흐름의 차이를 확인했다.
+- 사례 Store와 similarity gate를 상단 우선 경로로, 정의 Store를 독립 합류 경로로 옮겼다.
+- 재시도 판단, 교정 Prompt, Claude 재호출을 수정본과 같은 읽기 순서로 재배치하고 실제 화면을 재검증했다.
