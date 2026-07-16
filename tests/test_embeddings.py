@@ -24,13 +24,13 @@ class FakeEmbeddingClient:
 
 def test_upstage_embedding_uses_passage_and_query_models() -> None:
     client = FakeEmbeddingClient()
-    embedding = UpstageEmbeddingFunction(model="solar-embedding-1-large", client=client)
+    embedding = UpstageEmbeddingFunction(model="embedding", client=client)
 
     assert embedding.embed_documents(["문서"]) == [[2.0]]
     assert embedding.embed_query(["질문"]) == [[2.0]]
     assert client.calls == [
-        (["문서"], "solar-embedding-1-large-passage"),
-        (["질문"], "solar-embedding-1-large-query"),
+        (["문서"], "embedding-passage"),
+        (["질문"], "embedding-query"),
     ]
     embedding.close()
     assert client.close_calls == 1
@@ -43,14 +43,14 @@ def test_embedding_factory_supports_hash_and_upstage() -> None:
 
 def test_upstage_embedding_normalizes_suffixed_model_names() -> None:
     client = FakeEmbeddingClient()
-    embedding = UpstageEmbeddingFunction(model="solar-embedding-1-large-query", client=client)
+    embedding = UpstageEmbeddingFunction(model="embedding-query", client=client)
 
     embedding.embed_documents(["문서"])
     embedding.embed_query(["질문"])
 
     assert client.calls == [
-        (["문서"], "solar-embedding-1-large-passage"),
-        (["질문"], "solar-embedding-1-large-query"),
+        (["문서"], "embedding-passage"),
+        (["질문"], "embedding-query"),
     ]
 
 

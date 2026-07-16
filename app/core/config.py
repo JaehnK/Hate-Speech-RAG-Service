@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     pipeline_mode: Literal["fake", "production"] = "fake"
     chroma_persist_directory: str = ".chroma"
     embedding_provider: str = "upstage"
-    embedding_model: str = "solar-embedding-1-large"
+    embedding_model: str = "embedding"
     embedding_api_key: str | None = Field(default=None, repr=False)
-    upstage_embedding_base_url: str = "https://api.upstage.ai/v1/solar/embeddings"
+    upstage_embedding_base_url: str = "https://api.upstage.ai/v1/embeddings"
     llm_provider: str = "anthropic"
     llm_model: str = "claude-haiku-4-5-20251001"
     llm_api_key: str | None = Field(default=None, repr=False)

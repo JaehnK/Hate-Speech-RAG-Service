@@ -16,7 +16,8 @@ def test_settings_default_to_upstage_haiku_and_langfuse_disabled(monkeypatch) ->
     settings = load_settings()
 
     assert settings.embedding_provider == "upstage"
-    assert settings.embedding_model == "solar-embedding-1-large"
+    assert settings.embedding_model == "embedding"
+    assert settings.upstage_embedding_base_url == "https://api.upstage.ai/v1/embeddings"
     assert settings.llm_provider == "anthropic"
     assert settings.llm_model == "claude-haiku-4-5-20251001"
     assert not settings.langfuse_enabled
