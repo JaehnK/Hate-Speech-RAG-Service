@@ -8,8 +8,8 @@
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - prompt version: `category-rag-v0.3.0`
-- taxonomy version: `v0.2.0`
-- definition corpus version: `definition-corpus-2026-07-09-v0.2`
+- taxonomy version: `v0.3.0`
+- definition corpus version: `definition-corpus-2026-07-16-v0.3`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
 
@@ -126,13 +126,33 @@ Return corrected valid JSON only.
 
 `HashEmbeddingFunction`은 256차원 결정적 local smoke/test 용도다. production 품질 재현에 사용하는 embedding과 같지 않다.
 
-### 4.2 Definition collection
+이 설정은 더 이상 장기 운영 기준이 아니다. Upstage 공식 가격표 기준으로 기존 Embed는 1M token당 USD 0.10이며 2026-08-31 UTC 종료 예정이다. Embed 2는 2026-07-20 UTC까지 무료이고 이후 1M token당 USD 0.02다. 가격은 VAT 10% 별도이며 변경될 수 있으므로 실행 전 공식 가격표를 다시 확인한다.
 
-내부 taxonomy는 5개 규칙 card와 13개 category card를 생성한다. 외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다.
+### 4.2 Embed 2 전환 gate
+
+legacy 전체 vector 적재는 중단하고 다음 gate를 순서대로 통과한 뒤 새 collection을 만든다.
+
+1. Upstage Console/API 문서에서 Embed 2의 정확한 model ID, endpoint, passage/query 사용법과 vector 차원을 확정한다. 공개 가격 페이지에 없는 식별자를 추측해 코드에 넣지 않는다.
+2. 동일 corpus와 고정 query 평가셋으로 legacy와 Embed 2의 category recall@k, 정치 2축 혼동, latency와 token 비용을 비교한다.
+3. 새 collection 이름과 corpus version으로 전량 재색인한다. 다른 embedding 모델의 vector를 기존 collection에 섞지 않는다.
+4. count, document hash, 검색 smoke를 통과한 뒤 retriever를 blue/green 전환한다.
+5. 새 analysis run에 실제 embedding model과 collection을 기록하고 검증 기간에는 legacy collection을 읽기 전용 rollback 대상으로 보존한다.
+
+비용 단가가 5분의 1이라는 사실만으로 품질 개선을 가정하지 않는다. migration 승인 조건은 비용과 함께 고정 평가셋의 retrieval 품질이 허용 범위 안에 있는지다.
+
+공식 가격 출처: [Upstage API Pricing](https://www.upstage.ai/pricing/api)
+
+### 4.3 Definition collection
+
+내부 taxonomy는 10개 규칙 card와 13개 category card, 총 23개 문서를 생성한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
+
+10개 규칙 card는 허용 category, 공통 hate threshold, 비혐오, `other`, 정치적 2축, 인용·풍자 문맥 예외, 복수 선택, `hate_type`, `target_group`, 배타 충돌 규칙을 각각 고정한다. category별 전체 기준은 `docs/12_category_taxonomy.md`를 기준으로 하며 코드의 `CATEGORY_CARDS`와 corpus 문서 생성 테스트로 동기화한다.
+
+외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다.
 
 외부 Markdown은 heading 단위로 나눈 뒤 문단 경계를 유지하며 최대 3,000자로 제한한다. 40자 미만 section은 제외하고, 정규화한 본문의 SHA-256을 `chunk_hash`와 doc ID 일부에 사용한다.
 
-### 4.3 Example collection
+### 4.4 Example collection
 
 example은 manifest에서 `corpus_target.examples=true`이고 기본 license tier가 `commercial_ok`인 train split만 적재한다. 현재 manifest 기준으로 라이선스가 검증된 K-HATERS가 production 기본 대상이며, UNSMILE은 retrieval corpus에서 제외된다.
 
@@ -238,6 +258,8 @@ Validator는 아래를 error로 처리한다.
 - 비혐오인데 `categories`가 정확히 `["unclassified"]`가 아님
 - 혐오인데 category가 비었거나 `unclassified` 포함
 - `other`와 다른 category를 함께 사용
+- `no_target`과 `profanity` 외 target category를 함께 사용
+- `no_target`인데 `target_group`이 null이 아님
 - `similar_cases_used` 또는 `definition_docs_used`가 list가 아님
 - `reasoning`이 문자열이 아니거나 한글을 포함하지 않음
 
@@ -253,7 +275,7 @@ Validator는 아래를 error로 처리한다.
 - embedding provider/model
 - example/definition collection 이름
 - definition corpus version
-- `taxonomy_k`, `definition_k`, `example_k`, `example_min_similarity`
+- `taxonomy_k`, `definition_k`, `example_k`, `example_min_similarity`, taxonomy version
 - comment/script prompt version
 
 ### 7.2 Item result
@@ -312,7 +334,7 @@ uv sync --frozen
 uv run alembic upgrade head
 ```
 
-같은 manifest, source revision, embedding model로 두 collection을 초기화한다.
+Embed 2 API 계약과 품질 gate를 통과한 뒤, 같은 manifest, source revision, 새 embedding model로 별도 collection을 초기화한다.
 
 ```bash
 uv run python -m scripts.bootstrap_corpus --reset
@@ -324,7 +346,7 @@ Docker named volume을 사용할 때는 다음 one-shot service를 사용한다.
 docker compose --profile tools run --rm corpus
 ```
 
-`--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. `--reset`은 해당 collection을 삭제 후 다시 만든다.
+`--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. migration 전에는 이 명령으로 legacy 전체 corpus를 다시 만들지 않는다. 새 model과 collection이 확정된 후에만 reset 대상을 명시해 실행한다.
 
 ### 10.2 서비스 job 재실행
 

@@ -76,6 +76,7 @@ def test_k_haters_loader_maps_commercial_rows(tmp_path) -> None:
         "\n".join(
             [
                 '{"text": "성별 비하 댓글", "label": "L2_hate", "target_label": ["gender"]}',
+                '{"text": "   ", "label": "normal", "target_label": []}',
                 '{"text": "정상 댓글", "label": "normal", "target_label": []}',
             ]
         ),
@@ -98,6 +99,7 @@ def test_k_haters_loader_maps_commercial_rows(tmp_path) -> None:
         manifest_path,
         project_root=tmp_path,
         allowed_license_tiers=(COMMERCIAL_OK,),
+        limit_per_dataset=2,
     )
 
     assert len(loaded) == 2

@@ -8,6 +8,15 @@ describe("RAG methodology page", () => {
     const html = renderToStaticMarkup(<RagMethodologyPage />);
 
     expect(html).toContain("category-rag-v0.3.0");
+    expect(html).toContain("definition-corpus-2026-07-16-v0.3");
+    expect(html).toContain("Embedding 비용·마이그레이션");
+    expect(html).toContain("2026-08-31 UTC");
+    expect(html).toContain("$0.10");
+    expect(html).toContain("$0.02");
+    expect(html).toContain("2026-07-20 UTC");
+    expect(html).toContain("Blue/green 재색인");
+    expect(html).toContain("legacy 전체 vector 적재는 보류");
+    expect(html).toContain("https://www.upstage.ai/pricing/api");
     expect(html).toContain("Write reasoning in Korean");
     expect(html).toContain("claude-haiku-4-5-20251001");
     expect(html).toContain("hate_speech_definitions");
@@ -25,5 +34,11 @@ describe("RAG methodology page", () => {
     expect(html).toContain("JSON 계약 통과?");
     expect(html).toContain("재시도 남음?");
     expect(html).toContain("figma.com/board/sGQ5uzigH8gTdLRYVGDM6X");
+    expect(html).toContain("Taxonomy 판정 가이드");
+    expect(html).toContain("공통 hate threshold");
+    expect(html).toContain("포함 기준");
+    expect(html).toContain("제외·경계");
+    expect(html).toContain("국적·민족 공격은 identity");
+    expect(html).toContain("정치적 반대나 정책 비판만으로는 혐오가 아닙니다");
   });
 });

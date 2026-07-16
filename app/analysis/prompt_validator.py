@@ -55,6 +55,11 @@ def validate_classification_output(
             errors.append("hate_must_not_use_unclassified")
         if "other" in category_set and len(categories) > 1:
             errors.append("other_must_be_exclusive")
+        if "no_target" in category_set:
+            if category_set - {"no_target", "profanity"}:
+                errors.append("no_target_conflicts_with_target_category")
+            if payload.get("target_group") is not None:
+                errors.append("no_target_requires_null_target_group")
         if payload.get("target_group") is None and category_set.difference({"profanity", "no_target"}):
             warnings.append("target_group_missing_for_targeted_category")
 

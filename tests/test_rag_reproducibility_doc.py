@@ -3,7 +3,11 @@ from pathlib import Path
 from app.analysis.llm_client import DEFAULT_ANTHROPIC_MODEL, DEFAULT_SYSTEM_PROMPT
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY
-from app.analysis.taxonomy import ALLOWED_CATEGORIES, DEFAULT_DEFINITION_CORPUS_VERSION
+from app.analysis.taxonomy import (
+    ALLOWED_CATEGORIES,
+    DEFAULT_DEFINITION_CORPUS_VERSION,
+    TAXONOMY_VERSION,
+)
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 
 
@@ -15,6 +19,7 @@ def test_rag_reproducibility_doc_tracks_runtime_contract() -> None:
         DEFAULT_ANTHROPIC_MODEL,
         DEFAULT_SYSTEM_PROMPT,
         DEFAULT_DEFINITION_CORPUS_VERSION,
+        TAXONOMY_VERSION,
         DEFINITION_COLLECTION_NAME,
         EXAMPLE_COLLECTION_NAME,
         f"score >= {DEFAULT_EXAMPLE_MIN_SIMILARITY:.2f}",
@@ -22,4 +27,3 @@ def test_rag_reproducibility_doc_tracks_runtime_contract() -> None:
     )
     for value in expected_values:
         assert value in document
-
