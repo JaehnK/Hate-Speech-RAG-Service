@@ -114,6 +114,31 @@ export interface CommentNetwork {
   edges: CommentNetworkEdge[];
 }
 
+export interface ReportComment {
+  comment_snapshot_id: string;
+  youtube_comment_id: string;
+  is_reply: boolean;
+  parent_youtube_comment_id: string | null;
+  author_display_name: string | null;
+  author_channel_id: string | null;
+  text_original: string | null;
+  like_count: number | null;
+  published_at: string | null;
+  analysis: {
+    status: string;
+    is_hate_speech: boolean | null;
+    categories: string[];
+    reasoning: string | null;
+  };
+}
+
+export interface ReportCommentPage {
+  items: ReportComment[];
+  total: number;
+  next_cursor: number | null;
+  has_more: boolean;
+}
+
 export interface ExportStatus {
   export_id: string;
   report_id: string;

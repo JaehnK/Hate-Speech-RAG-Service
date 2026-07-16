@@ -25,10 +25,10 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getExport, getJob, getReport, getReportNetwork } from "./api";
+import { ApiError, createExport, createJob, getExport, getHateComments, getJob, getReport, getReportNetwork } from "./api";
 import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
-import type { CommentNetwork, Job, JobStep, Report, StoredJob } from "./types";
+import type { CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, StoredJob } from "./types";
 import { categoryLabel, formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
@@ -331,15 +331,43 @@ function ReportPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [network, setNetwork] = useState<CommentNetwork | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [hateComments, setHateComments] = useState<ReportComment[]>([]);
+  const [hateCommentPage, setHateCommentPage] = useState<ReportCommentPage | null>(null);
+  const [hateCommentsLoading, setHateCommentsLoading] = useState(true);
+  const [hateCommentsError, setHateCommentsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    setHateComments([]);
+    setHateCommentPage(null);
+    setHateCommentsLoading(true);
+    setHateCommentsError(null);
     void getReport(reportId).then((value) => { if (active) setReport(value); }).catch((cause) => { if (active) setError(errorMessage(cause)); });
     void getReportNetwork(reportId).then((value) => { if (active) setNetwork(value); }).catch((cause) => { if (active) setNetworkError(errorMessage(cause)); });
+    void getHateComments(reportId).then((page) => {
+      if (!active) return;
+      setHateComments(page.items);
+      setHateCommentPage(page);
+    }).catch((cause) => { if (active) setHateCommentsError(errorMessage(cause)); }).finally(() => { if (active) setHateCommentsLoading(false); });
     return () => { active = false; };
   }, [reportId]);
+
+  async function loadMoreHateComments() {
+    if (hateCommentPage?.next_cursor === null || hateCommentPage?.next_cursor === undefined) return;
+    setHateCommentsLoading(true);
+    setHateCommentsError(null);
+    try {
+      const page = await getHateComments(reportId, hateCommentPage.next_cursor);
+      setHateComments((current) => [...current, ...page.items]);
+      setHateCommentPage(page);
+    } catch (cause) {
+      setHateCommentsError(errorMessage(cause));
+    } finally {
+      setHateCommentsLoading(false);
+    }
+  }
 
   async function exportReport(format: "html" | "xlsx") {
     setExporting(format);
@@ -388,14 +416,15 @@ function ReportPage() {
           <div className="category-list">{categories.length ? categories.map(([name, count]) => <div key={name}><span>{categoryLabel(name)}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
         </section>
         <section className="panel cases-panel">
-          <PanelTitle icon={<AlertTriangle size={18} />} title="대표 탐지 사례" />
-          {report.representative_comments.length ? report.representative_comments.slice(0, 5).map((comment) => (
-            <article className="case-card" key={comment.youtube_comment_id}>
-              <div><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></div>
-              <p>{comment.text}</p>
-              <footer><span>{comment.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></footer>
-            </article>
-          )) : <div className="clean-state"><ShieldCheck size={32} /><strong>대표 혐오표현 사례 없음</strong><p>현재 보고서에서 표시할 탐지 사례가 없습니다.</p></div>}
+          <PanelTitle icon={<AlertTriangle size={18} />} title="전체 혐오 댓글" />
+          <div className="cases-summary"><span>좋아요 많은 순</span><strong>{formatNumber(hateComments.length)} / {formatNumber(hateCommentPage?.total ?? summary.hate_speech_count)}</strong></div>
+          {hateCommentsError && <div className="cases-error" role="alert">{hateCommentsError}</div>}
+          <div className="cases-list" aria-live="polite">
+            {hateComments.map((comment) => <HateCommentCard comment={comment} key={comment.comment_snapshot_id} />)}
+            {hateCommentsLoading && hateComments.length === 0 && <div className="cases-loading"><LoaderCircle className="spin" size={22} />혐오 댓글을 불러오는 중입니다.</div>}
+            {!hateCommentsLoading && !hateCommentsError && hateComments.length === 0 && <div className="clean-state"><ShieldCheck size={32} /><strong>혐오표현 댓글 없음</strong><p>현재 보고서에서 탐지된 혐오 댓글이 없습니다.</p></div>}
+          </div>
+          {hateCommentPage?.has_more && <button className="cases-more" disabled={hateCommentsLoading} onClick={() => void loadMoreHateComments()}>{hateCommentsLoading ? "불러오는 중" : "혐오 댓글 더 불러오기"}</button>}
         </section>
       </div>
       <section className="panel network-panel">
@@ -405,6 +434,16 @@ function ReportPage() {
         ) : <div className="network-state"><LoaderCircle className="spin" size={25} /><strong>네트워크 데이터를 불러오는 중입니다.</strong></div>}
       </section>
     </div>
+  );
+}
+
+function HateCommentCard({ comment }: { comment: ReportComment }) {
+  return (
+    <article className="case-card">
+      <div><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></div>
+      <p>{comment.text_original || "내용이 없는 댓글입니다."}</p>
+      <footer><span>{comment.analysis.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></footer>
+    </article>
   );
 }
 

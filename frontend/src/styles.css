@@ -186,6 +186,13 @@ button:disabled { cursor: wait; opacity: .65; }
 .category-list i { display: block; height: 100%; background: var(--crimson); }
 .category-list strong { color: var(--primary); font: 600 10px "JetBrains Mono", monospace; text-align: right; }
 .cases-panel { padding-bottom: 12px; }
+.cases-summary { min-height: 38px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; color: var(--muted); background: var(--surface-low); border-bottom: 1px solid #e0e3e5; font-size: 9px; }
+.cases-summary strong { color: var(--primary); font: 700 10px "JetBrains Mono", monospace; }
+.cases-list { max-height: 560px; overflow-y: auto; scrollbar-gutter: stable; }
+.cases-loading { min-height: 150px; display: flex; align-items: center; justify-content: center; gap: 9px; color: var(--muted); font-size: 11px; }
+.cases-error { margin: 12px 14px 0; padding: 9px 11px; color: #8c2017; background: #fff0ed; border: 1px solid #ffb4ab; border-radius: 4px; font-size: 10px; }
+.cases-more { width: calc(100% - 28px); margin: 12px 14px 0; padding: 10px; color: var(--primary); background: #fff; border: 1px solid var(--outline); border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; }
+.cases-more:hover { color: #fff; background: var(--primary); }
 .case-card { margin: 12px 14px 0; padding: 14px; background: #fbfcfd; border: 1px solid #e0e3e5; border-left: 3px solid var(--crimson); border-radius: 4px; }
 .case-card > div, .case-card footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .case-card > div span { padding: 3px 6px; color: #fff; background: var(--crimson); border-radius: 2px; font: 600 8px "JetBrains Mono", monospace; }

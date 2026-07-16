@@ -1,11 +1,11 @@
 from collections.abc import Callable, Iterator
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
@@ -60,14 +60,23 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], storage_d
         result_status: str | None = Query(None, alias="status"),
         category: str | None = None,
         author_channel_id: str | None = None,
+        sort: Literal["collected_at", "like_count"] = "collected_at",
     ) -> dict[str, Any]:
         report = _report(session, report_id)
-        rows = session.execute(
+        statement = (
             select(CommentSnapshot, CommentAnalysisResult)
             .join(CommentAnalysisResult, CommentAnalysisResult.comment_snapshot_id == CommentSnapshot.id)
             .where(CommentAnalysisResult.analysis_run_id == report.analysis_run_id)
-            .order_by(CommentSnapshot.collected_at, CommentSnapshot.id)
-        ).all()
+        )
+        if sort == "like_count":
+            statement = statement.order_by(
+                func.coalesce(CommentSnapshot.like_count, 0).desc(),
+                CommentSnapshot.collected_at.desc(),
+                CommentSnapshot.id,
+            )
+        else:
+            statement = statement.order_by(CommentSnapshot.collected_at, CommentSnapshot.id)
+        rows = session.execute(statement).all()
         filtered = [
             (comment, result)
             for comment, result in rows
@@ -218,4 +227,4 @@ def _script_payload(segment, result) -> dict[str, Any]:
 
 def _page(items: list, cursor: int, limit: int, total: int) -> dict[str, Any]:
     next_cursor = cursor + limit if cursor + limit < total else None
-    return {"items": items, "next_cursor": next_cursor, "has_more": next_cursor is not None}
+    return {"items": items, "total": total, "next_cursor": next_cursor, "has_more": next_cursor is not None}

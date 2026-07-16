@@ -336,11 +336,12 @@ Query:
 | 이름 | 타입 | 설명 |
 | --- | --- | --- |
 | limit | int | 페이지 크기 |
-| cursor | string | 다음 페이지 cursor |
+| cursor | int | 다음 페이지 offset cursor |
 | is_hate_speech | boolean nullable | 혐오표현 여부 필터 |
 | status | string nullable | `succeeded`, `failed`, `skipped` |
 | category | string nullable | 카테고리 필터 |
 | author_channel_id | string nullable | 작성자 채널 필터 |
+| sort | string | `collected_at`(기본) 또는 `like_count`(좋아요 내림차순) |
 
 성공 응답:
 
@@ -370,6 +371,7 @@ Query:
       }
     }
   ],
+  "total": 1,
   "next_cursor": null,
   "has_more": false
 }

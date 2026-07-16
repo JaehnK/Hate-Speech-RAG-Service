@@ -299,3 +299,11 @@
 - 카테고리 분포와 대표 탐지 사례가 같은 공통 mapping을 사용하도록 했다.
 - RAG 방법론의 prompt contract code는 재현성을 위해 영문을 유지했다.
 - 알 수 없는 미래 category는 원본 code를 포함한 한국어 fallback으로 표시해 데이터 손실을 막았다.
+
+# 2026-07-16 전체 혐오 댓글 좋아요순 표시
+
+- 브랜치: `feat/all-hate-comments-by-likes`
+- 보고서 snapshot의 대표 5건 대신 comments API에서 전체 혐오 댓글을 조회하도록 변경했다.
+- comments API에 `sort=like_count`와 응답 `total`을 추가해 좋아요 내림차순과 안정적인 offset pagination을 제공했다.
+- 프론트는 최대 200건씩 불러와 scroll 목록으로 표시하고 초과 데이터는 이어서 불러온다.
+- canonical category의 한국어 표시와 빈 목록·오류·loading 상태를 유지했다.

@@ -91,6 +91,51 @@ async def test_report_detail_export_and_admin_apis(tmp_path) -> None:
         assert retry.json()["status"] == "pending"
 
 
+@pytest.mark.asyncio
+async def test_report_comments_sort_hate_speech_by_likes(tmp_path) -> None:
+    app = _app(tmp_path)
+    with app.state.session_factory.begin() as session:
+        report = _seed_report(session)
+        run = session.get(AnalysisRun, report.analysis_run_id)
+        popular = CommentSnapshot(
+            job_id=run.job_id,
+            youtube_video_id="abcdefghijk",
+            youtube_comment_id="popular-hate",
+            text_original="popular",
+            like_count=20,
+        )
+        session.add(popular)
+        session.flush()
+        session.add(
+            CommentAnalysisResult(
+                analysis_run_id=run.id,
+                comment_snapshot_id=popular.id,
+                status="succeeded",
+                is_hate_speech=True,
+                categories=["identity"],
+            )
+        )
+        report_id = report.id
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        first = await client.get(
+            f"/api/reports/{report_id}/comments",
+            params={"is_hate_speech": True, "sort": "like_count", "limit": 1},
+        )
+        second = await client.get(
+            f"/api/reports/{report_id}/comments",
+            params={"is_hate_speech": True, "sort": "like_count", "limit": 1, "cursor": 1},
+        )
+
+    assert first.status_code == 200
+    assert first.json()["items"][0]["youtube_comment_id"] == "popular-hate"
+    assert first.json()["total"] == 2
+    assert first.json()["next_cursor"] == 1
+    assert second.json()["items"][0]["like_count"] == 5
+    assert not second.json()["has_more"]
+
+
 def _app(tmp_path):
     app = create_app(
         Settings(
