@@ -1,4 +1,4 @@
-import type { CreatedJob, ExportStatus, Job, Report } from "./types";
+import type { CommentNetwork, CreatedJob, ExportStatus, Job, Report } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -35,6 +35,10 @@ export function getJob(jobId: string): Promise<Job> {
 
 export function getReport(reportId: string): Promise<Report> {
   return request(`/api/reports/${encodeURIComponent(reportId)}`);
+}
+
+export function getReportNetwork(reportId: string): Promise<CommentNetwork> {
+  return request(`/api/reports/${encodeURIComponent(reportId)}/network`);
 }
 
 export function createExport(reportId: string, format: "html" | "xlsx"): Promise<ExportStatus> {
