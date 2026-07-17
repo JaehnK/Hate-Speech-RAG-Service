@@ -14,8 +14,9 @@ describe("RAG methodology page", () => {
     expect(html).toContain("$0.10");
     expect(html).toContain("$0.02");
     expect(html).toContain("2026-07-20 UTC");
-    expect(html).toContain("Blue/green 재색인");
-    expect(html).toContain("legacy 전체 vector 적재는 보류");
+    expect(html).toContain("전체 재색인 완료");
+    expect(html).toContain("Embed 2 전환을 완료했습니다");
+    expect(html).toContain("정의 31건, 예시 172,157건");
     expect(html).toContain("https://www.upstage.ai/pricing/api");
     expect(html).toContain("Write reasoning in Korean");
     expect(html).toContain("claude-haiku-4-5-20251001");

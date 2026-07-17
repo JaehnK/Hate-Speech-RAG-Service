@@ -17,7 +17,8 @@ x-app-environment: &app-environment
   LLM_MODEL: ${LLM_MODEL:-claude-haiku-4-5-20251001}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-upstage}
-  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-solar-embedding-1-large}
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-embedding}
+  UPSTAGE_EMBEDDING_BASE_URL: ${UPSTAGE_EMBEDDING_BASE_URL:-https://api.upstage.ai/v1/embeddings}
   UPSTAGE_API_KEY: ${UPSTAGE_API_KEY:-}
   CHROMA_PERSIST_DIRECTORY: /data/chroma
   REPORT_STORAGE_DIR: /data/reports
@@ -65,7 +66,8 @@ services:
       APP_ENV: development
       PIPELINE_MODE: fake
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-upstage}
-      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-solar-embedding-1-large}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-embedding}
+      UPSTAGE_EMBEDDING_BASE_URL: ${UPSTAGE_EMBEDDING_BASE_URL:-https://api.upstage.ai/v1/embeddings}
       UPSTAGE_API_KEY: ${UPSTAGE_API_KEY:-}
       CHROMA_PERSIST_DIRECTORY: /data/chroma
     depends_on:

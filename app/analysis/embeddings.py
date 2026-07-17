@@ -14,8 +14,8 @@ import httpx
 from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
-DEFAULT_UPSTAGE_EMBEDDING_MODEL = "solar-embedding-1-large"
-DEFAULT_UPSTAGE_EMBEDDING_BASE_URL = "https://api.upstage.ai/v1/solar/embeddings"
+DEFAULT_UPSTAGE_EMBEDDING_MODEL = "embedding"
+DEFAULT_UPSTAGE_EMBEDDING_BASE_URL = "https://api.upstage.ai/v1/embeddings"
 
 
 class EmbeddingClient(Protocol):
