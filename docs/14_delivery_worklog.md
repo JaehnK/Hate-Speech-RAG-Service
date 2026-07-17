@@ -380,3 +380,13 @@
 - 진행 중이던 legacy 전체 vector 적재를 중단하고, RAG 방법론 화면에 비용·종료 일정과 migration gate를 추가했다.
 - model ID/API 계약 확인, 고정 평가셋 비교, 별도 collection 전량 재색인, blue/green 전환과 rollback 보존을 후속 순서로 명시했다.
 - 서로 다른 embedding model의 vector를 같은 collection에 혼합하지 않는 것을 정합성 원칙으로 고정했다.
+
+# 2026-07-17 Upstage Embed 2 전환 완료
+
+- 브랜치: `feat/upstage-embed2-migration`
+- production 기본 model을 `embedding`으로, endpoint를 `https://api.upstage.ai/v1/embeddings`로 변경하고 passage/query alias를 용도별로 적용했다.
+- worker를 중지한 뒤 definition 31건과 example 172,157건을 4096차원 Embed 2 vector로 전량 재색인했으며 background container의 exit code 0을 확인했다.
+- collection metadata/count와 정치 공동체·정체성·대상 없는 욕설 검색 smoke를 검증했다.
+- 실제 Upstage 검색과 Anthropic 분류를 연결해 `rag_context_status=complete`, output schema, 한국어 reasoning을 확인했다.
+- backend 99 passed/1 skipped, frontend 11 passed와 production build를 통과한 뒤 worker를 Embed 2 설정으로 재빌드·재기동했다.
+- 실행 순서와 완료 증적은 `docs/29_embed2_background_reindex.md`에 기록했다.

@@ -24,7 +24,7 @@ const RUNTIME = [
   ["LLM", "claude-haiku-4-5-20251001"],
   ["Temperature", "0.0"],
   ["Max tokens", "1200"],
-  ["Embedding", "solar-embedding-1-large · Legacy"],
+  ["Embedding", "embedding-passage / embedding-query · Embed 2"],
   ["Prompt", "category-rag-v0.3.0"],
   ["Taxonomy", "v0.3.0"],
   ["Corpus", "definition-corpus-2026-07-16-v0.3"],
@@ -153,29 +153,29 @@ export function RagMethodologyPage() {
 
       <MethodSection number="03" title="Embedding 비용·마이그레이션" icon={<RefreshCcw size={18} />}>
         <div className="embedding-migration-alert">
-          <TriangleAlert size={20} />
-          <div><strong>현재 모델은 종료 예정입니다.</strong><p><code>solar-embedding-1-large</code>가 속한 Embed 서비스는 2026-08-31 UTC 종료 예정이므로 신규 전체 적재를 중단하고 Embed 2 전환을 먼저 검증합니다.</p></div>
+          <CheckCircle2 size={20} />
+          <div><strong>Embed 2 전환을 완료했습니다.</strong><p><code>embedding-passage</code>와 <code>embedding-query</code>로 전체 corpus를 다시 색인하고 4096차원, 정의 31건, 예시 172,157건과 실제 RAG 호출을 검증했습니다.</p></div>
         </div>
         <div className="embedding-price-grid">
           <article>
-            <span>현재 · Embed</span><h3>$0.10</h3><small>1M tokens · VAT 별도</small>
+            <span>종료 예정 · Legacy Embed</span><h3>$0.10</h3><small>1M tokens · VAT 별도</small>
             <p><code>solar-embedding-1-large-passage/query</code><br />2026-08-31 UTC 서비스 종료 예정</p>
           </article>
           <article className="target">
-            <span>전환 대상 · Embed 2</span><h3>$0.02</h3><small>1M tokens · VAT 별도</small>
+            <span>현재 운영 · Embed 2</span><h3>$0.02</h3><small>1M tokens · VAT 별도</small>
             <p>2026-07-20 UTC까지 무료, 이후 기존 대비 단가 80% 절감</p>
           </article>
         </div>
         <div className="embedding-migration-plan">
-          <h3>왜 vector store를 바로 다시 만들지 않는가</h3>
-          <p>서로 다른 embedding 모델의 벡터는 같은 의미 공간이라고 가정할 수 없습니다. 새 모델로 query만 바꾸거나 기존 collection에 새 document를 섞으면 검색 거리가 무의미해질 수 있으므로 별도 collection에서 전량 재생성해야 합니다.</p>
+          <h3>왜 전체 vector store를 다시 만들었는가</h3>
+          <p>서로 다른 embedding 모델의 벡터는 같은 의미 공간이라고 가정할 수 없습니다. 새 모델로 query만 바꾸거나 기존 collection에 새 document를 섞으면 검색 거리가 무의미해질 수 있으므로 worker를 멈추고 두 collection을 reset한 뒤 전량 재생성했습니다.</p>
           <ol>
-            <li><span>01</span><div><strong>API 계약 확정</strong><p>Upstage Console의 Embed 2 model ID, endpoint, passage/query 사용법과 차원을 공식 문서로 확인합니다.</p></div></li>
-            <li><span>02</span><div><strong>고정 평가셋 비교</strong><p>동일 corpus·query로 legacy와 Embed 2의 category recall@k, 정치 2축 혼동, latency와 token 비용을 비교합니다.</p></div></li>
-            <li><span>03</span><div><strong>Blue/green 재색인</strong><p>새 collection과 corpus version을 만들고 count·hash·검색 smoke를 통과한 뒤 retriever를 전환합니다.</p></div></li>
-            <li><span>04</span><div><strong>Rollback 보존</strong><p>새 run에 embedding model과 collection을 기록하고 검증 기간에는 legacy collection을 읽기 전용으로 보존합니다.</p></div></li>
+            <li><span>01</span><div><strong>API 계약 확인 완료</strong><p>공식 endpoint에서 passage/query alias가 각각 HTTP 200과 4096차원 vector를 반환하는지 확인했습니다.</p></div></li>
+            <li><span>02</span><div><strong>전체 재색인 완료</strong><p>definition과 example collection을 Embed 2로 reset하고 전체 172,188건을 적재했습니다.</p></div></li>
+            <li><span>03</span><div><strong>검색 smoke 통과</strong><p>정치 공동체, 정체성, 대상 없는 욕설 query에서 관련 taxonomy가 상위에 검색됐습니다.</p></div></li>
+            <li><span>04</span><div><strong>분류 통합 검증 완료</strong><p>검색 문맥 complete, JSON schema, 한국어 reasoning과 Anthropic 호출을 함께 검증했습니다.</p></div></li>
           </ol>
-          <div className="embedding-decision"><ShieldAlert size={17} /><p><strong>현재 결정:</strong> legacy 전체 vector 적재는 보류합니다. Embed 2 API 계약과 품질 gate를 통과하기 전에는 production collection을 교체하지 않습니다.</p></div>
+          <div className="embedding-decision"><CheckCircle2 size={17} /><p><strong>현재 결정:</strong> production 기본값은 Embed 2입니다. legacy vector와 혼합하지 않으며 배포할 때 corpus manifest와 Chroma volume을 같은 버전으로 운반합니다.</p></div>
           <a href="https://www.upstage.ai/pricing/api" target="_blank" rel="noreferrer">Upstage 공식 API 가격표 ↗</a>
         </div>
       </MethodSection>
@@ -281,8 +281,8 @@ export function RagMethodologyPage() {
 
       <MethodSection number="10" title="재현 체크리스트" icon={<ServerCog size={18} />}>
         <ol className="reproduction-grid">
-          <ReproStep number="01" title="Embed 2 gate">공식 API 계약과 고정 평가셋의 품질·비용 기준을 통과시킵니다.</ReproStep>
-          <ReproStep number="02" title="Blue/green corpus">허용 license corpus를 새 model·collection에 동일 revision으로 적재합니다.</ReproStep>
+          <ReproStep number="01" title="Embed 2 고정">문서는 <code>embedding-passage</code>, 검색은 <code>embedding-query</code>, vector 차원은 4096으로 고정합니다.</ReproStep>
+          <ReproStep number="02" title="Corpus snapshot">허용 license corpus를 동일 revision으로 적재하고 collection count와 metadata를 검증합니다.</ReproStep>
           <ReproStep number="03" title="Version freeze">corpus, embedding, LLM, prompt version을 함께 기록합니다.</ReproStep>
           <ReproStep number="04" title="Identical input">동일한 원문과 <code>source_type</code>으로 검색 질의를 만듭니다.</ReproStep>
           <ReproStep number="05" title="Retriever & contract">K 값 <code>4/4/6</code>, threshold <code>0.40</code>과 validator를 고정합니다.</ReproStep>

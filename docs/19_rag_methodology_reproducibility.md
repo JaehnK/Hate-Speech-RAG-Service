@@ -2,7 +2,7 @@
 
 ## 1. 문서 목적과 기준 시점
 
-이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 dual-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-16 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
+이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 dual-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-17 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
 
 - 프론트 요약 화면: `/rag-methodology`
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
@@ -117,28 +117,30 @@ Return corrected valid JSON only.
 
 ### 4.1 Production embedding
 
-기본 provider는 Upstage이며 설정 이름은 `solar-embedding-1-large`다.
+기본 provider는 Upstage Embed 2이며 설정 이름은 `embedding`이다. adapter가 용도에 따라 다음 alias로 변환한다.
 
-- 문서 적재: `solar-embedding-1-large-passage`
-- 검색 query: `solar-embedding-1-large-query`
+- 문서 적재: `embedding-passage`
+- 검색 query: `embedding-query`
+- endpoint: `https://api.upstage.ai/v1/embeddings`
+- vector dimensions: 4096
 - Chroma distance space: cosine
 - upsert batch size: 100
 
 `HashEmbeddingFunction`은 256차원 결정적 local smoke/test 용도다. production 품질 재현에 사용하는 embedding과 같지 않다.
 
-이 설정은 더 이상 장기 운영 기준이 아니다. Upstage 공식 가격표 기준으로 기존 Embed는 1M token당 USD 0.10이며 2026-08-31 UTC 종료 예정이다. Embed 2는 2026-07-20 UTC까지 무료이고 이후 1M token당 USD 0.02다. 가격은 VAT 10% 별도이며 변경될 수 있으므로 실행 전 공식 가격표를 다시 확인한다.
+legacy Embed는 1M token당 USD 0.10이며 2026-08-31 UTC 종료 예정이다. 현재 사용하는 Embed 2는 2026-07-20 UTC까지 무료이고 이후 1M token당 USD 0.02다. 가격은 VAT 10% 별도이며 변경될 수 있으므로 실행 전 공식 가격표를 다시 확인한다.
 
-### 4.2 Embed 2 전환 gate
+### 4.2 Embed 2 전환 검증 결과
 
-legacy 전체 vector 적재는 중단하고 다음 gate를 순서대로 통과한 뒤 새 collection을 만든다.
+worker를 정지한 상태에서 두 production collection을 reset하고 동일 corpus를 Embed 2로 전량 재색인했다. 다른 embedding 모델의 vector는 혼합하지 않았다.
 
-1. Upstage Console/API 문서에서 Embed 2의 정확한 model ID, endpoint, passage/query 사용법과 vector 차원을 확정한다. 공개 가격 페이지에 없는 식별자를 추측해 코드에 넣지 않는다.
-2. 동일 corpus와 고정 query 평가셋으로 legacy와 Embed 2의 category recall@k, 정치 2축 혼동, latency와 token 비용을 비교한다.
-3. 새 collection 이름과 corpus version으로 전량 재색인한다. 다른 embedding 모델의 vector를 기존 collection에 섞지 않는다.
-4. count, document hash, 검색 smoke를 통과한 뒤 retriever를 blue/green 전환한다.
-5. 새 analysis run에 실제 embedding model과 collection을 기록하고 검증 기간에는 legacy collection을 읽기 전용 rollback 대상으로 보존한다.
+1. passage/query alias가 실제 API에서 각각 HTTP 200과 4096차원 vector를 반환했다.
+2. 재색인 container가 exit code 0으로 끝났고 definition 31건, example 172,157건이 적재됐다.
+3. collection metadata에 provider `upstage`, model `embedding`, document/query alias와 4096차원이 기록됐다.
+4. 정치 공동체, 정체성, 대상 없는 욕설의 검색 smoke에서 관련 taxonomy 문서가 상위에 검색됐다.
+5. 실제 RAG 분류가 definition 8건과 example 4건을 사용해 `rag_context_status=complete`, 유효 JSON과 한국어 reasoning을 반환했다.
 
-비용 단가가 5분의 1이라는 사실만으로 품질 개선을 가정하지 않는다. migration 승인 조건은 비용과 함께 고정 평가셋의 retrieval 품질이 허용 범위 안에 있는지다.
+이는 migration과 실행 정합성에 대한 smoke 증거다. 독립 gold set 기반 recall@k·분류 품질 평가는 모델 품질 개선을 주장하기 전에 별도로 수행해야 한다. 상세 실행 증적은 `docs/29_embed2_background_reindex.md`에 기록한다.
 
 공식 가격 출처: [Upstage API Pricing](https://www.upstage.ai/pricing/api)
 
@@ -334,7 +336,7 @@ uv sync --frozen
 uv run alembic upgrade head
 ```
 
-Embed 2 API 계약과 품질 gate를 통과한 뒤, 같은 manifest, source revision, 새 embedding model로 별도 collection을 초기화한다.
+같은 manifest, source revision과 Embed 2 설정으로 두 collection을 초기화한다. 기존 worker가 동시에 읽지 않도록 먼저 중지해야 한다.
 
 ```bash
 uv run python -m scripts.bootstrap_corpus --reset
@@ -346,7 +348,7 @@ Docker named volume을 사용할 때는 다음 one-shot service를 사용한다.
 docker compose --profile tools run --rm corpus
 ```
 
-`--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. migration 전에는 이 명령으로 legacy 전체 corpus를 다시 만들지 않는다. 새 model과 collection이 확정된 후에만 reset 대상을 명시해 실행한다.
+`--limit-per-dataset`은 연결 smoke에만 사용하고 배포 corpus에는 사용하지 않는다. `--reset`은 기존 collection을 교체하므로 worker가 중지됐고 model·endpoint·manifest가 고정됐을 때만 실행한다.
 
 ### 10.2 서비스 job 재실행
 
