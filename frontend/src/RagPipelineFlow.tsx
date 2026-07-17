@@ -1,5 +1,3 @@
-const FIGMA_FLOW_URL = "https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X";
-
 type FlowNode = {
   id: string;
   type: "start" | "process" | "input" | "pool" | "store" | "decision" | "merge" | "success" | "failure";
@@ -13,26 +11,26 @@ type FlowNode = {
 
 const NODES: FlowNode[] = [
   { id: "request", type: "start", x: 40, y: 74, width: 140, height: 56, title: "분석 요청", detail: "YouTube URL" },
-  { id: "accept", type: "process", x: 230, y: 74, width: 140, height: 56, title: "API 202 접수", detail: "pending job" },
+  { id: "accept", type: "process", x: 230, y: 74, width: 140, height: 56, title: "분석 작업 접수", detail: "비동기 처리" },
   { id: "collect", type: "process", x: 420, y: 74, width: 140, height: 56, title: "공개 데이터 수집", detail: "댓글 · 자막" },
-  { id: "items", type: "input", x: 610, y: 70, width: 150, height: 64, title: "분석 Item 구성", detail: "comment · reply · segment" },
-  { id: "pool", type: "pool", x: 810, y: 68, width: 160, height: 68, title: "병렬 Worker Pool", detail: "bounded concurrency" },
-  { id: "embed", type: "process", x: 50, y: 320, width: 150, height: 62, title: "검색 Query 임베딩", detail: "Upstage query vector" },
-  { id: "examples", type: "store", x: 240, y: 235, width: 160, height: 68, title: "사례 Store", detail: "example k=6" },
-  { id: "definitions", type: "store", x: 240, y: 410, width: 160, height: 68, title: "정의 Store", detail: "taxonomy 4 + definition 4" },
-  { id: "similarity", type: "decision", x: 430, y: 225, width: 150, height: 96, title: "유사도 0.40 이상?", detail: "score gate" },
+  { id: "items", type: "input", x: 610, y: 70, width: 150, height: 64, title: "분석 단위 구성", detail: "댓글 · 답글 · 자막" },
+  { id: "pool", type: "pool", x: 810, y: 68, width: 160, height: 68, title: "병렬 분석", detail: "안정적인 동시 처리" },
+  { id: "embed", type: "process", x: 50, y: 320, width: 150, height: 62, title: "의미 벡터 변환", detail: "검색 질의 구성" },
+  { id: "examples", type: "store", x: 240, y: 235, width: 160, height: 68, title: "유사 사례", detail: "경험적 근거" },
+  { id: "definitions", type: "store", x: 240, y: 410, width: 160, height: 68, title: "정의·분류 기준", detail: "개념적 근거" },
+  { id: "similarity", type: "decision", x: 430, y: 225, width: 150, height: 96, title: "관련성 확인", detail: "근거 선별" },
   { id: "evidence", type: "merge", x: 610, y: 310, width: 90, height: 90, title: "근거", detail: "결합" },
-  { id: "prompt", type: "process", x: 735, y: 326, width: 140, height: 60, title: "Prompt 조립", detail: "rules + 3 contexts" },
-  { id: "classify", type: "process", x: 910, y: 326, width: 130, height: 60, title: "Claude 분류", detail: "valid JSON" },
-  { id: "validate", type: "decision", x: 1050, y: 306, width: 130, height: 100, title: "JSON 계약 통과?", detail: "schema + category" },
-  { id: "retry", type: "decision", x: 610, y: 490, width: 140, height: 96, title: "재시도 남음?", detail: "최대 2회" },
-  { id: "correct", type: "process", x: 800, y: 508, width: 140, height: 60, title: "교정 Prompt", detail: "validation errors" },
+  { id: "prompt", type: "process", x: 735, y: 326, width: 140, height: 60, title: "판정 문맥 구성", detail: "입력 + 검색 근거" },
+  { id: "classify", type: "process", x: 910, y: 326, width: 130, height: 60, title: "혐오표현 분류", detail: "범주 + 설명" },
+  { id: "validate", type: "decision", x: 1050, y: 306, width: 130, height: 100, title: "결과 검증", detail: "형식 + 규칙" },
+  { id: "retry", type: "decision", x: 610, y: 490, width: 140, height: 96, title: "교정 가능?", detail: "검증 결과 확인" },
+  { id: "correct", type: "process", x: 800, y: 508, width: 140, height: 60, title: "결과 교정", detail: "검증 오류 반영" },
   { id: "persist", type: "success", x: 1020, y: 490, width: 150, height: 62, title: "분류 결과 저장", detail: "판정 + RAG 근거" },
-  { id: "fail", type: "failure", x: 610, y: 600, width: 140, height: 48, title: "Item 실패 기록", detail: "LLM_ERROR" },
+  { id: "fail", type: "failure", x: 610, y: 600, width: 140, height: 48, title: "실패 상태 기록", detail: "원인 추적" },
   { id: "aggregate", type: "process", x: 250, y: 735, width: 150, height: 60, title: "판정 결과 집계", detail: "성공 · 실패 포함" },
   { id: "network", type: "process", x: 480, y: 735, width: 150, height: 60, title: "댓글 Network", detail: "node · edge" },
   { id: "report", type: "success", x: 710, y: 735, width: 150, height: 60, title: "분석 보고서", detail: "HTML · XLSX" },
-  { id: "complete", type: "start", x: 960, y: 735, width: 170, height: 60, title: "Job 완료", detail: "partial_success 포함" },
+  { id: "complete", type: "start", x: 960, y: 735, width: 170, height: 60, title: "분석 완료", detail: "결과 제공" },
 ];
 
 const EDGES = [
@@ -62,8 +60,8 @@ export function RagPipelineFlow() {
             </marker>
           </defs>
 
-          <Phase x={20} y={20} width={1160} height={140} title="01 · 비동기 Job" className="job" />
-          <Phase x={20} y={185} width={1160} height={470} title="02 · Item별 Dual-Vector RAG" className="rag" />
+          <Phase x={20} y={20} width={1160} height={140} title="01 · 데이터 수집과 작업 구성" className="job" />
+          <Phase x={20} y={185} width={1160} height={470} title="02 · Dual-Vector RAG 분석" className="rag" />
           <Phase x={20} y={680} width={1160} height={140} title="03 · 집계와 보고서" className="report" />
 
           <g className="flow-edges">
@@ -83,7 +81,6 @@ export function RagPipelineFlow() {
       <div className="rag-flow-footer">
         <span className="rag-flow-mobile-hint">흐름도를 좌우로 이동해 전체 분기를 확인하세요.</span>
         <div className="rag-flow-legend"><span><i className="solid" />순차 흐름</span><span><i className="thick" />병렬 진입</span><span><i className="dotted" />조건·재시도</span></div>
-        <a href={FIGMA_FLOW_URL} target="_blank" rel="noreferrer">FigJam 설계 원본 열기 ↗</a>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@
 
 이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 dual-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-17 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
 
-- 공개 경로 없음. 이 문서와 관련 frontend source는 내부 개발·감사 자료로만 유지한다.
+- 공개 요약 화면: `/rag-methodology`. 이 문서의 운영 설정과 재현 세부는 내부 개발·감사 자료로만 유지한다.
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - prompt version: `category-rag-v0.3.0`

@@ -407,3 +407,11 @@
 - 내부 RAG 방법론 문서와 frontend source는 개발·감사 자료로 유지하지만 production bundle과 public route에서는 제외한다.
 - backend 101 passed/1 skipped, frontend 12 passed, production build와 bundle 개발 문자열 검사를 통과했다.
 - 설정, 테스트, production bundle 문자열 검사와 배포 전 확인 절차는 `docs/31_public_surface_hardening.md`에 기록했다.
+
+# 2026-07-17 공개 RAG 포트폴리오 화면 복원
+
+- 브랜치: `feat/public-rag-portfolio-page`
+- 사용자 피드백에 따라 `/rag-methodology` route와 navigation을 복원했다.
+- Dual-vector 근거 결합, 판정·검증 흐름, 13개 taxonomy, 사회과학적 함의와 타당도 한계는 포트폴리오 정보로 유지했다.
+- embedding migration·가격·종료 일정, 모델 ID, prompt 원문, collection 이름, 검색 수치, 오류 코드와 내부 FigJam 링크는 공개 화면에서 제거했다.
+- Swagger/ReDoc/OpenAPI의 기본 및 production 비노출 정책은 유지했다.
