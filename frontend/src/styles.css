@@ -446,19 +446,31 @@ button:disabled { cursor: wait; opacity: .65; }
 .public-principles p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
 .public-principles aside { grid-column: 1 / -1; padding: 17px 20px; color: #713c16; background: #fff4e8; border: 1px solid #edcfb3; font-size: 13px; line-height: 1.7; }
 .key-settings { max-width: 980px; }
+.key-security-note { margin: 0 0 18px; padding: 13px 15px; display: flex; align-items: flex-start; gap: 10px; color: #625014; background: #fff8db; border: 1px solid #eadb9c; border-radius: 5px; }
+.key-security-note svg { flex: none; margin-top: 1px; }
+.key-security-note p { margin: 0; font-size: 12px; line-height: 1.65; }
+.key-security-note strong { color: var(--primary); }
 .settings-message { margin: 0 0 18px; padding: 12px 14px; color: var(--primary); background: #edf2fb; border: 1px solid #c8d4e6; font-size: 12px; }
 .key-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.key-card { padding: 22px; }
+.key-card { padding: 22px; display: flex; flex-direction: column; }
 .key-title { display: flex; align-items: center; gap: 12px; }
 .key-title > span { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; background: var(--primary); border-radius: 5px; }
 .key-title h2 { margin: 0; font-size: 18px; }
 .key-title p { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+.key-issuance { margin-top: 20px; padding: 15px; background: var(--surface-low); border: 1px solid #e1e5ea; border-radius: 5px; }
+.key-issuance > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.key-issuance > div > strong { color: var(--primary); font-size: 13px; }
+.key-issuance a { display: inline-flex; align-items: center; gap: 5px; color: #315f9e; font-size: 11px; font-weight: 700; }
+.key-issuance a:hover { text-decoration: underline; }
+.key-issuance ol { margin: 13px 0 0; padding-left: 19px; color: #454c58; font-size: 11px; line-height: 1.65; }
+.key-issuance li + li { margin-top: 4px; }
+.key-issuance > p { margin: 12px 0 0; padding-top: 10px; color: var(--muted); border-top: 1px solid #dfe3e8; font-size: 10px; line-height: 1.55; }
 .saved-key { margin: 20px 0 0; padding: 10px 12px; display: flex; align-items: center; gap: 8px; color: var(--success); background: #e7f6ef; font-size: 11px; }
 .saved-key strong { margin-left: auto; }
 .key-card label { margin: 18px 0; display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 700; }
 .key-card input { width: 100%; padding: 12px; border: 1px solid var(--outline); border-radius: 4px; outline: 0; }
 .key-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px #dae2ff; }
-.key-card > div:last-child { display: flex; gap: 8px; }
+.key-actions { margin-top: auto; display: flex; gap: 8px; }
 .key-card button { border: 0; }
 .key-delete { padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--crimson); background: #ffedeb; border-radius: 5px; font-size: 11px; font-weight: 700; }
 .auth-required p { margin: 0; color: var(--muted); font-size: 12px; }
