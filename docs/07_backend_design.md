@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.1 |
-| 작성일시 | 2026-07-09 03:04:53 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-16 22:30:00 KST |
 
 ## 문서 목적
 
@@ -69,12 +69,23 @@ app/
       reports.py
       admin.py
       exports.py
+      auth.py
+      user_api_keys.py
     routes/
       health.py
       analysis_jobs.py
       reports.py
       exports.py
       admin.py
+      auth.py
+      me.py
+  auth/
+    google_oauth_client.py
+    session_service.py
+    session_cookie_codec.py
+    user_account_service.py
+    user_api_key_service.py
+    key_encryption_service.py
   db/
     base.py
     session.py
@@ -88,6 +99,9 @@ app/
       networks.py
       reports.py
       operations.py
+      users.py
+      sessions.py
+      user_api_keys.py
   jobs/
     worker.py
     orchestrator.py
@@ -137,7 +151,8 @@ app/
 
 - request validation
 - response schema 변환
-- 인증과 관리자 토큰 확인
+- 인증과 관리자 토큰 확인(세션 쿠키 기반 사용자 인증 포함)
+- job/report 소유권 검사
 - service 호출
 - HTTP status 결정
 
@@ -155,6 +170,8 @@ API layer가 하지 않는 일:
 - `exports.py`
 - `admin.py`
 - `health.py`
+- `auth.py`
+- `me.py`(사용자 API 키, 내 job/report 목록)
 
 ### Service Layer
 
@@ -172,6 +189,9 @@ API layer가 하지 않는 일:
 - `ReportQueryService`
 - `ExportService`
 - `AdminService`
+- `UserAccountService`
+- `SessionService`
+- `UserApiKeyService`
 
 ### Repository Layer
 
@@ -224,6 +244,143 @@ adapter는 service schema에 맞는 DTO를 반환한다.
 - `definition_vector_collection_name`
 - `definition_corpus_version`
 - `admin_token`
+- `google_client_id`
+- `google_client_secret`
+- `google_oauth_redirect_uri`
+- `session_cookie_name`
+- `session_cookie_domain`
+- `session_cookie_secure`
+- `session_ttl_seconds`
+- `api_key_encryption_key`
+
+### GoogleOAuthClient
+
+위치:
+
+- `app/auth/google_oauth_client.py`
+
+책임:
+
+- Google authorization URL을 생성한다(state, PKCE code_challenge 포함).
+- authorization code를 token으로 교환한다.
+- ID token 서명과 claim(`aud`, `iss`, `exp`)을 검증한다.
+
+주요 메서드:
+
+```python
+build_authorization_url(state: str, code_challenge: str) -> str
+exchange_code(code: str, code_verifier: str) -> GoogleTokenResult
+verify_id_token(id_token: str) -> GoogleIdentity
+```
+
+테스트에서는 fake 구현으로 대체해 실제 Google 호출 없이 로그인 흐름을 검증한다.
+
+### UserAccountService
+
+위치:
+
+- `app/auth/user_account_service.py`
+
+책임:
+
+- `google_sub` 기준으로 사용자를 조회하거나 새로 생성한다.
+- 로그인 시각과 프로필 정보를 갱신한다.
+- 계정 상태(`active`/`suspended`)를 관리한다.
+
+주요 메서드:
+
+```python
+get_or_create_user(identity: GoogleIdentity) -> User
+suspend_user(user_id: UUID) -> None
+```
+
+### SessionService
+
+위치:
+
+- `app/auth/session_service.py`
+
+책임:
+
+- 로그인 성공 시 세션을 생성한다.
+- 요청마다 세션 쿠키를 검증하고 sliding expiration을 적용한다.
+- 로그아웃 시 세션을 무효화한다.
+
+주요 메서드:
+
+```python
+create_session(user_id: UUID, user_agent: str | None, ip: str | None) -> IssuedSession
+validate_session(raw_token: str) -> SessionContext | None
+revoke_session(raw_token: str) -> None
+```
+
+정책:
+
+- 세션 토큰은 SHA-256 해시로만 저장한다. 상세 사양은 `30_auth_oauth_byok.md`를 따른다.
+
+### SessionCookieCodec
+
+위치:
+
+- `app/auth/session_cookie_codec.py`
+
+책임:
+
+- 세션 쿠키를 발급하고(`Set-Cookie` 헤더 생성), 요청에서 파싱한다.
+- `HttpOnly`, `Secure`, `SameSite=Lax` 등 쿠키 속성을 일관되게 적용한다.
+
+주요 메서드:
+
+```python
+encode(raw_token: str, expires_at: datetime) -> str
+decode(cookie_header: str) -> str | None
+expired_cookie() -> str
+```
+
+### UserApiKeyService
+
+위치:
+
+- `app/auth/user_api_key_service.py`
+
+책임:
+
+- 사용자가 등록한 Anthropic/Upstage API 키를 검증, 암호화, 저장, 삭제한다.
+- 분석 job 실행 시점에 필요한 키를 복호화해 제공한다.
+
+주요 메서드:
+
+```python
+register_key(user_id: UUID, provider: str, raw_api_key: str) -> UserApiKeySummary
+list_keys(user_id: UUID) -> list[UserApiKeySummary]
+delete_key(user_id: UUID, provider: str) -> None
+resolve_decrypted_key(user_id: UUID, provider: str) -> str
+```
+
+정책:
+
+- `resolve_decrypted_key`는 worker의 job 실행 스코프 안에서만 호출하고, 반환값을 로그나 예외 메시지에 포함하지 않는다.
+
+### KeyEncryptionService
+
+위치:
+
+- `app/auth/key_encryption_service.py`
+
+책임:
+
+- API 키 원문을 애플리케이션 레벨 대칭키(Fernet)로 암호화/복호화한다.
+
+주요 메서드:
+
+```python
+encrypt(plaintext: str) -> bytes
+decrypt(ciphertext: bytes) -> str
+```
+
+정책:
+
+- 마스터 키는 `settings.api_key_encryption_key`에서만 읽고, 암호화 결과 외의 중간값을 로그에 남기지 않는다.
 
 ### AnalysisJobService
 
@@ -235,15 +392,23 @@ adapter는 service schema에 맞는 DTO를 반환한다.
 
 - 분석 요청을 job으로 생성한다.
 - video ID를 검증한다.
+- 요청자가 필요한 API 키(Anthropic, Upstage)를 등록하고 유효한 상태인지 확인한다.
 - 초기 `job_steps`를 생성한다.
 - 같은 영상 요청도 새 job으로 만든다.
+- job 조회 시 요청자의 소유권을 검사한다.
 
 주요 메서드:
 
 ```python
-create_job(input_value: str) -> AnalysisJobCreated
-get_job_status(job_id: UUID) -> AnalysisJobStatus
+create_job(user_id: UUID, input_value: str) -> AnalysisJobCreated
+get_job_status(user_id: UUID, job_id: UUID) -> AnalysisJobStatus
+list_jobs_for_user(user_id: UUID, filters: JobListFilters) -> Page[AnalysisJobSummary]
 ```
+
+정책:
+
+- API 키 미등록 또는 무효 상태면 `ApiKeyNotConfiguredError` 또는 `ApiKeyInvalidError`를 발생시키고 job을 만들지 않는다.
+- `get_job_status`는 job의 `user_id`가 요청자와 다르면 `JobAccessDeniedError`를 발생시킨다.
 
 ### JobWorker
 
@@ -390,6 +555,11 @@ collect(video_id: str) -> TranscriptCollectionResult
 classify_text(text: str, context: ClassificationContext) -> ClassificationResult
 ```
 
+정책:
+
+- `LlmClient`와 embedding client는 전역 설정 키가 아니라, job의 `user_id`로 `UserApiKeyService.resolve_decrypted_key`를 통해 얻은 사용자 키를 사용한다.
+- provider가 인증 오류를 반환하면 `ApiKeyInvalidError`로 변환하고, 해당 job step만 실패시킨다(다른 사용자의 job에는 영향 없음).
+
 ### CommentAnalyzer
 
 책임:
@@ -501,8 +671,22 @@ retry_job(job_id: UUID) -> RetryResult
 ## 흐름 다이어그램
 
 ```text
+GET /api/auth/google/login
+  -> GoogleOAuthClient.build_authorization_url
+
+GET /api/auth/google/callback
+  -> GoogleOAuthClient.exchange_code / verify_id_token
+      -> UserAccountService.get_or_create_user
+      -> SessionService.create_session
+      -> SessionCookieCodec.encode
+
+PUT /api/me/api-keys/{provider}
+  -> UserApiKeyService.register_key
+      -> KeyEncryptionService.encrypt
+
 POST /api/analysis-jobs
   -> AnalysisJobService
+      -> UserApiKeyService(키 등록/유효성 확인)
       -> JobRepository
       -> JobStepRepository
 
@@ -537,6 +721,9 @@ GET /api/reports/{report_id}
 | `ReportRepository` | report snapshot과 export 저장 |
 | `OperationLogRepository` | operation log와 quota event 저장 |
 | `SecretReferenceRepository` | secret 등록 상태 조회 |
+| `UserRepository` | 사용자 조회/생성, `google_sub` 기준 lookup |
+| `UserSessionRepository` | 세션 생성, 해시 기준 조회, 만료/revoke 처리 |
+| `UserApiKeyRepository` | 암호화된 API 키 저장, provider별 조회/삭제 |
 
 ## DTO 경계
 
@@ -552,6 +739,10 @@ GET /api/reports/{report_id}
 - `CommentNetworkNode`
 - `CommentNetworkEdge`
 - `ReportPayload`
+- `GoogleIdentity`
+- `IssuedSession`
+- `SessionContext`
+- `UserApiKeySummary`
 
 DTO를 두는 이유:
 
@@ -577,12 +768,22 @@ DTO를 두는 이유:
 - `LlmTimeoutError`
 - `NetworkBuildError`
 - `ReportBuildError`
+- `OAuthStateMismatchError`
+- `OAuthCallbackError`
+- `SessionInvalidError`
+- `SessionExpiredError`
+- `AccountSuspendedError`
+- `ApiKeyNotConfiguredError`
+- `ApiKeyInvalidError`
+- `JobAccessDeniedError`
 
 정책:
 
 - API layer는 domain error를 HTTP error response로 변환한다.
 - worker는 domain error를 `job_steps.error_code`와 `operation_logs`에 기록한다.
 - 민감정보는 error message 저장 전 마스킹한다.
+- `ApiKeyInvalidError`, `ApiKeyNotConfiguredError`는 사용자 API 키 원문을 포함하지 않는다. provider와 오류 유형만 기록한다.
+- `SessionInvalidError`, `SessionExpiredError`는 세션 토큰 원문을 포함하지 않는다.
 
 ## 트랜잭션 경계
 
@@ -594,6 +795,8 @@ DTO를 두는 이유:
 - LLM 호출 자체는 DB transaction 밖에서 수행한다.
 - 분석 결과 저장은 batch transaction을 사용한다.
 - report snapshot 생성은 payload 조립 후 단일 transaction으로 저장한다.
+- 사용자 upsert와 세션 생성은 OAuth 콜백 처리 안에서 하나의 transaction으로 묶는다.
+- API 키 등록은 검증 호출(외부 API, transaction 밖) 성공 후 암호화와 저장만 단일 transaction으로 수행한다.
 
 이유:
 
@@ -656,12 +859,18 @@ MVP 최소 테스트:
 - comment analysis result 저장 테스트
 - report payload 생성 테스트
 - API schema validation 테스트
+- 세션 생성/검증/만료/revoke 테스트
+- `KeyEncryptionService` 암호화-복호화 round trip 테스트
+- job/report 소유권 검사 테스트(다른 사용자의 리소스 접근 시 거부)
+- API 키 미등록/무효 상태에서 job 생성이 거부되는지 테스트
 
 외부 의존성 테스트:
 
 - YouTube API client는 fixture payload로 단위 테스트한다.
 - LLM 호출은 fake classifier로 대체한다.
 - Chroma 접근은 integration test에서 별도로 확인한다.
+- `GoogleOAuthClient`는 fake 구현으로 대체해 실제 Google 호출 없이 로그인 E2E를 테스트한다.
+- Anthropic/Upstage 키 검증 호출은 fake provider response로 단위 테스트하고, 실제 키 검증은 integration test에서만 확인한다.
 
 ## 구현 전 확인 사항
 
@@ -672,6 +881,8 @@ MVP 최소 테스트:
 - `legacy_adapters/`를 MVP에 포함할지, 필요한 로직만 새 코드로 옮길지
 - prod reverse proxy를 Compose에 포함할지 여부
 - dev DB 관리 도구를 포함할지 여부
+- Google Cloud Console에서 OAuth client(웹 애플리케이션 유형)를 발급하고 redirect URI를 등록하는 절차
+- `API_KEY_ENCRYPTION_KEY` 생성과 배포 환경(Railway 등) 저장 방식
 
 ## 검증 기준
 
@@ -683,3 +894,6 @@ MVP 최소 테스트:
 - 댓글 분석, 스크립트 분석, 네트워크 생성 실패가 독립적으로 표현된다.
 - 보고서 snapshot이 특정 analysis run에 고정된다.
 - raw 프로젝트의 기존 DAO에 서비스 런타임이 직접 의존하지 않는다.
+- 로그인하지 않았거나 필요한 API 키가 없으면 분석 job을 생성할 수 없다.
+- 소유자가 아닌 사용자의 job/report 조회는 거부된다(공개 샘플 report 제외).
+- 사용자 API 키 원문과 세션 토큰 원문이 로그, 오류 메시지, DB 평문 컬럼 어디에도 남지 않는다.

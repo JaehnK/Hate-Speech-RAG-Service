@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.2 |
-| 작성일시 | 2026-07-09 03:04:53 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-16 22:00:00 KST |
 
 ## 문서 목적
 
@@ -22,6 +22,10 @@
 - RAG 근거는 혐오표현 예시와 혐오표현 정의 문서 출처를 분리해 저장한다.
 - 민감정보 원문은 저장하지 않는다.
 - 기존 `legacy/YouTubeHateSpeech/`, `legacy/hateSpeechRAG/`의 테이블은 참조 대상으로만 보고, MVP 서비스 스키마는 새로 정규화한다.
+- 사용자 신원은 `users.google_sub`를 기준으로 식별하고, 이메일은 참조 정보로만 취급한다.
+- job과 report snapshot의 소유권은 `user_id` 기준으로 표현하고, 소유자가 아닌 사용자의 조회를 차단할 수 있어야 한다.
+- 사용자가 등록하는 Anthropic/Upstage API 키 원문은 어떤 테이블에도 평문으로 저장하지 않고, 애플리케이션 레벨 암호화 후에만 저장한다.
+- 세션은 서버가 소유한 opaque 토큰 기준이며, DB에는 토큰 원문이 아니라 해시만 저장한다.
 
 ## 공통 규칙
 
@@ -36,21 +40,24 @@
 ## ERD 개요
 
 ```text
-analysis_jobs
-  -> job_steps
-  -> video_metadata_snapshots
-  -> comment_snapshots
-  -> transcript_snapshots
-      -> transcript_segments
-  -> analysis_runs
-      -> comment_analysis_results
-      -> script_analysis_results
-      -> comment_networks
-          -> comment_network_nodes
-          -> comment_network_edges
-      -> report_snapshots
-          -> report_exports
-  -> operation_logs
+users
+  -> user_sessions
+  -> user_api_keys
+  -> analysis_jobs (user_id, nullable)
+      -> job_steps
+      -> video_metadata_snapshots
+      -> comment_snapshots
+      -> transcript_snapshots
+          -> transcript_segments
+      -> analysis_runs
+          -> comment_analysis_results
+          -> script_analysis_results
+          -> comment_networks
+              -> comment_network_nodes
+              -> comment_network_edges
+          -> report_snapshots (owner_user_id, is_public_sample)
+              -> report_exports
+      -> operation_logs
 
 channels
   <- video_metadata_snapshots
@@ -58,6 +65,102 @@ channels
 secret_references
 api_quota_events
 ```
+
+## 인증과 사용자 테이블
+
+### users
+
+Google OAuth로 로그인한 사용자 계정을 저장한다.
+
+| 컬럼 | 타입 | 설명 |
+| --- | --- | --- |
+| id | uuid PK | 내부 사용자 ID |
+| google_sub | text | Google ID 토큰의 `sub` claim. 계정의 불변 식별자 |
+| email | text | Google 계정 이메일 |
+| email_verified | boolean | Google이 확인한 이메일 검증 여부 |
+| display_name | text nullable | 표시 이름 |
+| avatar_url | text nullable | 프로필 이미지 URL |
+| status | text | `active`, `suspended` |
+| created_at | timestamptz | 최초 로그인(계정 생성) 시각 |
+| last_login_at | timestamptz nullable | 마지막 로그인 시각 |
+
+제약:
+
+- `UNIQUE (google_sub)`
+- `UNIQUE (email)`
+
+인덱스:
+
+- `(email)`
+- `(status)`
+
+정책:
+
+- 신원의 기준은 `google_sub`이다. `email`은 Google 계정 설정에 따라 바뀔 수 있으므로 조회 편의용 보조 필드로만 취급한다.
+- `status = 'suspended'`인 사용자는 유효한 세션이 있어도 새 job을 생성할 수 없다.
+
+### user_sessions
+
+로그인 세션을 저장한다.
+
+| 컬럼 | 타입 | 설명 |
+| --- | --- | --- |
+| id | uuid PK | 세션 row ID |
+| user_id | uuid FK | `users.id` |
+| session_token_hash | text | 세션 토큰의 SHA-256 해시 |
+| user_agent | text nullable | 로그인 시 User-Agent |
+| ip_address | inet nullable | 로그인 시 IP |
+| created_at | timestamptz | 생성 시각 |
+| last_seen_at | timestamptz | 마지막으로 세션이 사용된 시각 |
+| expires_at | timestamptz | 만료 시각 |
+| revoked_at | timestamptz nullable | 로그아웃 또는 강제 만료 시각 |
+
+제약:
+
+- `UNIQUE (session_token_hash)`
+
+인덱스:
+
+- `(user_id, expires_at)`
+- `(expires_at)`
+
+정책:
+
+- 세션 쿠키에는 원문 토큰만 담고, DB에는 해시만 저장한다. 원문 토큰은 발급 시점 외에는 서버에 보존하지 않는다.
+- `expires_at`이 지났거나 `revoked_at`이 설정된 세션은 인증되지 않은 것으로 처리한다.
+- 세션 발급/검증/만료 처리의 상세 흐름은 `30_auth_oauth_byok.md`에서 정의한다.
+
+### user_api_keys
+
+사용자가 등록한 Anthropic/Upstage API 키를 암호화해 저장한다.
+
+| 컬럼 | 타입 | 설명 |
+| --- | --- | --- |
+| id | uuid PK | row ID |
+| user_id | uuid FK | `users.id` |
+| provider | text | `anthropic`, `upstage` |
+| encrypted_key | bytea | 애플리케이션 레벨로 암호화된 API 키 |
+| key_fingerprint | text | 화면 표시용 마스킹 값(예: 키 뒷 4자리) |
+| is_valid | boolean | 마지막 검증 호출의 성공 여부 |
+| last_validated_at | timestamptz nullable | 마지막 검증 호출 시각 |
+| last_validation_error | text nullable | 마스킹된 검증 실패 사유 |
+| created_at | timestamptz | 등록 시각 |
+| updated_at | timestamptz | 마지막 갱신 시각 |
+
+제약:
+
+- `UNIQUE (user_id, provider)`
+
+인덱스:
+
+- `(user_id)`
+
+정책:
+
+- `encrypted_key`는 애플리케이션 레벨 대칭키 암호화(Fernet, AES-128-CBC+HMAC 기반) 후에만 저장한다. 암호화 키 관리는 `30_auth_oauth_byok.md`에서 정의한다.
+- 키 원문은 분석 job 실행 시점에 worker 프로세스 메모리 내에서만 복호화하고, 로그·오류 메시지·`operation_logs`·`comment_analysis_results.raw_response`를 포함한 어떤 저장 대상에도 남기지 않는다.
+- 같은 `(user_id, provider)`로 다시 등록하면 기존 row를 갱신(대체)한다.
+- YouTube API 키는 이 테이블에 포함하지 않는다. 계속 `secret_references`로 운영자 공용 설정을 관리한다.
 
 ## 핵심 테이블
 
@@ -68,10 +171,11 @@ api_quota_events
 | 컬럼 | 타입 | 설명 |
 | --- | --- | --- |
 | id | uuid PK | job ID |
+| user_id | uuid nullable FK | `users.id`. 인증된 사용자가 만든 job의 소유자 |
 | input_value | text | 사용자가 입력한 URL 또는 video ID |
 | youtube_video_id | text | 추출된 YouTube video ID |
 | status | text | `pending`, `running`, `partial_success`, `succeeded`, `failed`, `canceled` |
-| requested_by | text nullable | MVP에서는 익명 또는 내부 식별자 |
+| requested_by | text nullable | 관리자 도구나 시드 스크립트가 만든 job처럼 `user_id`가 없는 경우의 보조 식별자 |
 | request_options | jsonb | 요청 옵션. MVP에서는 대부분 기본값 |
 | error_summary | jsonb nullable | 전체 실패 또는 부분 실패 요약 |
 | created_at | timestamptz | 생성 시각 |
@@ -82,11 +186,14 @@ api_quota_events
 
 - `(status, created_at)`
 - `(youtube_video_id, created_at)`
+- `(user_id, created_at)`
 
 정책:
 
 - 같은 `youtube_video_id`의 기존 job이 있어도 새 row를 만든다.
 - MVP에서는 deduplication을 하지 않는다.
+- 로그인한 사용자가 생성한 job은 `user_id`를 필수로 채운다. `user_id`가 `null`인 row는 공개 샘플 데이터 시드처럼 사용자 소유가 아닌 job으로 취급한다.
+- job 조회 API는 요청자의 세션 `user_id`와 `analysis_jobs.user_id`가 일치하는 row만 반환한다.
 
 ### job_steps
 
@@ -467,6 +574,8 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 | --- | --- | --- |
 | id | uuid PK | report snapshot ID |
 | analysis_run_id | uuid FK | `analysis_runs.id` |
+| owner_user_id | uuid nullable FK | `users.id`. 조회 편의를 위해 job에서 비정규화한 소유자 |
+| is_public_sample | boolean | 로그인 없이 열람 가능한 공개 샘플 보고서 여부. 기본값 `false` |
 | status | text | `succeeded`, `partial_success`, `failed` |
 | title | text | 보고서 제목 |
 | payload | jsonb | 보고서 렌더링용 정규화 payload |
@@ -480,11 +589,16 @@ YouTube 채널의 최신 확인 정보를 저장한다.
 
 - `(analysis_run_id)`
 - `(status, created_at)`
+- `(owner_user_id, created_at)`
+- `(is_public_sample)`
 
 정책:
 
 - report snapshot은 생성 이후 수정하지 않는다.
 - 수정이 필요하면 새 snapshot을 생성한다.
+- `owner_user_id`는 해당 report의 `analysis_run_id -> job_id -> analysis_jobs.user_id`와 항상 일치해야 하며, report 생성 시점에 채운다.
+- `is_public_sample = true`인 report는 인증 없이 조회를 허용한다. 이 값은 관리자만 설정할 수 있고, 사용자가 직접 본인 report를 공개로 전환하는 기능은 MVP 범위에 포함하지 않는다.
+- report 조회 API는 `is_public_sample = true`이거나 요청자의 세션 `user_id`가 `owner_user_id`와 일치하는 row만 반환한다.
 
 ### report_exports
 
@@ -585,6 +699,8 @@ MVP 기본 보존 정책:
 - export 파일은 재생성 가능하므로 보존 기간을 둘 수 있다.
 - 운영 로그는 기간 기반 보존 정책을 둘 수 있다.
 - 민감정보 원문은 저장하지 않으므로 삭제 대상이 아니다.
+- 사용자가 API 키를 삭제하면 `user_api_keys` row는 즉시 삭제한다. 이미 실행된 job의 `comment_analysis_results` 등 분석 결과에는 영향을 주지 않는다.
+- 사용자가 로그아웃하면 해당 `user_sessions` row를 `revoked_at`으로 무효화한다. 하드 삭제는 보존 기간 정책에 따라 별도 배치로 처리할 수 있다.
 
 삭제 API는 MVP 범위에 포함하지 않는다. 운영 중 수동 정리가 필요하면 별도 관리 명령으로 처리한다.
 
@@ -611,6 +727,9 @@ MVP 서비스 스키마의 변경 방향:
 - PostgreSQL enum을 사용할지, text + 애플리케이션 enum으로 유지할지
 - report `payload`를 DB에 저장할지 파일 저장소에 저장할지
 - export 파일의 기본 보존 기간
+- 사용자가 탈퇴(계정 삭제)할 때 기존 `analysis_jobs`/`report_snapshots`의 소유자 참조를 유지할지, 익명화(`user_id = null`)할지
+- `user_sessions`를 PostgreSQL에 계속 둘지, 세션 조회 부하가 커지면 Redis 등 별도 store로 분리할지
+- API 키 암호화 마스터 키의 rotation 절차(현재는 단일 서버 보유 키를 전제로 하며, KMS 연동은 MVP 이후로 미룬다)
 
 ## 검증 기준
 
@@ -621,3 +740,7 @@ MVP 서비스 스키마의 변경 방향:
 - 스크립트 없음, 댓글 비활성화, 네트워크 생성 실패를 독립적으로 표현할 수 있다.
 - 보고서 snapshot이 특정 analysis run에 고정된다.
 - 민감정보 원문이 저장되지 않는다.
+- 로그인한 사용자는 본인 소유(`user_id` 일치)의 job과 report만 조회할 수 있다.
+- `is_public_sample = true`인 report는 인증 없이 조회할 수 있다.
+- 사용자 API 키 원문이 어떤 테이블에도 평문으로 저장되지 않는다.
+- 세션 토큰 원문이 DB에 저장되지 않는다(해시만 저장).

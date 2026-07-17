@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.4.0 |
-| 작성일시 | 2026-07-09 02:35:08 KST |
+| 버전 | v0.5.0 |
+| 작성일시 | 2026-07-16 22:30:00 KST |
 
 ## 문서 목적
 
@@ -24,12 +24,16 @@ MVP는 다음 조건을 만족하면 완료로 본다.
 - 웹 보고서와 JSON report API로 결과를 확인한다.
 - HTML과 Excel export를 생성한다.
 - 부분 실패가 보고서와 job 상태에 표시된다.
+- 사용자가 Google OAuth로 로그인하고, 본인 소유의 job과 report만 조회한다.
+- 사용자가 Anthropic API 키와 Upstage API 키를 등록해야 새 분석 job을 생성할 수 있다.
+- 로그인하지 않은 방문자는 운영자가 지정한 공개 샘플 report만 열람한다.
 
 ## MVP 제외 항목
 
 - 다중 영상 업로드
-- 사용자 계정과 멀티 테넌트
 - 과금과 quota 공유
+- 사용자별 YouTube API 키 등록(YouTube 키는 운영자 공용 유지)
+- 조직/팀 단위 사용자 그룹과 역할 기반 권한
 - PDF export
 - 외부 자막 업로드
 - 관리자 웹 화면
@@ -78,12 +82,14 @@ POST /api/analysis-jobs
 - Chroma persistent directory 권장안 최종 확인
 - raw 프로젝트를 git submodule로 둘지 vendor로 둘지 확정
 - 관리자 인증의 MVP 방식 확정
+- Google Cloud Console에서 OAuth client 발급, redirect URI 등록
+- `API_KEY_ENCRYPTION_KEY` 생성 및 배포 환경 secret 저장 방식 확정
 
 검증:
 
 - 결정 사항이 `09_implementation_decisions.md`와 관련 설계 문서에 반영되어 있다.
 - Docker 환경 분리 기준이 `10_docker_environment.md`에 정리되어 있다.
-- `.env*.example`에 필요한 환경변수 목록이 정리되어 있다.
+- `.env*.example`에 필요한 환경변수 목록이 정리되어 있다(OAuth, 세션, 암호화 키 포함, 상세는 `30_auth_oauth_byok.md` 참조).
 
 MVP 기본값:
 
@@ -155,8 +161,10 @@ MVP 기본값:
 
 - SQLAlchemy model 작성
 - Alembic 초기화
-- `analysis_jobs`, `job_steps` 생성
-- snapshot, analysis, network, report, operation 테이블 생성
+- `users`, `user_sessions`, `user_api_keys` 생성
+- `analysis_jobs`(`user_id` 포함), `job_steps` 생성
+- snapshot, analysis, network, operation 테이블 생성
+- `report_snapshots`를 `owner_user_id`, `is_public_sample` 포함해 생성
 - repository 기본 class 작성
 
 검증:
@@ -165,28 +173,58 @@ MVP 기본값:
 - 빈 DB에서 전체 테이블이 생성된다.
 - `analysis_jobs`와 `job_steps` repository 단위 테스트가 통과한다.
 - 동일 video ID로 여러 job row를 만들 수 있다.
+- `users.google_sub`, `user_sessions.session_token_hash`, `user_api_keys.(user_id, provider)`에 UNIQUE 제약이 걸려 있다.
+
+## Phase 2.5. Auth와 BYOK 기반 구축
+
+목표:
+
+- 이후 모든 job 생성 API가 로그인과 API 키 등록을 전제로 하므로, Job API 구현보다 먼저 인증/BYOK 기반을 준비한다.
+
+작업:
+
+- `KeyEncryptionService`(Fernet 암호화/복호화) 구현과 단위 테스트
+- `GoogleOAuthClient` 구현(fake 구현 포함, 실제 Google 호출 없이 테스트 가능하게)
+- `SessionService`, `SessionCookieCodec` 구현
+- `auth_api` 라우터 구현: `GET /api/auth/google/login`, `GET /api/auth/google/callback`, `GET /api/auth/session`, `POST /api/auth/logout`
+- 다른 라우터가 재사용할 `get_current_user` FastAPI dependency 작성
+- `UserApiKeyService` 구현: provider별 검증 호출, 등록/조회/삭제
+- `/api/me/api-keys` 라우터 구현
+
+검증:
+
+- fake `GoogleOAuthClient`로 로그인 E2E 테스트가 통과한다(로그인 → 세션 쿠키 발급 → `/api/auth/session` 조회).
+- 세션 쿠키 없이 인증이 필요한 endpoint를 호출하면 `401`이 반환된다.
+- 로그아웃 이후 동일 쿠키로는 인증된 요청을 수행할 수 없다.
+- API 키 등록 시 검증 호출이 실패하면 키가 저장되지 않고 `422`가 반환된다.
+- 등록된 API 키는 응답과 로그 어디에도 원문으로 노출되지 않는다.
+- 상세 사양은 `docs/30_auth_oauth_byok.md`를 따른다.
 
 ## Phase 3. Job API와 Worker Skeleton
 
 목표:
 
-- 분석 요청부터 fake report snapshot 생성까지 end-to-end를 검증한다.
+- 로그인과 API 키 등록을 전제로, 분석 요청부터 fake report snapshot 생성까지 end-to-end를 검증한다.
 
 작업:
 
-- `POST /api/analysis-jobs` 구현
-- `GET /api/analysis-jobs/{job_id}` 구현
+- `POST /api/analysis-jobs` 구현(로그인 세션 필요, API 키 등록 여부 확인, `user_id` 채움)
+- `GET /api/analysis-jobs/{job_id}` 구현(요청자 소유권 검사)
+- `GET /api/me/jobs` 구현
 - job step 초기화 구현
 - PostgreSQL polling worker 구현
 - fake step runner 구현
-- fake report snapshot 생성
+- fake report snapshot 생성(`owner_user_id` 채움)
 
 검증:
 
-- 유효한 video ID 입력 시 job ID가 반환된다.
+- 로그인하고 API 키를 등록한 상태에서 유효한 video ID 입력 시 job ID가 반환된다.
+- 로그인하지 않은 상태로 요청하면 `401`이 반환되고 job이 생성되지 않는다.
+- API 키가 없는 상태로 요청하면 `422`가 반환되고 job이 생성되지 않는다.
 - 같은 video ID를 두 번 요청하면 job이 두 개 생성된다.
 - worker가 pending job을 running, succeeded로 전이한다.
 - job 상태 API가 step 목록을 반환한다.
+- 다른 사용자의 job_id를 조회하면 `403`이 반환된다.
 - fake report API가 snapshot을 반환한다.
 
 ## Phase 4. YouTube 메타데이터 수집
@@ -266,7 +304,7 @@ MVP 기본값:
 - `ExampleRetriever` 구현
 - `DefinitionRetriever` 구현
 - 혐오표현 정의 문서 corpus version 읽기
-- `LlmClient` 구현
+- `LlmClient` 구현(job의 `user_id` 기준으로 `UserApiKeyService.resolve_decrypted_key`가 반환한 키를 사용)
 - `RagClassifier.classify_text` 구현
 - prompt version 기록
 - fake classifier 테스트 추가
@@ -278,6 +316,8 @@ MVP 기본값:
 - 분석 결과에 model, prompt version, example collection, definition collection, definition corpus version이 기록된다.
 - 분석 결과에 유사 예시와 정의 문서 근거가 분리되어 저장된다.
 - LLM 오류가 domain error로 변환된다.
+- 사용자 API 키가 인증 오류를 반환하면 `ApiKeyInvalidError`로 기록되고, `user_api_keys.is_valid`가 `false`로 갱신된다.
+- LLM/embedding 호출에 사용된 키 원문이 로그, 오류 메시지, Langfuse trace 어디에도 남지 않는다.
 
 ## Phase 7.5. RAG Item 병렬 실행 기반
 
@@ -382,8 +422,9 @@ MVP 기본값:
 - `ReportBuilder` 구현
 - 대표 사례 선정 구현
 - failure summary 생성
-- `report_snapshots.payload` 저장
-- `GET /api/reports/{report_id}` 구현
+- `report_snapshots.payload` 저장(`owner_user_id` 채움)
+- `GET /api/reports/{report_id}` 구현(소유권 검사, `is_public_sample` 예외 처리)
+- `GET /api/me/reports`, `GET /api/reports/public` 구현
 - comments, script, network 상세 API 구현
 
 검증:
@@ -392,6 +433,8 @@ MVP 기본값:
 - 댓글 상세 API가 pagination으로 동작한다.
 - 네트워크 API가 nodes와 edges를 반환한다.
 - 같은 영상 새 분석이 기존 report snapshot을 바꾸지 않는다.
+- 소유자가 아닌 사용자가 report를 조회하면 `403`(비로그인은 `401`)이 반환된다.
+- `is_public_sample = true`인 report는 로그인 없이 조회할 수 있다.
 
 ## Phase 12. 웹 보고서와 Export
 
@@ -450,6 +493,9 @@ MVP 기본값:
 - 공개 자막 없는 영상으로 부분 실패 실행
 - LLM fake mode와 real mode 검증
 - 로그와 민감정보 노출 점검
+- Google 로그인 → API 키 등록 → 분석 job 생성 → 본인 report 조회까지 전체 흐름 E2E 실행
+- 두 개의 사용자 계정으로 서로의 job/report에 접근 불가함을 확인
+- 공개 샘플 report가 로그인 없이 조회됨을 확인
 
 검증:
 
@@ -457,6 +503,7 @@ MVP 기본값:
 - 댓글 비활성화 영상은 댓글 섹션 실패를 표시한다.
 - 공개 자막 없는 영상은 스크립트 섹션 실패를 표시한다.
 - API key와 secret이 로그와 보고서에 없다.
+- 사용자 API 키 원문과 세션 토큰 원문이 로그와 보고서에 없다.
 - 문서의 MVP 완료 정의를 모두 만족한다.
 
 ## 구현 우선순위
@@ -464,19 +511,20 @@ MVP 기본값:
 1. RAG corpus와 prompt PoC
 2. Chroma ingest와 retrieval smoke test
 3. 프로젝트 스캐폴딩
-4. DB migration
-5. job API와 worker skeleton
-6. metadata 수집
-7. 댓글 수집
-8. 자막 수집
-9. fake RAG 기반 분석 저장
-10. 실제 dual vector RAG adapter 연결
-11. 네트워크 생성
-12. report snapshot
-13. 웹 보고서
-14. Excel export
-15. 관리자 API
-16. E2E hardening
+4. DB migration(users/user_sessions/user_api_keys 포함)
+5. Auth와 BYOK 기반(OAuth, 세션, API 키 등록)
+6. job API와 worker skeleton
+7. metadata 수집
+8. 댓글 수집
+9. 자막 수집
+10. fake RAG 기반 분석 저장
+11. 실제 dual vector RAG adapter 연결(사용자별 키 사용)
+12. 네트워크 생성
+13. report snapshot과 소유권/공개 샘플 처리
+14. 웹 보고서
+15. Excel export
+16. 관리자 API
+17. E2E hardening(인증/BYOK 시나리오 포함)
 
 ## 주요 리스크
 
@@ -489,6 +537,9 @@ MVP 기본값:
 | 기존 DAO와 신규 스키마 충돌 | 데이터 무결성 저하 | raw DAO 직접 사용 금지 |
 | 네트워크 그래프 과대 | 보고서 렌더링 지연 | summary 우선, 상세 API 분리 |
 | secret 로그 노출 | 보안 사고 | masking, settings repr 제한 |
+| 사용자 API 키 오남용/유출 | 사용자 계정 정지, 신뢰 손상 | 저장 전 암호화, 로그/trace 마스킹, worker 스코프 내에서만 복호화 |
+| OAuth redirect URI 오설정 | 로그인 실패 또는 콜백 탈취 위험 | Google Cloud Console에 정확한 redirect URI 등록, `state`/PKCE 검증 |
+| 공개 샘플 report가 실수로 비공개 데이터를 노출 | 사용자 개인정보 노출 | `is_public_sample`은 관리자만 설정, 지정 전 내용 검토 절차 |
 
 ## 구현 전 질문 후보
 
@@ -501,6 +552,8 @@ MVP 기본값:
 - 혐오표현 정의 문서 corpus의 출처와 versioning을 어떻게 둘 것인가?
 - 웹 보고서는 server-side template로 먼저 만들고 React 분리는 MVP 이후로 미뤄도 되는가?
 - prod profile에 reverse proxy를 포함할 것인가?
+- Anthropic/Upstage 키 검증 호출로 어떤 최소 비용 endpoint를 사용할 것인가?
+- 세션을 PostgreSQL에 둘지, 초기부터 Redis 등 별도 store로 분리할지
 
 이 질문들은 현재 문서 작성을 막지는 않는다. 구현을 시작하기 전에는 결정이 필요하다.
 
@@ -520,6 +573,8 @@ MVP 기본값:
 - HTML report template
 - Excel exporter
 - Admin APIs
+- Auth module(Google OAuth, 세션, 쿠키)
+- BYOK 모듈(사용자 API 키 등록/암호화/검증)
 - E2E test 또는 실행 절차 문서
 
 ## 검증 기준
@@ -532,3 +587,5 @@ MVP 기본값:
 - 댓글 전체 분석 정책을 유지한다.
 - 보고서 snapshot과 항상 새 분석 정책을 유지한다.
 - raw 프로젝트의 기존 코드를 안전하게 전환할 수 있다.
+- Job API 구현 이전에 로그인과 BYOK 기반이 먼저 검증된다.
+- 사용자 소유권과 공개 샘플 report 정책이 E2E 단계에서 검증된다.
