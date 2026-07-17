@@ -27,7 +27,7 @@ uv run python -m app.worker_main
 docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-공개 샘플은 `http://localhost:3000`, 분석 화면은 `http://localhost:3000/analyze`, RAG 방법론은 `http://localhost:3000/rag-methodology`에서 확인한다. 개발용 API 문서는 `API_DOCS_ENABLED=true`일 때만 `http://localhost:8000/docs`에 열린다. 호스트 포트가 사용 중이면 `FRONTEND_PORT=13000`, `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
+분석 메인 화면은 `http://localhost:3000`, 공개 샘플은 `http://localhost:3000/samples`, RAG 방법론은 `http://localhost:3000/rag-methodology`에서 확인한다. 기존 `/analyze` 주소는 메인 화면으로 호환 리다이렉트한다. 개발용 API 문서는 `API_DOCS_ENABLED=true`일 때만 `http://localhost:8000/docs`에 열린다. 호스트 포트가 사용 중이면 `FRONTEND_PORT=13000`, `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
 
 프론트만 다시 빌드하고 시작하려면 다음을 실행한다.
 

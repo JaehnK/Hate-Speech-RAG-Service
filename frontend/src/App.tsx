@@ -51,9 +51,10 @@ const CommentNetworkGraph = lazy(() => import("./CommentNetworkGraph").then((mod
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<PublicHomePage />} />
+      <Route path="/samples" element={<PublicHomePage />} />
       <Route element={<AppShell />}>
-        <Route path="/analyze" element={<AnalysisRequestPage />} />
+        <Route path="/" element={<AnalysisRequestPage />} />
+        <Route path="/analyze" element={<Navigate to="/" replace />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
         <Route path="/reports/:reportId" element={<ReportPage />} />
@@ -76,23 +77,23 @@ function Header() {
 
   return (
     <header className="topbar">
-      <Link className="brand" to="/">SENTINEL-YT</Link>
+      <Link className="brand" to="/">HateScope</Link>
       <nav className="topnav" aria-label="주 메뉴">
-        <NavLink to="/" end>공개 샘플</NavLink>
-        <NavLink to="/analyze">분석</NavLink>
+        <NavLink to="/" end>분석</NavLink>
+        <NavLink to="/samples">공개 샘플</NavLink>
         <NavLink to="/history">분석 이력</NavLink>
         <NavLink to="/rag-methodology">RAG 방법론</NavLink>
       </nav>
       <details className="mobile-nav">
         <summary aria-label="메뉴 열기"><Menu size={20} /></summary>
         <nav aria-label="모바일 메뉴">
-          <NavLink to="/" end>공개 샘플</NavLink>
-          <NavLink to="/analyze">분석</NavLink>
+          <NavLink to="/" end>분석</NavLink>
+          <NavLink to="/samples">공개 샘플</NavLink>
           <NavLink to="/history">분석 이력</NavLink>
           <NavLink to="/rag-methodology">RAG 방법론</NavLink>
         </nav>
       </details>
-      <div className="header-account">{session === undefined ? <span>세션 확인 중</span> : session === null ? <a href="/api/auth/google/login?return_to=/analyze"><LogIn size={15} /> Google 로그인</a> : <><Link to="/settings"><KeyRound size={15} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={() => void signOut()}><LogOut size={15} /></button></>}</div>
+      <div className="header-account">{session === undefined ? <span>세션 확인 중</span> : session === null ? <a href="/api/auth/google/login?return_to=/"><LogIn size={15} /> Google 로그인</a> : <><Link to="/settings"><KeyRound size={15} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={() => void signOut()}><LogOut size={15} /></button></>}</div>
     </header>
   );
 }
@@ -111,7 +112,7 @@ function AppShell() {
             <NavLink to="/history"><History size={18} /> 분석 이력</NavLink>
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
-          <Link className="new-analysis" to="/analyze"><Play size={16} /> 새 분석</Link>
+          <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
           <div className="sidebar-note"><ShieldCheck size={18} /><span>정의·유사 사례 기반<br />dual-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
@@ -130,13 +131,16 @@ function AnalysisRequestPage() {
   useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
 
   if (session === undefined) return <LoadingState label="로그인 상태를 확인하는 중입니다" />;
-  if (session === null) return <AuthRequired />;
-  if (!session.api_keys_registered.anthropic || !session.api_keys_registered.upstage) return <ApiKeysRequired session={session} />;
+  if (session && (!session.api_keys_registered.anthropic || !session.api_keys_registered.upstage)) return <ApiKeysRequired session={session} />;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!input.trim()) {
       setError("YouTube URL 또는 영상 ID를 입력해주세요.");
+      return;
+    }
+    if (session === null) {
+      window.location.assign("/api/auth/google/login?return_to=/");
       return;
     }
     setSubmitting(true);
@@ -172,7 +176,7 @@ function AnalysisRequestPage() {
             </div>
             <button type="submit" disabled={submitting}>
               {submitting ? <LoaderCircle className="spin" size={19} /> : <Sparkles size={19} />}
-              {submitting ? "요청 중" : "분석 시작"}
+              {submitting ? "요청 중" : session === null ? "Google 로그인 후 분석" : "분석 시작"}
             </button>
           </form>
           {error && <div className="inline-error" role="alert">{error}</div>}
@@ -322,7 +326,7 @@ function HistoryPage() {
   const visible = jobs.filter((job) => job.youtube_video_id.toLowerCase().includes(query.toLowerCase()) || job.job_id.includes(query));
   return (
     <div className="page-wrap">
-      <PageTitle title="내 분석 이력" kicker="REPORTS"><Link className="button-small" to="/analyze"><Play size={15} /> 새 분석</Link></PageTitle>
+      <PageTitle title="내 분석 이력" kicker="REPORTS"><Link className="button-small" to="/"><Play size={15} /> 새 분석</Link></PageTitle>
       <p className="page-description">Google 계정으로 요청한 YouTube 분석 작업을 다시 확인합니다.</p>
       <div className="history-toolbar"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="영상 ID 또는 작업 ID 검색" /></div>
       {error ? <ErrorState message={error} /> : loading ? <LoadingState label="분석 이력을 불러오는 중입니다" /> : visible.length === 0 ? (
@@ -562,11 +566,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 function EmptyState() {
-  return <div className="state-card"><FileText size={32} /><strong>아직 분석 이력이 없습니다.</strong><Link to="/analyze">첫 분석 시작하기</Link></div>;
-}
-
-function AuthRequired() {
-  return <div className="state-card auth-required"><LogIn size={34} /><strong>분석을 시작하려면 Google 로그인이 필요합니다.</strong><p>공개 샘플은 로그인 없이 계속 확인할 수 있습니다.</p><a href="/api/auth/google/login?return_to=/analyze">Google로 로그인</a></div>;
+  return <div className="state-card"><FileText size={32} /><strong>아직 분석 이력이 없습니다.</strong><Link to="/">첫 분석 시작하기</Link></div>;
 }
 
 function ApiKeysRequired({ session }: { session: AuthSession }) {
