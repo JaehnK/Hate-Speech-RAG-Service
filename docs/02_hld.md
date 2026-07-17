@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.4.1 |
-| 작성일시 | 2026-07-09 03:04:53 KST |
+| 버전 | v0.5.0 |
+| 작성일시 | 2026-07-16 22:00:00 KST |
 
 ## 문서 목적
 
@@ -23,16 +23,21 @@ MVP는 단일 YouTube 영상 URL 또는 영상 ID 하나를 입력받아 다음 
 - 댓글과 대댓글 기반 소셜 네트워크
 - 웹 보고서와 HTML, Excel 내보내기
 - 보고서 생성 시점의 snapshot
+- Google OAuth 로그인과 서버 측 세션(쿠키) 관리
+- 사용자별 job/보고서 소유권 분리
+- 사용자가 등록하는 Anthropic/Upstage API 키(BYOK)의 암호화 저장과 사용
+- 로그인 없이 열람 가능한 공개 샘플 보고서
 
 MVP는 다음 항목을 포함하지 않는다.
 
 - 다중 영상 업로드
-- 멀티 테넌트 사용자 관리
+- 조직/팀 단위 사용자 그룹과 역할 기반 권한 관리
 - PDF 내보내기
 - 외부 자막 업로드
 - 관리자 웹 화면
 - 브라우저 캐시 또는 로컬 Chrome 세션 의존 수집
 - 기존 분석 결과 재사용 기반 재분석 판단
+- 사용자별 YouTube API 키 등록
 
 ## 핵심 결정
 
@@ -48,19 +53,31 @@ MVP는 다음 항목을 포함하지 않는다.
 - RAG 분류는 혐오표현 예시 vector store와 혐오표현 정의 문서 vector store를 함께 사용한다.
 - Python dependency 관리는 `uv`를 사용하고, Docker Compose 환경 분리는 `10_docker_environment.md`를 따른다.
 - 원천 프로젝트 디렉토리인 `legacy/YouTubeHateSpeech/`, `legacy/hateSpeechRAG/`는 MVP 구현 전환의 참조 코드로 사용하고, 추후 별도 서브모듈 또는 vendor 구조로 포함하는 것을 검토한다.
+- 사용자 신원 확인은 Google OAuth Authorization Code flow만 사용한다.
+- 세션은 서버가 관리하는 opaque 토큰과 HttpOnly 쿠키로 유지하고, 클라이언트가 직접 해석하는 JWT를 세션의 기준으로 사용하지 않는다.
+- Anthropic API 키와 Upstage API 키는 사용자가 등록하는 BYOK로 전환하고, 서버는 원문을 애플리케이션 레벨 암호화 후에만 저장한다. YouTube API 키는 계속 운영자 공용 키를 사용한다.
+- job과 report snapshot의 소유권은 `user_id` 기준으로 분리하고, 소유자가 아닌 사용자는 조회할 수 없다.
+- 로그인 없이 접근한 방문자에게는 운영자가 지정한 공개 샘플 report만 노출한다.
+- 세션 쿠키, OAuth 콜백 흐름, API 키 암호화의 상세 사양은 `30_auth_oauth_byok.md`에서 정의한다.
 
 ## 시스템 컨텍스트
 
 ```text
-분석 이용자
-  -> FastAPI Web/API
+미인증 방문자
+  -> FastAPI Web/API (공개 샘플 report만)
       -> PostgreSQL
+
+분석 이용자
+  -> Google OAuth (로그인)
+  -> FastAPI Web/API
+      -> PostgreSQL (users, sessions, user_api_keys 포함)
       -> Object/File Storage
       -> Chroma Vector Stores
       -> Background Worker
-          -> YouTube Data API
+          -> YouTube Data API (운영자 공용 키)
           -> Public Caption Collector
-          -> LLM Provider
+          -> LLM Provider (사용자 등록 Anthropic 키)
+          -> Embedding Provider (사용자 등록 Upstage 키)
 관리자
   -> FastAPI Admin API
 ```
@@ -80,6 +97,9 @@ FastAPI 애플리케이션은 동기적인 요청 처리와 조회 화면 렌더
 - 보고서 조회 페이지 렌더링
 - HTML, Excel 내보내기 제공
 - 관리자 API 제공
+- Google OAuth 로그인/콜백 처리와 세션 쿠키 발급·검증
+- 로그인한 사용자의 Anthropic/Upstage API 키 등록, 검증, 삭제
+- 요청 사용자와 job/report의 소유권 검사
 
 FastAPI 애플리케이션은 댓글 수집, RAG 분석, 보고서 생성 같은 장시간 작업을 직접 수행하지 않는다.
 
@@ -104,6 +124,9 @@ PostgreSQL은 서비스의 기준 저장소다.
 
 저장 대상:
 
+- users
+- user sessions
+- user api keys(암호화 저장)
 - jobs
 - videos
 - comments
@@ -145,6 +168,30 @@ HTTP endpoint와 request/response schema를 담당한다.
 - `report_api`: 보고서 조회와 내보내기
 - `admin_api`: 운영 설정과 실패 job 조회
 - `health_api`: health check
+- `auth_api`: Google OAuth 로그인/콜백, 세션 조회, 로그아웃
+- `user_api_keys_api`: 사용자 Anthropic/Upstage API 키 등록·조회·삭제
+
+### Auth Module
+
+Google OAuth 로그인, 세션 관리, 사용자 API 키(BYOK) 관리를 담당한다.
+
+주요 컴포넌트:
+
+- `GoogleOAuthClient`: authorization URL 생성, code-token 교환, ID token 검증
+- `UserAccountService`: `google_sub` 기준 사용자 조회/생성, 계정 상태 관리
+- `SessionService`: 세션 생성, 조회, 만료 처리, 로그아웃 시 무효화
+- `SessionCookieCodec`: 세션 쿠키 발급/파싱, 쿠키 속성(HttpOnly, Secure, SameSite) 적용
+- `UserApiKeyService`: 사용자 API 키 등록, 검증 호출, 삭제
+- `KeyEncryptionService`: API 키 암호화/복호화(애플리케이션 레벨 대칭키)
+
+정책:
+
+- 세션은 서버가 발급하는 opaque 토큰이며, DB에는 토큰의 해시만 저장한다.
+- 세션 쿠키는 HttpOnly, 운영 환경에서 Secure, SameSite=Lax 속성을 사용한다.
+- 사용자 API 키는 저장 전 애플리케이션 레벨로 암호화하고, 분석 job 실행 시점에만 worker 프로세스 메모리에서 복호화한다.
+- API 키 등록 시 최소 비용의 검증 호출을 수행하고, 실패하면 저장하지 않는다.
+- YouTube API 키는 이 모듈이 관리하지 않고 운영자 공용 설정(`secret_references`)으로 유지한다.
+- 세부 OAuth 흐름, 쿠키 속성, 암호화 방식은 `30_auth_oauth_byok.md`를 따른다.
 
 ### Job Orchestrator
 
@@ -308,8 +355,18 @@ MVP에서는 관리자 웹 UI를 만들지 않는다.
 
 MVP에서 필요한 API 표면은 다음과 같다.
 
+- `GET /api/auth/google/login`
+- `GET /api/auth/google/callback`
+- `GET /api/auth/session`
+- `POST /api/auth/logout`
+- `GET /api/me/api-keys`
+- `PUT /api/me/api-keys/{provider}`
+- `DELETE /api/me/api-keys/{provider}`
+- `GET /api/me/jobs`
+- `GET /api/me/reports`
 - `POST /api/analysis-jobs`
 - `GET /api/analysis-jobs/{job_id}`
+- `GET /api/reports/public`
 - `GET /api/reports/{report_id}`
 - `GET /reports/{report_id}`
 - `POST /api/reports/{report_id}/exports`
@@ -332,6 +389,8 @@ HLD 기준의 저장 경계는 다음과 같다.
 - 보고서 snapshot은 특정 analysis run을 기준으로 고정한다.
 - network nodes와 edges는 특정 analysis run에 종속된다.
 - exports는 특정 report snapshot에 종속된다.
+- job의 소유권은 `analysis_jobs.user_id`로 표현하고, report snapshot은 조회 편의를 위해 `owner_user_id`를 비정규화해서 갖는다.
+- 운영자가 지정한 공개 샘플 report는 `report_snapshots.is_public_sample = true`로 표시하고, 인증 없이 조회를 허용한다.
 
 ## 보안과 민감정보
 
@@ -340,6 +399,10 @@ HLD 기준의 저장 경계는 다음과 같다.
 - 쿠키 파일 경로, 브라우저 세션 정보, 로컬 캐시 경로는 MVP 보고서에 포함하지 않는다.
 - 외부 API 오류 메시지는 저장 전 민감정보를 마스킹한다.
 - 보고서에는 YouTube 공개 데이터와 분석 결과만 포함한다.
+- 사용자가 등록한 Anthropic/Upstage API 키는 애플리케이션 레벨로 암호화해 저장하고, 원문은 로그·오류 응답·Langfuse trace 어디에도 남기지 않는다.
+- 세션 쿠키 값과 세션 토큰 원문은 서버 로그와 운영자 화면에 노출하지 않으며, DB에는 토큰 해시만 저장한다.
+- 상태를 변경하는 요청(로그아웃, API 키 등록/삭제 등)은 CSRF 대응을 적용한다. 상세 기준은 `30_auth_oauth_byok.md`를 따른다.
+- 관리자 인증(`X-Admin-Token`)과 사용자 세션 인증은 서로 분리된 체계로 유지한다.
 
 ## 관측성과 운영
 
@@ -368,6 +431,8 @@ MVP 기준 프로세스:
 MVP 권장 기본값에서는 별도 Chroma server container를 두지 않는다.
 
 실행 환경은 Docker Compose로 묶는다. 개발, 테스트, 운영 override 기준은 `10_docker_environment.md`에서 정의한다.
+
+인증/BYOK 관련 추가 환경변수(`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SESSION_COOKIE_DOMAIN`, `API_KEY_ENCRYPTION_KEY` 등)의 목록과 상세 값은 `30_auth_oauth_byok.md`에서 정의한다.
 
 ## 원천 프로젝트 전환 기준
 
@@ -416,3 +481,4 @@ HLD 이후에는 다음 순서로 문서를 작성한다.
 4. `06_report_spec.md`: 웹 보고서와 내보내기 구성
 5. `07_backend_design.md`: 주요 클래스와 모듈 책임
 6. `08_mvp_plan.md`: 구현 순서와 검증 기준
+7. `30_auth_oauth_byok.md`: Google OAuth 흐름, 세션 쿠키 사양, API 키 암호화 설계

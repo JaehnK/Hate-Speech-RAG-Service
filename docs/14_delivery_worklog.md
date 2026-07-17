@@ -390,3 +390,11 @@
 - 실제 Upstage 검색과 Anthropic 분류를 연결해 `rag_context_status=complete`, output schema, 한국어 reasoning을 확인했다.
 - backend 99 passed/1 skipped, frontend 11 passed와 production build를 통과한 뒤 worker를 Embed 2 설정으로 재빌드·재기동했다.
 - 실행 순서와 완료 증적은 `docs/29_embed2_background_reindex.md`에 기록했다.
+
+# 2026-07-17 Google OAuth/BYOK 설계 정합성
+
+- 브랜치: `docs/google-oauth-byok-consistency`
+- Google OAuth, DB session, 사용자별 Anthropic/Upstage BYOK와 Fernet 암호화 계약을 `docs/30_auth_oauth_byok.md`에 구체화했다.
+- 프로젝트 범위, HLD, data model, API, backend 설계, 구현 계획, 결정 로그, Docker 환경과 배포 전 runbook의 필드·경로·오류 코드·환경변수를 동일 계약으로 맞췄다.
+- `GET /api/admin/settings` 예시의 LLM provider를 실제 기본값인 `anthropic`으로 바로잡았다.
+- 이 변경은 구현 전 설계 문서 확정이며 실제 OAuth endpoint와 migration은 후속 구현 브랜치에서 추가한다.

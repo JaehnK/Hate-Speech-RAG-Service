@@ -2,8 +2,8 @@
 
 | 항목 | 값 |
 | --- | --- |
-| 버전 | v0.3.0 |
-| 작성일시 | 2026-07-08 08:35:46 KST |
+| 버전 | v0.4.0 |
+| 작성일시 | 2026-07-16 22:45:00 KST |
 
 ## 문서 목적
 
@@ -256,6 +256,14 @@ Dockerfile 흐름 후보:
 | `APP_ENV` | `dev`, `test`, `prod` |
 | `DATABASE_URL` | PostgreSQL 접속 URL |
 | `ADMIN_TOKEN` | 관리자 API token |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `GOOGLE_OAUTH_REDIRECT_URI` | OAuth 콜백 URL |
+| `SESSION_COOKIE_NAME` | 세션 쿠키 이름. 기본 `hsr_session` |
+| `SESSION_COOKIE_DOMAIN` | 세션 쿠키 Domain 속성. 서브도메인 분리 시에만 설정 |
+| `SESSION_COOKIE_SECURE` | 세션 쿠키 Secure 속성. prod 기본 `true`, 로컬 개발만 `false` |
+| `SESSION_TTL_SECONDS` | 세션 만료 기준(초). 기본 `1209600`(14일) |
+| `API_KEY_ENCRYPTION_KEY` | 사용자 API 키 암호화용 Fernet 마스터 키(base64, 32바이트) |
 | `WORKER_STALE_AFTER_SECONDS` | heartbeat가 멈춘 running job을 재대기시키는 기준. 기본 900초 |
 | `RAG_EXECUTION_MODE` | RAG item 실행 방식. 기본 `sequential`, 검증 후 `parallel` |
 | `RAG_ITEM_CONCURRENCY` | RAG step의 최대 in-flight item/classifier slot 수. 기본 2 |
@@ -278,6 +286,12 @@ Dockerfile 흐름 후보:
 | `DEFINITION_CORPUS_VERSION` | 정의 문서 corpus version |
 | `REPORT_STORAGE_DIR` | report export 저장 경로 |
 | `LOG_LEVEL` | 로그 레벨 |
+
+`LLM_API_KEY`, `EMBEDDING_API_KEY`의 역할 변화:
+
+- 실제 사용자 분석 job은 이 값 대신 로그인한 사용자가 등록한 Anthropic/Upstage 키(BYOK, `30_auth_oauth_byok.md` 참조)를 사용한다.
+- 이 두 환경변수는 `PIPELINE_MODE=fake`가 아닌 dev/test 환경에서 개발자가 직접 실행할 때, 그리고 정의 문서 corpus bootstrap 스크립트(`corpus` service)처럼 특정 사용자에게 귀속되지 않는 운영자 작업에서만 사용한다.
+- prod 환경에서 이 값을 설정하지 않아도 일반 사용자 분석 job은 정상 동작해야 한다.
 
 파일 정책:
 
@@ -379,3 +393,5 @@ Docker 환경은 다음 조건을 만족해야 한다.
 - test 환경은 외부 API key 없이 실행 가능하다.
 - prod 환경은 source bind mount를 사용하지 않는다.
 - PostgreSQL, report storage, Chroma data volume이 분리되어 있다.
+- `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`API_KEY_ENCRYPTION_KEY` 없이도 `PIPELINE_MODE=fake` 기반 test profile은 실행 가능하다(OAuth는 fake `GoogleOAuthClient`로 대체).
+- prod 환경에서 `LLM_API_KEY`/`EMBEDDING_API_KEY`를 설정하지 않아도 BYOK 기반 사용자 분석 job은 정상 동작한다.
