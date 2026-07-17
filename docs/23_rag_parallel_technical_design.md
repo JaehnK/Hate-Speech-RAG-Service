@@ -363,8 +363,8 @@ semaphore는 실제 HTTP 시도 동안만 점유한다. backoff sleep 중에는 
 | 환경 변수 | 기본값 | 검증/용도 |
 | --- | ---: | --- |
 | `RAG_EXECUTION_MODE` | `sequential` | `sequential`, `parallel` |
-| `RAG_ITEM_CONCURRENCY` | `2` | 1~16, executor/in-flight/classifier slot 수 |
-| `RAG_EMBEDDING_CONCURRENCY` | `2` | 1~item concurrency |
+| `RAG_ITEM_CONCURRENCY` | `4` | 1~16, executor/in-flight/classifier slot 수 |
+| `RAG_EMBEDDING_CONCURRENCY` | `4` | 1~item concurrency |
 | `RAG_LLM_CONCURRENCY` | `2` | 1~item concurrency |
 | `RAG_ITEM_MAX_ATTEMPTS` | `3` | 1~5, infrastructure 시도 수 |
 | `RAG_HEARTBEAT_INTERVAL_SECONDS` | `30` | 5 이상, 완료 item이 없을 때 heartbeat 간격 |
@@ -373,7 +373,7 @@ semaphore는 실제 HTTP 시도 동안만 점유한다. backoff sleep 중에는 
 
 `embedding_concurrency`와 `llm_concurrency`가 item concurrency보다 크면 validation error로 시작을 막는다. worker replica를 늘리면 provider 총 동시성은 `replica 수 × 설정값`이 되므로 운영자는 replica별 값을 나눠야 한다.
 
-compose의 `x-app-environment`에 값을 넣어 web과 worker 설정 parsing을 일치시키되 실제 사용은 worker만 한다. production 최초 활성화는 env에서 `RAG_EXECUTION_MODE=parallel`, concurrency 2로 지정한다.
+compose의 `x-app-environment`에 값을 넣어 web과 worker 설정 parsing을 일치시키되 실제 사용은 worker만 한다. BYOK 기본값은 `RAG_EXECUTION_MODE=parallel`, item/embedding 4, LLM 2다. 사용자별 Anthropic 한도를 알기 전에는 LLM 동시성을 더 높이지 않는다.
 
 ## 10. 로그와 API
 
