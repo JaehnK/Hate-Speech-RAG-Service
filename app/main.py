@@ -31,8 +31,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level)
     engine = build_engine(settings.database_url)
     session_factory = build_session_factory(engine)
+    docs_enabled = settings.api_docs_enabled and settings.app_env != "production"
 
-    app = FastAPI(title="YouTube Hate Speech Report", version="0.1.0")
+    app = FastAPI(
+        title="YouTube Hate Speech Report",
+        version="0.1.0",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
+    )
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = session_factory

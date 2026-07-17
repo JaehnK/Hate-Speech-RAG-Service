@@ -253,7 +253,8 @@ Dockerfile 흐름 후보:
 
 | 이름 | 설명 |
 | --- | --- |
-| `APP_ENV` | `dev`, `test`, `prod` |
+| `APP_ENV` | `development`, `test`, `production` |
+| `API_DOCS_ENABLED` | 개발용 Swagger/ReDoc/OpenAPI 노출 여부. 기본 `false`, production에서는 값과 무관하게 비활성화 |
 | `DATABASE_URL` | PostgreSQL 접속 URL |
 | `ADMIN_TOKEN` | 관리자 API token |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |

@@ -1,5 +1,6 @@
 x-app-environment: &app-environment
   APP_ENV: ${APP_ENV:-development}
+  API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
   DATABASE_URL: postgresql+psycopg://hatespeech:${POSTGRES_PASSWORD:-hatespeech}@postgres:5432/hatespeech
   ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
   WORKER_STALE_AFTER_SECONDS: ${WORKER_STALE_AFTER_SECONDS:-900}

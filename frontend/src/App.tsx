@@ -1,11 +1,8 @@
 import { lazy, Suspense, type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  BookOpen,
-  BrainCircuit,
   Check,
   CircleDashed,
   CloudDownload,
@@ -26,7 +23,6 @@ import {
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
 import { ApiError, createExport, createJob, getExport, getHateComments, getJob, getReport, getReportNetwork } from "./api";
-import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
 import type { CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, StoredJob } from "./types";
 import { categoryLabel, formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
@@ -54,7 +50,6 @@ export default function App() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
         <Route path="/reports/:reportId" element={<ReportPage />} />
-        <Route path="/rag-methodology" element={<RagMethodologyPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -68,16 +63,12 @@ function Header() {
       <nav className="topnav" aria-label="주 메뉴">
         <NavLink to="/" end>분석</NavLink>
         <NavLink to="/history">분석 이력</NavLink>
-        <NavLink to="/rag-methodology">RAG 방법론</NavLink>
-        <a href="/docs" target="_blank" rel="noreferrer">API 문서</a>
       </nav>
       <details className="mobile-nav">
         <summary aria-label="메뉴 열기"><Menu size={20} /></summary>
         <nav aria-label="모바일 메뉴">
           <NavLink to="/" end>분석</NavLink>
           <NavLink to="/history">분석 이력</NavLink>
-          <NavLink to="/rag-methodology">RAG 방법론</NavLink>
-          <a href="/docs" target="_blank" rel="noreferrer">API 문서</a>
         </nav>
       </details>
       <div className="engine-state"><span /> API 연결됨</div>
@@ -97,9 +88,6 @@ function AppShell() {
           </div>
           <nav>
             <NavLink to="/history"><History size={18} /> 분석 이력</NavLink>
-            <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
-            <a href="/api/health/readiness" target="_blank" rel="noreferrer"><Activity size={18} /> API 상태</a>
-            <a href="/docs" target="_blank" rel="noreferrer"><BookOpen size={18} /> 문서</a>
           </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
           <div className="sidebar-note"><ShieldCheck size={18} /><span>정의·유사 사례 기반<br />dual-vector RAG</span></div>

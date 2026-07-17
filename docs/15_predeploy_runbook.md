@@ -115,5 +115,7 @@ uv run python -m experiments.evaluate_results \
 - Google OAuth consent screen이 운영 도메인으로 설정되고, redirect URI가 정확히 등록되어 있다
 - `SESSION_COOKIE_SECURE=true`, `SESSION_COOKIE_DOMAIN`이 운영 도메인 기준으로 설정되어 있다(HTTPS 미적용 상태로 배포하지 않는다)
 - `API_KEY_ENCRYPTION_KEY`가 secret manager/보호된 환경변수로만 주입되고, 별도 안전한 위치에 백업되어 있다(분실 시 전체 사용자 API 키 재등록 필요)
+- `APP_ENV=production`, `API_DOCS_ENABLED=false`이며 `/docs`, `/redoc`, `/openapi.json`이 모두 `404`를 반환한다.
+- public frontend에 `/rag-methodology`, Swagger, readiness 링크가 노출되지 않는다.
 - 운영자가 공개 샘플로 지정할 report 후보를 사전에 검토하고 `is_public_sample`을 설정했다
 - 두 계정 간 job/report 소유권 격리가 E2E에서 확인됐다(4번 절차 10번 항목)
