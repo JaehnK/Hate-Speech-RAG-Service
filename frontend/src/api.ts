@@ -1,4 +1,4 @@
-import type { CommentNetwork, CreatedJob, ExportStatus, Job, Report, ReportCommentPage } from "./types";
+import type { CommentNetwork, CreatedJob, ExportStatus, Job, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -50,6 +50,11 @@ export function getHateComments(reportId: string, cursor = 0): Promise<ReportCom
     cursor: String(cursor),
   });
   return request(`/api/reports/${encodeURIComponent(reportId)}/comments?${query}`);
+}
+
+export function getScriptSegments(reportId: string, cursor = 0): Promise<ReportScriptSegmentPage> {
+  const query = new URLSearchParams({ limit: "200", cursor: String(cursor) });
+  return request(`/api/reports/${encodeURIComponent(reportId)}/script-segments?${query}`);
 }
 
 export function createExport(reportId: string, format: "html" | "xlsx"): Promise<ExportStatus> {

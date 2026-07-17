@@ -226,6 +226,7 @@ context_hint={optional}
 ```
 
 스크립트 세그먼트는 이전/다음 문장을 context로 줄 수 있지만, classification 대상은 현재 segment로 제한한다.
+현재 수집기는 자막 cue의 문장 종결부호를 우선 경계로 삼고, 자동 자막에 종결부호가 없을 때는 최대 45초·800자를 fallback으로 사용한다. 이 방식은 표시·감사 단위를 문장에 가깝게 유지하면서 불완전한 cue를 무리하게 문장으로 간주하지 않는다.
 
 ### Retriever Slots
 

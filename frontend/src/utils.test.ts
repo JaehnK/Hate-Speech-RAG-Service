@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { categoryLabel, itemProgressText, ratioPercent, reportIdFromPath } from "./utils";
+import { categoryLabel, formatPlaybackTime, itemProgressText, ratioPercent, reportIdFromPath } from "./utils";
 
 describe("report helpers", () => {
   it("extracts a report id from an API path", () => {
@@ -11,6 +11,11 @@ describe("report helpers", () => {
   it("calculates safe percentages", () => {
     expect(ratioPercent(4, 10)).toBe(40);
     expect(ratioPercent(4, 0)).toBe(0);
+  });
+
+  it("formats transcript timestamps", () => {
+    expect(formatPlaybackTime(7.8)).toBe("0:07");
+    expect(formatPlaybackTime(3661)).toBe("1:01:01");
   });
 
   it("formats detailed RAG item progress", () => {

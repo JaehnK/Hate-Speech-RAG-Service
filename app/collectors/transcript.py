@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
@@ -9,6 +10,9 @@ from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled, Video
 
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, TranscriptSegment, TranscriptSnapshot
+
+
+SENTENCE_END_PATTERN = re.compile(r"[.!?…。！？](?:[\"'”’」』)]*)$")
 
 
 @dataclass(frozen=True)
@@ -78,7 +82,10 @@ class TranscriptCollector:
             is_auto_generated=data.is_generated,
             source_type="public_caption",
             raw_text=raw_text,
-            raw_payload={"item_count": len(data.items)},
+            raw_payload={
+                "item_count": len(data.items),
+                "segmentation": "sentence_boundary_with_duration_char_fallback_v1",
+            },
             status="succeeded",
         )
         session.add(snapshot)
@@ -107,6 +114,9 @@ class TranscriptCollector:
                 yield _segment(current)
                 current = []
             current.append(item)
+            if SENTENCE_END_PATTERN.search(item.text.strip()):
+                yield _segment(current)
+                current = []
         if current:
             yield _segment(current)
 

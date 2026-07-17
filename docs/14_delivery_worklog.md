@@ -331,6 +331,15 @@
 - Excel 댓글·자막 sheet의 `reasoning` 열 제목을 `분석 사유`로 변경했다.
 - 기존 저장 결과는 원문 보존을 위해 소급 번역하지 않으며 변경 이후 분석부터 한국어 계약을 적용한다.
 
+# 2026-07-17 문장 경계 우선 자막 분석 노출
+
+- 브랜치: `feat/sentence-aware-script-report`
+- 자막 cue에 문장 종결부호가 있으면 segment 경계로 우선하고, 없으면 기존 45초·800자 상한을 fallback으로 유지했다.
+- 보고서에 시간순 자막, 판정 상태, 한국어 카테고리, 분석 사유와 pagination을 노출했다.
+- 기존 segment/API/DB 계약을 유지해 과거 보고서도 표시하며, 새 분할 규칙은 신규 job부터 적용된다.
+- 상세 설계·순서·검증 기준은 `docs/32_sentence_aware_script_report.md`에 기록했다.
+- 검증: backend 102 passed/1 skipped, frontend 13 passed, Ruff·compileall·Compose config·production image build 통과.
+
 # 2026-07-16 RAG 사회과학적 함의와 해석 경계
 
 - 브랜치: `feat/rag-social-science-implications`

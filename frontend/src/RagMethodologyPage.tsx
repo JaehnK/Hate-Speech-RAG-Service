@@ -148,7 +148,7 @@ export function RagMethodologyPage() {
       <MethodSection number="06" title="사회과학적 해석 단위" icon={<Users size={18} />}>
         <p className="section-intro">모델의 판정은 개인의 본질이나 의도를 규정하는 값이 아니라, 수집된 시점의 발화와 답글 관계를 관찰 가능한 지표로 바꾼 결과입니다.</p>
         <div className="social-lens-grid">
-          <article><Code2 size={20} /><h3>분석 단위</h3><p>기본 단위는 댓글·답글·자막이라는 <strong>발화</strong>입니다. 작성자 단위 수치는 발화 결과를 집계한 값이며 개인의 성향 진단이 아닙니다.</p></article>
+          <article><Code2 size={20} /><h3>분석 단위</h3><p>기본 단위는 댓글·답글·자막이라는 <strong>발화</strong>입니다. 자막은 문장 경계를 우선하고 시간·길이 상한을 보조 기준으로 삼습니다. 작성자 단위 수치는 발화 결과를 집계한 값이며 개인의 성향 진단이 아닙니다.</p></article>
           <article><Scale size={20} /><h3>개념의 조작화</h3><p>혐오표현 개념을 13개 범주와 정치적 대상 축으로 조작화합니다. 각 범주는 분석 도구이지 사회집단의 고정된 속성이 아닙니다.</p></article>
           <article><Network size={20} /><h3>관계적 맥락</h3><p>답글 edge와 연결 구조는 상호작용의 집중을 보여줍니다. 연결 자체가 동조·설득·영향 또는 혐오의 전파를 입증하지는 않습니다.</p></article>
           <article><BookOpenCheck size={20} /><h3>근거의 역할</h3><p>검색된 정의와 유사 사례는 판정 경로를 감사하기 위한 근거입니다. 검색 유사도나 모델의 한국어 사유를 사실의 증명으로 취급하지 않습니다.</p></article>

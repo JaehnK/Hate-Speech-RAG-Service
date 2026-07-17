@@ -36,6 +36,32 @@ def test_transcript_is_normalized_and_segmented(tmp_path) -> None:
         assert [segment.text for segment in segments] == ["첫 문장 둘째 문장", "셋째 문장"]
 
 
+def test_transcript_prefers_sentence_boundaries(tmp_path) -> None:
+    class SentenceProvider:
+        def fetch(self, _video_id: str) -> TranscriptData:
+            return TranscriptData(
+                language_code="ko",
+                is_generated=True,
+                items=(
+                    TranscriptItem("이것은", 0, 2),
+                    TranscriptItem("첫 문장입니다.", 2, 2),
+                    TranscriptItem("둘째 문장입니다!", 4, 2),
+                    TranscriptItem("문장부호가 없는 마지막 발화", 6, 2),
+                ),
+            )
+
+    factory = _factory(tmp_path)
+    with factory.begin() as session:
+        job = AnalysisJobRepository(session).create("abcdefghijk", "abcdefghijk")
+        snapshot, segments = TranscriptCollector(SentenceProvider()).collect(session, job)
+        assert snapshot.raw_payload["segmentation"] == "sentence_boundary_with_duration_char_fallback_v1"
+        assert [segment.text for segment in segments] == [
+            "이것은 첫 문장입니다.",
+            "둘째 문장입니다!",
+            "문장부호가 없는 마지막 발화",
+        ]
+
+
 def test_missing_transcript_records_not_available_snapshot(tmp_path) -> None:
     factory = _factory(tmp_path)
     with factory.begin() as session:

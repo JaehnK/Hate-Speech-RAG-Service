@@ -23,11 +23,11 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getExport, getHateComments, getJob, getReport, getReportNetwork } from "./api";
+import { ApiError, createExport, createJob, getExport, getHateComments, getJob, getReport, getReportNetwork, getScriptSegments } from "./api";
 import { RagMethodologyPage } from "./RagMethodologyPage";
 import { getStoredJobs, rememberJob } from "./storage";
-import type { CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, StoredJob } from "./types";
-import { categoryLabel, formatDate, formatNumber, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
+import type { CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage, StoredJob } from "./types";
+import { categoryLabel, formatDate, formatNumber, formatPlaybackTime, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
   validate_input: "입력 검증",
@@ -341,6 +341,10 @@ function ReportPage() {
   const [hateCommentPage, setHateCommentPage] = useState<ReportCommentPage | null>(null);
   const [hateCommentsLoading, setHateCommentsLoading] = useState(true);
   const [hateCommentsError, setHateCommentsError] = useState<string | null>(null);
+  const [scriptSegments, setScriptSegments] = useState<ReportScriptSegment[]>([]);
+  const [scriptSegmentPage, setScriptSegmentPage] = useState<ReportScriptSegmentPage | null>(null);
+  const [scriptSegmentsLoading, setScriptSegmentsLoading] = useState(true);
+  const [scriptSegmentsError, setScriptSegmentsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<string | null>(null);
 
@@ -350,6 +354,10 @@ function ReportPage() {
     setHateCommentPage(null);
     setHateCommentsLoading(true);
     setHateCommentsError(null);
+    setScriptSegments([]);
+    setScriptSegmentPage(null);
+    setScriptSegmentsLoading(true);
+    setScriptSegmentsError(null);
     void getReport(reportId).then((value) => { if (active) setReport(value); }).catch((cause) => { if (active) setError(errorMessage(cause)); });
     void getReportNetwork(reportId).then((value) => { if (active) setNetwork(value); }).catch((cause) => { if (active) setNetworkError(errorMessage(cause)); });
     void getHateComments(reportId).then((page) => {
@@ -357,6 +365,11 @@ function ReportPage() {
       setHateComments(page.items);
       setHateCommentPage(page);
     }).catch((cause) => { if (active) setHateCommentsError(errorMessage(cause)); }).finally(() => { if (active) setHateCommentsLoading(false); });
+    void getScriptSegments(reportId).then((page) => {
+      if (!active) return;
+      setScriptSegments(page.items);
+      setScriptSegmentPage(page);
+    }).catch((cause) => { if (active) setScriptSegmentsError(errorMessage(cause)); }).finally(() => { if (active) setScriptSegmentsLoading(false); });
     return () => { active = false; };
   }, [reportId]);
 
@@ -372,6 +385,21 @@ function ReportPage() {
       setHateCommentsError(errorMessage(cause));
     } finally {
       setHateCommentsLoading(false);
+    }
+  }
+
+  async function loadMoreScriptSegments() {
+    if (scriptSegmentPage?.next_cursor === null || scriptSegmentPage?.next_cursor === undefined) return;
+    setScriptSegmentsLoading(true);
+    setScriptSegmentsError(null);
+    try {
+      const page = await getScriptSegments(reportId, scriptSegmentPage.next_cursor);
+      setScriptSegments((current) => [...current, ...page.items]);
+      setScriptSegmentPage(page);
+    } catch (cause) {
+      setScriptSegmentsError(errorMessage(cause));
+    } finally {
+      setScriptSegmentsLoading(false);
     }
   }
 
@@ -433,6 +461,20 @@ function ReportPage() {
           {hateCommentPage?.has_more && <button className="cases-more" disabled={hateCommentsLoading} onClick={() => void loadMoreHateComments()}>{hateCommentsLoading ? "불러오는 중" : "혐오 댓글 더 불러오기"}</button>}
         </section>
       </div>
+      <section className="panel script-panel">
+        <PanelTitle icon={<FileText size={18} />} title="자막 RAG 분석" />
+        <div className="script-summary">
+          <span>영상 시간순 · 자막 구간별 판정</span>
+          <div><strong>{formatNumber(report.script_analysis_summary.succeeded)}</strong> 분석 완료 <strong className="risk">{formatNumber(report.script_analysis_summary.hate_speech_count)}</strong> 혐오표현</div>
+        </div>
+        {scriptSegmentsError && <div className="cases-error" role="alert">{scriptSegmentsError}</div>}
+        <div className="script-list" aria-live="polite">
+          {scriptSegments.map((segment) => <ScriptSegmentCard segment={segment} key={segment.segment_id} />)}
+          {scriptSegmentsLoading && scriptSegments.length === 0 && <div className="cases-loading"><LoaderCircle className="spin" size={22} />자막 분석을 불러오는 중입니다.</div>}
+          {!scriptSegmentsLoading && !scriptSegmentsError && scriptSegments.length === 0 && <div className="clean-state"><FileText size={32} /><strong>분석 가능한 공개 자막 없음</strong><p>공개 자막이 없거나 자막 분석 결과가 생성되지 않았습니다.</p></div>}
+        </div>
+        {scriptSegmentPage?.has_more && <button className="cases-more" disabled={scriptSegmentsLoading} onClick={() => void loadMoreScriptSegments()}>{scriptSegmentsLoading ? "불러오는 중" : "자막 분석 더 불러오기"}</button>}
+      </section>
       <section className="panel network-panel">
         <PanelTitle icon={<Network size={18} />} title="댓글 네트워크 분석" />
         {network ? <Suspense fallback={<div className="network-state"><LoaderCircle className="spin" size={25} /><strong>그래프 엔진을 준비하는 중입니다.</strong></div>}><CommentNetworkGraph network={network} /></Suspense> : networkError ? (
@@ -440,6 +482,25 @@ function ReportPage() {
         ) : <div className="network-state"><LoaderCircle className="spin" size={25} /><strong>네트워크 데이터를 불러오는 중입니다.</strong></div>}
       </section>
     </div>
+  );
+}
+
+function ScriptSegmentCard({ segment }: { segment: ReportScriptSegment }) {
+  const categories = segment.analysis.categories ?? [];
+  const failed = segment.analysis.status === "failed";
+  const flagged = segment.analysis.is_hate_speech === true;
+  return (
+    <article className={`script-card ${flagged ? "flagged" : ""}`}>
+      <header>
+        <time>{formatPlaybackTime(segment.start_seconds)}–{formatPlaybackTime(segment.end_seconds)}</time>
+        <span className={failed ? "failed" : flagged ? "flagged" : "normal"}>{failed ? "분석 실패" : flagged ? "혐오표현" : "정상"}</span>
+      </header>
+      <div>
+        <p>{segment.text}</p>
+        {segment.analysis.reasoning && <small><strong>분석 사유</strong>{segment.analysis.reasoning}</small>}
+      </div>
+      <footer>{categories.length > 0 ? categories.map(categoryLabel).join(", ") : "분류 없음"}</footer>
+    </article>
   );
 }
 
