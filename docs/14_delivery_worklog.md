@@ -430,3 +430,13 @@
 - 브랜치: `style/report-category-list-fill-panel`
 - 카테고리 분포 패널을 세로 flex layout으로 바꾸고 목록이 패널의 남은 높이를 채우도록 했다.
 - 7개 이하 항목은 상단부터 스크롤 없이 표시하고, 8개 이상일 때만 확장된 목록 영역에서 세로 스크롤을 사용한다.
+
+# 2026-07-17 Google 로그인 전 공개 샘플 Stitch 설계
+
+- 브랜치: `design/prelogin-public-samples`
+- 문서에만 있던 비로그인 공개 샘플 흐름이 실제 frontend/backend에는 없음을 확인했다.
+- 기존 Stitch project와 VoxGuard design system에 desktop 공개 랜딩·샘플 탐색 화면을 생성했다.
+- 초안에 생성된 영문 메뉴, API Documentation, 가상 회사명, 2024 표기를 제거하고 한국어 용어·해석 경계·2026 푸터로 수정했다.
+- 390px single-column, 44px touch target을 기준으로 mobile 스크린을 별도 생성했다.
+- Stitch의 가상 샘플은 layout 참조로만 사용하고, 실제 구현은 운영자가 검토해 `is_public_sample=true`로 지정한 report만 API에서 표시하도록 계약을 고정했다.
+- 화면 ID·권한 경계·data contract·후속 구현 순서는 `docs/33_prelogin_public_samples_stitch.md`에 기록했다.
