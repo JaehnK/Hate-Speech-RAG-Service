@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.analysis.llm_client import LlmClient, LlmResponse
-from app.analysis.errors import ApiKeyInvalidError
+from app.analysis.errors import ApiKeyInvalidError, LlmRequestError
 from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult, SourceType
 from app.analysis.models import ValidationResult
@@ -41,7 +41,9 @@ class ClassificationResult:
 
 
 class ClassificationError(Exception):
-    pass
+    def __init__(self, message: str, code: str = "LLM_ERROR") -> None:
+        self.code = code
+        super().__init__(message)
 
 
 class RagClassifier:
@@ -91,7 +93,10 @@ class RagClassifier:
                 self.invalid_provider = exc.provider
                 raise
             except Exception as exc:
-                raise ClassificationError("both RAG vector stores are unavailable") from exc
+                raise ClassificationError(
+                    "both RAG vector stores are unavailable",
+                    code="RAG_RETRIEVAL_ERROR",
+                ) from exc
             definitions = list(bundle.definitions)
             examples = list(bundle.examples)
             examples = [
@@ -101,7 +106,7 @@ class RagClassifier:
             ]
 
         if len(bundle.failures) == 2:
-            raise ClassificationError("both RAG vector stores are unavailable")
+            raise ClassificationError("both RAG vector stores are unavailable", code="RAG_RETRIEVAL_ERROR")
         context_status = _context_status(definitions, examples)
 
         prompt = build_category_prompt(
@@ -131,6 +136,8 @@ class RagClassifier:
                 except ApiKeyInvalidError as exc:
                     self.invalid_provider = exc.provider
                     raise
+                except LlmRequestError as exc:
+                    raise ClassificationError(str(exc), code=exc.code) from exc
                 except Exception as exc:
                     raise ClassificationError("LLM classification request failed") from exc
 
@@ -154,7 +161,10 @@ class RagClassifier:
 
             prompt = _retry_prompt(prompt, validation)
 
-        raise ClassificationError(f"LLM output failed validation: {last_validation.errors}")
+        raise ClassificationError(
+            f"LLM output failed validation: {last_validation.errors}",
+            code="LLM_OUTPUT_INVALID",
+        )
 
     def close(self) -> None:
         self.retriever.close()

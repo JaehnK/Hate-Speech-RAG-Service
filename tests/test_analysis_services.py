@@ -91,6 +91,7 @@ def test_comment_and_script_analyzers_record_every_item(tmp_path) -> None:
     with factory() as session:
         assert [row.status for row in session.scalars(select(CommentAnalysisResult).order_by(CommentAnalysisResult.created_at))] == ["succeeded", "failed"]
         assert [row.status for row in session.scalars(select(ScriptAnalysisResult).order_by(ScriptAnalysisResult.created_at))] == ["succeeded", "failed"]
+        assert {row.error_code for row in session.scalars(select(CommentAnalysisResult).where(CommentAnalysisResult.status == "failed"))} == {"LLM_ERROR"}
         progress_logs = list(session.scalars(select(OperationLog).where(OperationLog.event_type == "rag_progress")))
         assert len(progress_logs) == 2
         assert {row.metadata_json["total"] for row in progress_logs} == {2}

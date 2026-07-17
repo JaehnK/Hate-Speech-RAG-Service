@@ -218,7 +218,7 @@ def _classify(classifier: Classifier, item: AnalysisItem) -> AnalysisOutcome:
         return AnalysisOutcome(
             source_id=item.source_id,
             status="failed",
-            result_values={"error_code": "LLM_ERROR", "error_message": str(exc)},
+            result_values={"error_code": exc.code, "error_message": str(exc)},
         )
     payload = result.payload
     return AnalysisOutcome(
