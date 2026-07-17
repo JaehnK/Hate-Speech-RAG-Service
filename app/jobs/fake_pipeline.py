@@ -66,6 +66,7 @@ def _build_report(session: Session, job: AnalysisJob) -> StepResult:
     report = ReportSnapshot(
         id=report_id,
         analysis_run_id=run.id,
+        owner_user_id=job.user_id,
         status="succeeded",
         title=metadata.title or job.youtube_video_id,
         payload={

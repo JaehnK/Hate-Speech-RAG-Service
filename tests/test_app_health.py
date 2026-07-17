@@ -65,6 +65,12 @@ async def test_production_cannot_enable_developer_api_surfaces() -> None:
         youtube_api_key="youtube-key",
         llm_api_key="llm-key",
         embedding_api_key="embedding-key",
+        google_client_id="google-client-id",
+        google_client_secret="google-client-secret",
+        api_key_encryption_key="MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=",
+        session_cookie_secure=True,
+        frontend_origin="https://example.test",
+        google_oauth_redirect_uri="https://example.test/api/auth/google/callback",
     )
     app = create_app(settings)
     transport = httpx.ASGITransport(app=app)

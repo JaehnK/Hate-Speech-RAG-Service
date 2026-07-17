@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from app.analysis.llm_client import LlmClient, LlmResponse
+from app.analysis.errors import ApiKeyInvalidError
 from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult, SourceType
 from app.analysis.models import ValidationResult
@@ -67,6 +68,7 @@ class RagClassifier:
         self.example_min_similarity = example_min_similarity
         self.definition_corpus_version = definition_corpus_version
         self.should_stop = should_stop or (lambda: False)
+        self.invalid_provider: str | None = None
 
     def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
         if self.should_stop():
@@ -85,6 +87,9 @@ class RagClassifier:
                 )
             except RetryCancelled as exc:
                 raise WorkerShutdownRequested from exc
+            except ApiKeyInvalidError as exc:
+                self.invalid_provider = exc.provider
+                raise
             except Exception as exc:
                 raise ClassificationError("both RAG vector stores are unavailable") from exc
             definitions = list(bundle.definitions)
@@ -123,6 +128,9 @@ class RagClassifier:
                     response = self.llm_client.complete(prompt)
                 except RetryCancelled as exc:
                     raise WorkerShutdownRequested from exc
+                except ApiKeyInvalidError as exc:
+                    self.invalid_provider = exc.provider
+                    raise
                 except Exception as exc:
                     raise ClassificationError("LLM classification request failed") from exc
 

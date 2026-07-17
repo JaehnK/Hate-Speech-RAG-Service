@@ -16,9 +16,9 @@ class AnalysisJobService:
         self.session = session
         self.repository = AnalysisJobRepository(session)
 
-    def create_job(self, input_value: str) -> AnalysisJob:
+    def create_job(self, input_value: str, user_id: UUID | None = None) -> AnalysisJob:
         video_id = extract_video_id(input_value)
-        job = self.repository.create(input_value, video_id)
+        job = self.repository.create(input_value, video_id, user_id=user_id)
         validate_step = next(step for step in self.repository.list_steps(job.id) if step.step_key == "validate_input")
         validate_step.status = "succeeded"
         validate_step.attempt_count = 1

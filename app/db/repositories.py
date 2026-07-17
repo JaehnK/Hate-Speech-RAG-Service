@@ -32,10 +32,12 @@ class AnalysisJobRepository:
         self,
         input_value: str,
         youtube_video_id: str,
+        user_id: UUID | None = None,
         request_options: dict | None = None,
         steps: Iterable[tuple[str, bool]] = DEFAULT_JOB_STEPS,
     ) -> AnalysisJob:
         job = AnalysisJob(
+            user_id=user_id,
             input_value=input_value,
             youtube_video_id=youtube_video_id,
             request_options=request_options or {},

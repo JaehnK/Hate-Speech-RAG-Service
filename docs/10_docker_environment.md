@@ -262,7 +262,7 @@ Dockerfile 흐름 후보:
 | `GOOGLE_OAUTH_REDIRECT_URI` | OAuth 콜백 URL |
 | `SESSION_COOKIE_NAME` | 세션 쿠키 이름. 기본 `hsr_session` |
 | `SESSION_COOKIE_DOMAIN` | 세션 쿠키 Domain 속성. 서브도메인 분리 시에만 설정 |
-| `SESSION_COOKIE_SECURE` | 세션 쿠키 Secure 속성. prod 기본 `true`, 로컬 개발만 `false` |
+| `SESSION_COOKIE_SECURE` | 세션 쿠키 Secure 속성. production 필수 `true`, 로컬 개발 예시 기본값만 `false` |
 | `SESSION_TTL_SECONDS` | 세션 만료 기준(초). 기본 `1209600`(14일) |
 | `API_KEY_ENCRYPTION_KEY` | 사용자 API 키 암호화용 Fernet 마스터 키(base64, 32바이트) |
 | `WORKER_STALE_AFTER_SECONDS` | heartbeat가 멈춘 running job을 재대기시키는 기준. 기본 900초 |

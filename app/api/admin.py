@@ -12,7 +12,7 @@ from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 from app.core.config import Settings
 from app.core.errors import DomainError
-from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog
+from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog, ReportSnapshot
 from app.db.repositories import AnalysisJobRepository
 
 
@@ -117,6 +117,20 @@ def build_admin_router(get_session: Callable[[], Iterator[Session]], settings: S
             },
         }
 
+    @router.put("/reports/{report_id}/public-sample")
+    def publish_sample(report_id: UUID, session: SessionDependency) -> dict[str, Any]:
+        report = _report(session, report_id)
+        report.is_public_sample = True
+        session.flush()
+        return {"report_id": str(report.id), "is_public_sample": True}
+
+    @router.delete("/reports/{report_id}/public-sample")
+    def unpublish_sample(report_id: UUID, session: SessionDependency) -> dict[str, Any]:
+        report = _report(session, report_id)
+        report.is_public_sample = False
+        session.flush()
+        return {"report_id": str(report.id), "is_public_sample": False}
+
     @router.get("/logs")
     def get_logs(
         session: SessionDependency,
@@ -171,3 +185,10 @@ def _job_summary(job: AnalysisJob) -> dict[str, Any]:
         "finished_at": job.finished_at,
         "error_summary": job.error_summary,
     }
+
+
+def _report(session: Session, report_id: UUID) -> ReportSnapshot:
+    report = session.get(ReportSnapshot, report_id)
+    if report is None:
+        raise DomainError("REPORT_NOT_FOUND", "보고서를 찾을 수 없습니다.", status_code=404)
+    return report

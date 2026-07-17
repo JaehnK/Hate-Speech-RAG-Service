@@ -1,4 +1,4 @@
-import { lazy, Suspense, type CSSProperties, type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, type CSSProperties, type FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,8 +10,11 @@ import {
   Download,
   FileText,
   History,
+  KeyRound,
   Link as LinkIcon,
   LoaderCircle,
+  LogIn,
+  LogOut,
   Menu,
   Network,
   Play,
@@ -23,10 +26,11 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getExport, getHateComments, getJob, getReport, getReportNetwork, getScriptSegments } from "./api";
+import { ApiError, createExport, createJob, getAuthSession, getExport, getHateComments, getJob, getMyJobs, getReport, getReportNetwork, getScriptSegments, logout } from "./api";
+import { ApiKeySettingsPage } from "./ApiKeySettingsPage";
+import { PublicHomePage } from "./PublicHomePage";
 import { RagMethodologyPage } from "./RagMethodologyPage";
-import { getStoredJobs, rememberJob } from "./storage";
-import type { CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage, StoredJob } from "./types";
+import type { AuthSession, CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage } from "./types";
 import { categoryLabel, formatDate, formatNumber, formatPlaybackTime, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
@@ -47,12 +51,14 @@ const CommentNetworkGraph = lazy(() => import("./CommentNetworkGraph").then((mod
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<AnalysisRequestPage />} />
+      <Route path="/" element={<PublicHomePage />} />
       <Route element={<AppShell />}>
+        <Route path="/analyze" element={<AnalysisRequestPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
         <Route path="/reports/:reportId" element={<ReportPage />} />
         <Route path="/rag-methodology" element={<RagMethodologyPage />} />
+        <Route path="/settings" element={<ApiKeySettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -60,23 +66,33 @@ export default function App() {
 }
 
 function Header() {
+  const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
+  useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
+
+  async function signOut() {
+    await logout();
+    window.location.assign("/");
+  }
+
   return (
     <header className="topbar">
       <Link className="brand" to="/">SENTINEL-YT</Link>
       <nav className="topnav" aria-label="주 메뉴">
-        <NavLink to="/" end>분석</NavLink>
+        <NavLink to="/" end>공개 샘플</NavLink>
+        <NavLink to="/analyze">분석</NavLink>
         <NavLink to="/history">분석 이력</NavLink>
         <NavLink to="/rag-methodology">RAG 방법론</NavLink>
       </nav>
       <details className="mobile-nav">
         <summary aria-label="메뉴 열기"><Menu size={20} /></summary>
         <nav aria-label="모바일 메뉴">
-          <NavLink to="/" end>분석</NavLink>
+          <NavLink to="/" end>공개 샘플</NavLink>
+          <NavLink to="/analyze">분석</NavLink>
           <NavLink to="/history">분석 이력</NavLink>
           <NavLink to="/rag-methodology">RAG 방법론</NavLink>
         </nav>
       </details>
-      <div className="engine-state"><span /> API 연결됨</div>
+      <div className="header-account">{session === undefined ? <span>세션 확인 중</span> : session === null ? <a href="/api/auth/google/login?return_to=/analyze"><LogIn size={15} /> Google 로그인</a> : <><Link to="/settings"><KeyRound size={15} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={() => void signOut()}><LogOut size={15} /></button></>}</div>
     </header>
   );
 }
@@ -95,7 +111,7 @@ function AppShell() {
             <NavLink to="/history"><History size={18} /> 분석 이력</NavLink>
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
-          <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
+          <Link className="new-analysis" to="/analyze"><Play size={16} /> 새 분석</Link>
           <div className="sidebar-note"><ShieldCheck size={18} /><span>정의·유사 사례 기반<br />dual-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
@@ -109,6 +125,13 @@ function AnalysisRequestPage() {
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
+
+  useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
+
+  if (session === undefined) return <LoadingState label="로그인 상태를 확인하는 중입니다" />;
+  if (session === null) return <AuthRequired />;
+  if (!session.api_keys_registered.anthropic || !session.api_keys_registered.upstage) return <ApiKeysRequired session={session} />;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -120,7 +143,6 @@ function AnalysisRequestPage() {
     setError(null);
     try {
       const job = await createJob(input.trim());
-      rememberJob({ jobId: job.job_id, videoId: job.youtube_video_id, createdAt: job.created_at });
       navigate(`/jobs/${job.job_id}`);
     } catch (cause) {
       setError(errorMessage(cause));
@@ -130,8 +152,7 @@ function AnalysisRequestPage() {
   }
 
   return (
-    <div className="landing">
-      <Header />
+    <div className="analysis-workspace">
       <main className="hero">
         <div className="hero-grid" />
         <div className="hero-content">
@@ -162,7 +183,6 @@ function AnalysisRequestPage() {
           </div>
         </div>
       </main>
-      <footer className="landing-footer"><strong>SENTINEL</strong><span>Evidence-based YouTube analysis</span></footer>
     </div>
   );
 }
@@ -189,7 +209,6 @@ function JobPage() {
         const next = await getJob(jobId);
         if (!active) return;
         setJob(next);
-        rememberJob({ jobId: next.job_id, videoId: next.youtube_video_id, createdAt: next.created_at });
         if (!TERMINAL_STATUSES.has(next.status)) timer = window.setTimeout(load, 2000);
       } catch (cause) {
         if (active) setError(errorMessage(cause));
@@ -276,16 +295,16 @@ function stepProgressText(step: JobStep, totalHint: number | null): string | nul
 }
 
 function HistoryPage() {
-  const stored = useMemo(() => getStoredJobs(), []);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [reports, setReports] = useState<Record<string, Report>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    Promise.allSettled(stored.map((item) => getJob(item.jobId))).then((results) => {
-      const loadedJobs = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+    getMyJobs().then((page) => {
+      const loadedJobs = page.items;
       if (!active) return;
       setJobs(loadedJobs);
       setLoading(false);
@@ -296,18 +315,18 @@ function HistoryPage() {
         if (!active) return;
         setReports(Object.fromEntries(reportResults.flatMap((result) => result.status === "fulfilled" && result.value ? [result.value] : [])));
       });
-    });
+    }).catch((cause) => { if (active) { setError(errorMessage(cause)); setLoading(false); } });
     return () => { active = false; };
-  }, [stored]);
+  }, []);
 
   const visible = jobs.filter((job) => job.youtube_video_id.toLowerCase().includes(query.toLowerCase()) || job.job_id.includes(query));
   return (
     <div className="page-wrap">
-      <PageTitle title="내 분석 이력" kicker="REPORTS"><Link className="button-small" to="/"><Play size={15} /> 새 분석</Link></PageTitle>
-      <p className="page-description">이 브라우저에서 요청한 YouTube 분석 작업을 다시 확인합니다.</p>
+      <PageTitle title="내 분석 이력" kicker="REPORTS"><Link className="button-small" to="/analyze"><Play size={15} /> 새 분석</Link></PageTitle>
+      <p className="page-description">Google 계정으로 요청한 YouTube 분석 작업을 다시 확인합니다.</p>
       <div className="history-toolbar"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="영상 ID 또는 작업 ID 검색" /></div>
-      {loading ? <LoadingState label="분석 이력을 불러오는 중입니다" /> : visible.length === 0 ? (
-        <EmptyState stored={stored} />
+      {error ? <ErrorState message={error} /> : loading ? <LoadingState label="분석 이력을 불러오는 중입니다" /> : visible.length === 0 ? (
+        <EmptyState />
       ) : (
         <div className="history-grid">{visible.map((job) => <HistoryCard job={job} report={reports[job.job_id]} key={job.job_id} />)}</div>
       )}
@@ -542,8 +561,17 @@ function ErrorState({ message }: { message: string }) {
   return <div className="state-card error-state"><AlertTriangle size={30} /><strong>{message}</strong><Link to="/">새 분석 시작</Link></div>;
 }
 
-function EmptyState({ stored }: { stored: StoredJob[] }) {
-  return <div className="state-card"><FileText size={32} /><strong>{stored.length ? "조회 가능한 분석 이력이 없습니다." : "아직 분석 이력이 없습니다."}</strong><Link to="/">첫 분석 시작하기</Link></div>;
+function EmptyState() {
+  return <div className="state-card"><FileText size={32} /><strong>아직 분석 이력이 없습니다.</strong><Link to="/analyze">첫 분석 시작하기</Link></div>;
+}
+
+function AuthRequired() {
+  return <div className="state-card auth-required"><LogIn size={34} /><strong>분석을 시작하려면 Google 로그인이 필요합니다.</strong><p>공개 샘플은 로그인 없이 계속 확인할 수 있습니다.</p><a href="/api/auth/google/login?return_to=/analyze">Google로 로그인</a></div>;
+}
+
+function ApiKeysRequired({ session }: { session: AuthSession }) {
+  const missing = [!session.api_keys_registered.anthropic && "Anthropic", !session.api_keys_registered.upstage && "Upstage"].filter(Boolean).join(", ");
+  return <div className="state-card auth-required"><KeyRound size={34} /><strong>분석 API 키를 등록해주세요.</strong><p>필요한 키: {missing}</p><Link to="/settings">API 키 설정</Link></div>;
 }
 
 function errorMessage(cause: unknown): string {

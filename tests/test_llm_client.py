@@ -2,7 +2,9 @@ from types import SimpleNamespace
 
 import anthropic
 import httpx
+import pytest
 
+from app.analysis.errors import ApiKeyInvalidError
 from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.retry import RetryPolicy
 
@@ -72,3 +74,27 @@ def test_anthropic_client_retries_rate_limit_with_retry_after() -> None:
     assert fake_client.messages.calls == 2
     assert delays == [3.0]
     assert retries == [(1, 3.0)]
+
+
+def test_anthropic_client_maps_authentication_failure_without_retry() -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx.Response(401, request=request)
+
+    class RejectedMessages(FakeMessages):
+        calls = 0
+
+        def create(self, **kwargs):
+            self.calls += 1
+            raise anthropic.AuthenticationError("rejected", response=response, body=None)
+
+    fake_client = FakeAnthropicClient()
+    fake_client.messages = RejectedMessages()
+    client = AnthropicLlmClient(
+        api_key=None,
+        client=fake_client,
+        retry_policy=RetryPolicy(max_attempts=3, sleep=lambda _delay: None),
+    )
+
+    with pytest.raises(ApiKeyInvalidError):
+        client.complete("prompt")
+    assert fake_client.messages.calls == 1

@@ -7,6 +7,12 @@
 | 기준 브랜치 | `main` |
 | 완료 기준 | 외부 API 키만 주입하면 실제 E2E를 실행할 수 있는 배포 직전 상태 |
 
+## 2026-07-17 — Google OAuth/BYOK 및 로그인 전 공개 샘플
+
+- 설계: `design/prelogin-public-samples`에서 Stitch desktop/mobile 화면과 공개 표면 계약을 작성하고 `main`에 병합했다.
+- 구현: `feat/google-oauth-public-samples`에서 OAuth, server session, Fernet BYOK, 소유권, 공개 sample API, job별 RAG key 주입과 frontend를 구현했다.
+- 검증·배포 전 결과는 `34_google_oauth_public_samples_delivery.md`에 기록한다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.
