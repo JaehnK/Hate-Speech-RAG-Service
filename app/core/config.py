@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     )
 
     app_env: Literal["development", "test", "production"] = "development"
+    api_docs_enabled: bool = False
     log_level: str = "INFO"
     database_url: str = Field(default="sqlite:///./hatespeech.db", repr=False)
     admin_token: str = Field(default="change-me", repr=False)

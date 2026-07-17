@@ -398,3 +398,12 @@
 - 프로젝트 범위, HLD, data model, API, backend 설계, 구현 계획, 결정 로그, Docker 환경과 배포 전 runbook의 필드·경로·오류 코드·환경변수를 동일 계약으로 맞췄다.
 - `GET /api/admin/settings` 예시의 LLM provider를 실제 기본값인 `anthropic`으로 바로잡았다.
 - 이 변경은 구현 전 설계 문서 확정이며 실제 OAuth endpoint와 migration은 후속 구현 브랜치에서 추가한다.
+
+# 2026-07-17 공개 개발 표면 비노출
+
+- 브랜치: `harden/public-developer-surfaces`
+- Swagger, ReDoc, OpenAPI schema는 기본 비활성화하고 production에서는 설정값과 관계없이 생성하지 않도록 했다.
+- public frontend에서 RAG 방법론 route와 navigation, Swagger와 readiness 링크를 제거했다.
+- 내부 RAG 방법론 문서와 frontend source는 개발·감사 자료로 유지하지만 production bundle과 public route에서는 제외한다.
+- backend 101 passed/1 skipped, frontend 12 passed, production build와 bundle 개발 문자열 검사를 통과했다.
+- 설정, 테스트, production bundle 문자열 검사와 배포 전 확인 절차는 `docs/31_public_surface_hardening.md`에 기록했다.

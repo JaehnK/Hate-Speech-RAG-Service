@@ -10,12 +10,17 @@ services:
 
   web:
     restart: unless-stopped
+    environment:
+      APP_ENV: production
+      API_DOCS_ENABLED: "false"
     read_only: true
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
   worker:
     restart: unless-stopped
+    environment:
+      APP_ENV: production
     read_only: true
     tmpfs: [/tmp]
     security_opt: [no-new-privileges:true]
