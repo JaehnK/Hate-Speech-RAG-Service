@@ -120,4 +120,29 @@ Advisory: https://github.com/pypa/advisory-database/blob/main/vulns/chromadb/PYS
 - Compose: dev/test/prod config 검증 성공
 - Docker: production `web`, `worker`, `frontend` 이미지 빌드 성공
 - dependency audit: `PYSEC-2026-311` embedded-only 예외를 제외한 알려진 취약점 0건
-- 실제 Google OAuth: 필수 local secret 미설정으로 자동 fake E2E까지만 완료, 운영 credential 주입 후 수동 검증 필요
+- 실제 Google OAuth: 구현 merge 시점에는 필수 local secret이 없어 자동 fake E2E까지만 완료
+
+## 로컬 OAuth 설정 주입 후 검증
+
+2026-07-17 `chore/oauth-live-config-validation`에서 사용자가 로컬 Google OAuth credential을 주입한 뒤 값 자체를 출력하지 않고 다음을 확인했다.
+
+1. `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`의 설정 여부를 확인했다.
+2. redirect URI가 `http://localhost:3000/api/auth/google/callback`과 정확히 일치하는지 확인했다.
+3. 처음 입력된 `API_KEY_ENCRYPTION_KEY`가 Fernet 형식이 아닌 것을 감지하고 새 Fernet 키로 교체했다. 키 값은 command output과 문서에 남기지 않았다.
+4. dev `frontend`, `web`, `worker` 이미지를 다시 빌드하고 migrate를 실행했다. 이전 web 이미지에서 발생했던 `cryptography`, `google.auth` import 실패는 새 의존성이 포함된 이미지로 교체한 뒤 해소됐다.
+5. frontend/web health가 모두 200이고 DB가 Alembic head `e7a4c10d4f82`인지 확인했다.
+6. `/api/auth/google/login`이 Google Accounts로 302 응답하고 OAuth state HttpOnly 쿠키를 발급하는지 확인했다.
+7. Google authorize 페이지가 200으로 열리며 `invalid_client` 또는 등록되지 않은 OAuth client 오류가 없는지 확인했다.
+8. 비로그인 `/api/me/jobs`, `/api/me/reports`, `/api/me/api-keys`가 401이고, 유효한 분석 요청 body를 사용한 비로그인 `POST /api/analysis-jobs`가 CSRF 경계에서 403인지 확인했다.
+9. state/code 없는 callback이 400인지 확인하고, `/api/reports/public`이 200으로 응답하는지 확인했다.
+
+검증 당시 공개 sample은 0건이었다. API 실패가 아니라 아직 운영자가 공개로 승인한 report가 없다는 의미이며, 로그인 전 화면은 정의된 empty state를 표시한다.
+
+Google 계정 동의, 실제 authorization code 교환, 로그인 세션 발급은 사용자 브라우저 상호작용이 필요하므로 자동 HTTP 점검 범위에 포함하지 않는다. 로컬 브라우저에서 로그인한 뒤 `/api/auth/session`, `/settings`의 실제 Anthropic/Upstage 키 검증, 짧은 분석 1건을 순서대로 확인하면 local live E2E가 완결된다.
+
+회귀 검증 결과:
+
+- OAuth/BYOK, production 설정, app health, worker BYOK backend 테스트: `15 passed`
+- frontend 테스트: `13 passed`
+- frontend TypeScript/Vite production build: 성공
+- Ruff와 `git diff --check`: 성공
