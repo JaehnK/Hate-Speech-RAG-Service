@@ -455,3 +455,11 @@
 - 사용자 노출 브랜드와 frontend package 이름을 `SENTINEL-YT`에서 `HateScope`로 변경했다. DB·쿠키·CSRF header·Docker project/volume 같은 호환성 식별자는 유지했다.
 - `lecielgris1@gmail.com`의 Anthropic·Upstage BYOK로 영상 `hIwABxM30Ds`를 새로 분석하고, 완료 보고서를 공개 샘플로 지정하는 절차를 수행했다.
 - 상세 실행·검증 증적은 `docs/38_hatescope_home_public_sample_delivery.md`에 기록한다.
+
+# 2026-07-17 댓글 RAG 근거 공개와 다국어 corpus 사전 감사
+
+- 브랜치: `feat/comment-evidence-corpus-audit`
+- 전체 혐오 댓글 card를 클릭하면 한국어 분석 사유, 공격 대상·표현 유형·RAG 상태, 결과에 기록된 사례·정의 문서 ID를 펼쳐 볼 수 있게 했다.
+- 실제 production Chroma의 정의 31건과 사례 172,157건을 읽기 전용으로 전수 집계했다.
+- 한국어 서비스에는 조건부 사용 가능하지만 영어 입력 분석에는 부적합하다고 판정했다. 언어 metadata, K-HATERS label mapping, source 다양성, citation 검증과 CC-BY attribution을 다국어 구현 계획의 선행 gate로 고정했다.
+- 상세 수치·판정·후속 계획 작성 조건은 `docs/39_comment_evidence_multilingual_corpus_audit.md`에 기록했다.

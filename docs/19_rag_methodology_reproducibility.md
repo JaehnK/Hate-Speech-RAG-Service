@@ -136,7 +136,7 @@ worker를 정지한 상태에서 두 production collection을 reset하고 동일
 
 1. passage/query alias가 실제 API에서 각각 HTTP 200과 4096차원 vector를 반환했다.
 2. 재색인 container가 exit code 0으로 끝났고 definition 31건, example 172,157건이 적재됐다.
-3. collection metadata에 provider `upstage`, model `embedding`, document/query alias와 4096차원이 기록됐다.
+3. provider/model과 definition corpus version은 `analysis_runs`에 기록된다. 2026-07-17 live audit에서 Chroma collection metadata에는 `hnsw:space=cosine`만 남아 있어, embedding alias·차원·corpus fingerprint를 collection 자체에서도 검증 가능하게 만드는 보강이 필요함을 확인했다.
 4. 정치 공동체, 정체성, 대상 없는 욕설의 검색 smoke에서 관련 taxonomy 문서가 상위에 검색됐다.
 5. 실제 RAG 분류가 definition 8건과 example 4건을 사용해 `rag_context_status=complete`, 유효 JSON과 한국어 reasoning을 반환했다.
 

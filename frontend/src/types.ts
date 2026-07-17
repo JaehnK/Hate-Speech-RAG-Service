@@ -128,7 +128,21 @@ export interface ReportComment {
     status: string;
     is_hate_speech: boolean | null;
     categories: string[];
+    target_group: string | null;
+    hate_type: string | null;
     reasoning: string | null;
+    rag_context_status: string | null;
+    similar_cases_used: Array<{
+      doc_id?: string;
+      source_dataset?: string;
+      mapped_categories?: string[];
+      score?: number;
+    }>;
+    definition_docs_used: Array<{
+      doc_id?: string;
+      source_id?: string;
+      retrieval_tags?: string[];
+    }>;
   };
 }
 
