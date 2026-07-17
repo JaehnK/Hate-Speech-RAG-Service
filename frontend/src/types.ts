@@ -139,6 +139,29 @@ export interface ReportCommentPage {
   has_more: boolean;
 }
 
+export interface ReportScriptSegment {
+  segment_id: string;
+  segment_index: number;
+  start_seconds: number;
+  end_seconds: number;
+  text: string;
+  analysis: {
+    status: string;
+    is_hate_speech: boolean | null;
+    categories: string[] | null;
+    target_group: string | null;
+    hate_type: string | null;
+    reasoning: string | null;
+  };
+}
+
+export interface ReportScriptSegmentPage {
+  items: ReportScriptSegment[];
+  total: number;
+  next_cursor: number | null;
+  has_more: boolean;
+}
+
 export interface ExportStatus {
   export_id: string;
   report_id: string;
