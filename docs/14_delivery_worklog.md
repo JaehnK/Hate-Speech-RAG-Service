@@ -415,3 +415,9 @@
 - Dual-vector 근거 결합, 판정·검증 흐름, 13개 taxonomy, 사회과학적 함의와 타당도 한계는 포트폴리오 정보로 유지했다.
 - embedding migration·가격·종료 일정, 모델 ID, prompt 원문, collection 이름, 검색 수치, 오류 코드와 내부 FigJam 링크는 공개 화면에서 제거했다.
 - Swagger/ReDoc/OpenAPI의 기본 및 production 비노출 정책은 유지했다.
+
+# 2026-07-17 보고서 카테고리 목록 높이 정렬
+
+- 브랜치: `style/report-category-list-fill-panel`
+- 카테고리 분포 패널을 세로 flex layout으로 바꾸고 목록이 패널의 남은 높이를 채우도록 했다.
+- 7개 이하 항목은 상단부터 스크롤 없이 표시하고, 8개 이상일 때만 확장된 목록 영역에서 세로 스크롤을 사용한다.

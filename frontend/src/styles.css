@@ -171,6 +171,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .panel-title span { color: var(--primary); }
 .panel-title h2 { margin: 0; color: var(--primary); font-size: 14px; }
 .distribution-panel, .cases-panel { height: 650px; min-height: 0; overflow: hidden; }
+.distribution-panel { display: flex; flex-direction: column; }
 .donut-wrap { padding: 22px; display: flex; align-items: center; justify-content: center; gap: 26px; }
 .donut { width: 142px; height: 142px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--crimson) var(--ratio), var(--primary) 0); position: relative; }
 .donut::after { content: ""; position: absolute; inset: 24px; border-radius: 50%; background: #fff; }
@@ -181,8 +182,8 @@ button:disabled { cursor: wait; opacity: .65; }
 .legend i.normal { background: var(--primary); }
 .legend i.risk { background: var(--crimson); }
 .legend strong { color: var(--primary); font-family: "JetBrains Mono", monospace; }
-.category-list { padding: 0 22px 22px; display: grid; gap: 12px; }
-.category-list.scrollable { max-height: 250px; overflow-y: auto; scrollbar-gutter: stable; }
+.category-list { min-height: 0; padding: 0 22px 22px; display: grid; flex: 1; align-content: start; grid-auto-rows: min-content; gap: 12px; }
+.category-list.scrollable { overflow-y: auto; scrollbar-gutter: stable; }
 .category-list > div { min-height: 22px; display: grid; grid-template-columns: 110px 1fr 35px; gap: 10px; align-items: center; font-size: 12px; }
 .category-list > div > div { height: 5px; overflow: hidden; background: var(--surface-high); border-radius: 999px; }
 .category-list i { display: block; height: 100%; background: var(--crimson); }
