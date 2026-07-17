@@ -100,3 +100,19 @@
 
 - 애플리케이션 코드, container image build, runtime 설정과 실제 provider smoke까지 완료했다.
 - 외부 배포 환경 반영과 트래픽 전환은 수행하지 않았다.
+
+## Phase 6. BYOK 동시성 조정과 provider 오류 가시성
+
+- 브랜치: `fix/rag-provider-errors-byok-tuning`
+- 사용자별 키 도입에 맞춰 item/Upstage 동시성을 4로 확대하고 Anthropic 동시성은 2로 유지했다.
+- Anthropic SDK 자체 기본 재시도를 끄고 애플리케이션의 `Retry-After` 기반 최대 3회 정책으로 일원화했다.
+- rate limit, timeout, connection, billing, overload, request rejection과 provider 5xx를 안정적인 item error code로 구분했다.
+- generic `LLM_ERROR`로 소실되던 원인을 report/job 데이터에서 집계할 수 있게 했다.
+- live job에서 발생한 실패와 동시성 판단 근거는 `37_byok_parallel_failure_diagnosis.md`에 기록했다.
+
+검증 결과:
+
+- provider/RAG/worker/config 집중 테스트 22개 통과
+- backend 전체 테스트 `110 passed, 1 skipped`
+- Ruff, compileall과 `git diff --check` 통과
+- dev/test/prod Compose config 검증 통과

@@ -41,7 +41,7 @@ def test_rag_provider_concurrency_cannot_exceed_item_concurrency() -> None:
     with pytest.raises(ValueError, match="RAG_EMBEDDING_CONCURRENCY"):
         Settings(rag_item_concurrency=2, rag_embedding_concurrency=3)
     with pytest.raises(ValueError, match="RAG_LLM_CONCURRENCY"):
-        Settings(rag_item_concurrency=2, rag_llm_concurrency=3)
+        Settings(rag_item_concurrency=2, rag_embedding_concurrency=2, rag_llm_concurrency=3)
 
 
 def test_settings_repr_masks_secrets(monkeypatch) -> None:

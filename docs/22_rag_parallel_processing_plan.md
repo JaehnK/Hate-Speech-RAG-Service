@@ -109,14 +109,14 @@ coordinator는 item 완료 여부와 별개로 주기적으로 `job_steps.heartb
 | 설정 | 초기값 | 의미 |
 | --- | ---: | --- |
 | `RAG_EXECUTION_MODE` | `sequential` | rollout 중 `sequential` 또는 `parallel` 선택 |
-| `RAG_ITEM_CONCURRENCY` | `2` | RAG step 하나의 최대 동시 item 수 |
-| `RAG_EMBEDDING_CONCURRENCY` | `2` | Upstage embedding 최대 동시 호출 수 |
+| `RAG_ITEM_CONCURRENCY` | `4` | RAG step 하나의 최대 동시 item 수 |
+| `RAG_EMBEDDING_CONCURRENCY` | `4` | Upstage embedding 최대 동시 호출 수 |
 | `RAG_LLM_CONCURRENCY` | `2` | Anthropic generation 최대 동시 호출 수 |
 | `RAG_ITEM_MAX_ATTEMPTS` | `3` | 일시적 infrastructure 오류의 최대 시도 수 |
 
 executor에는 최대 동시 실행 수만큼만 item을 제출하고, 하나가 끝날 때 다음 item을 넣는다. provider별 semaphore는 item 동시성보다 작게 설정할 수 있다. 429의 `Retry-After`와 일시적 5xx·timeout만 지수 backoff와 jitter로 재시도한다. prompt validation을 위한 기존 1회 재생성은 infrastructure 재시도와 별도로 집계한다.
 
-운영 확인 후 item 동시성을 4로 올릴 수 있지만, provider 동시성은 실제 429 비율과 latency를 기준으로 별도 조절한다.
+BYOK 도입 후 item/embedding 동시성은 4로 올리되 Anthropic 동시성은 2로 유지한다. BYOK는 사용자 간 quota를 격리하지만 단일 사용자의 조직 한도를 늘리지 않으므로, LLM 동시성은 실제 429 비율과 latency를 기준으로 별도 조절한다.
 
 ## 구현 순서
 

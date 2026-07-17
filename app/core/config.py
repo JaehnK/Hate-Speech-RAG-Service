@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     worker_poll_interval_seconds: float = 2.0
     worker_stale_after_seconds: int = 900
     rag_execution_mode: Literal["sequential", "parallel"] = "sequential"
-    rag_item_concurrency: int = Field(default=2, ge=1, le=16)
-    rag_embedding_concurrency: int = Field(default=2, ge=1, le=16)
+    rag_item_concurrency: int = Field(default=4, ge=1, le=16)
+    rag_embedding_concurrency: int = Field(default=4, ge=1, le=16)
     rag_llm_concurrency: int = Field(default=2, ge=1, le=16)
     rag_item_max_attempts: int = Field(default=3, ge=1, le=5)
     rag_heartbeat_interval_seconds: int = Field(default=30, ge=5)

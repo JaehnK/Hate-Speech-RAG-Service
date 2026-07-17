@@ -267,8 +267,8 @@ Dockerfile 흐름 후보:
 | `API_KEY_ENCRYPTION_KEY` | 사용자 API 키 암호화용 Fernet 마스터 키(base64, 32바이트) |
 | `WORKER_STALE_AFTER_SECONDS` | heartbeat가 멈춘 running job을 재대기시키는 기준. 기본 900초 |
 | `RAG_EXECUTION_MODE` | RAG item 실행 방식. 기본 `sequential`, 검증 후 `parallel` |
-| `RAG_ITEM_CONCURRENCY` | RAG step의 최대 in-flight item/classifier slot 수. 기본 2 |
-| `RAG_EMBEDDING_CONCURRENCY` | Upstage 최대 동시 호출 수. 기본 2 |
+| `RAG_ITEM_CONCURRENCY` | RAG step의 최대 in-flight item/classifier slot 수. BYOK 기본 4 |
+| `RAG_EMBEDDING_CONCURRENCY` | Upstage 최대 동시 호출 수. BYOK 기본 4 |
 | `RAG_LLM_CONCURRENCY` | Anthropic 최대 동시 호출 수. 기본 2 |
 | `RAG_ITEM_MAX_ATTEMPTS` | 일시적 provider 오류의 최대 시도 수. 기본 3 |
 | `RAG_HEARTBEAT_INTERVAL_SECONDS` | 완료 item이 없을 때 RAG heartbeat 간격. 기본 30초 |

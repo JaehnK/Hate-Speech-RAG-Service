@@ -144,6 +144,7 @@ def _app(tmp_path):
             database_url=f"sqlite:///{tmp_path / 'reporting.db'}",
             report_storage_dir=str(tmp_path / "reports"),
             admin_token="test-admin-secret",
+            _env_file=None,
         )
     )
     Base.metadata.create_all(app.state.engine)
