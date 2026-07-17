@@ -11,6 +11,7 @@ from threading import BoundedSemaphore
 
 import httpx
 
+from app.analysis.errors import ApiKeyInvalidError
 from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
@@ -99,6 +100,8 @@ class UpstageEmbeddingClient:
                 headers={"Authorization": f"Bearer {self.api_key}"},
                 json={"model": model, "input": texts},
             )
+        if response.status_code in {401, 403}:
+            raise ApiKeyInvalidError("upstage")
         response.raise_for_status()
         payload = response.json()
 

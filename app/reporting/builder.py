@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.db.models import (
+    AnalysisJob,
     AnalysisRun,
     CommentAnalysisResult,
     CommentNetwork,
@@ -22,6 +23,9 @@ from app.db.models import (
 
 class ReportBuilder:
     def build(self, session: Session, run: AnalysisRun) -> ReportSnapshot:
+        run_job = session.get(AnalysisJob, run.job_id)
+        if run_job is None:
+            raise DomainError("REPORT_BUILD_ERROR", "분석 job이 없어 보고서를 생성할 수 없습니다.")
         metadata = session.scalar(select(VideoMetadataSnapshot).where(VideoMetadataSnapshot.job_id == run.job_id))
         if metadata is None:
             raise DomainError("REPORT_BUILD_ERROR", "영상 metadata가 없어 보고서를 생성할 수 없습니다.")
@@ -87,6 +91,7 @@ class ReportBuilder:
         }
         report = ReportSnapshot(
             analysis_run_id=run.id,
+            owner_user_id=run_job.user_id,
             status="partial_success" if failures else "succeeded",
             title=f"{metadata.title or run.youtube_video_id} 혐오표현 분석 보고서",
             payload=payload,

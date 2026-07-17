@@ -6,6 +6,7 @@ import httpx
 import pytest
 
 from app.analysis.embeddings import UpstageEmbeddingClient, UpstageEmbeddingFunction, create_embedding_function
+from app.analysis.errors import ApiKeyInvalidError
 from app.analysis.retry import RetryPolicy
 
 
@@ -94,7 +95,7 @@ def test_upstage_embedding_does_not_retry_authentication_error() -> None:
         retry_policy=RetryPolicy(max_attempts=3, sleep=lambda _delay: None),
     )
 
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(ApiKeyInvalidError):
         client.embed(["query"], "model")
     assert http_client.calls == 1
 
@@ -104,6 +105,8 @@ def test_upstage_embedding_gate_limits_concurrent_requests() -> None:
     lock = Lock()
 
     class FakeResponse:
+        status_code = 200
+
         def raise_for_status(self):
             return None
 

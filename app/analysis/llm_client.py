@@ -7,6 +7,7 @@ from typing import Protocol
 
 import anthropic
 
+from app.analysis.errors import ApiKeyInvalidError
 from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
@@ -67,14 +68,17 @@ class AnthropicLlmClient:
         )
 
     def _complete_once(self, prompt: str) -> LlmResponse:
-        with (self.gate if self.gate is not None else nullcontext()):
-            message = self.client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                system=DEFAULT_SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": prompt}],
-            )
+        try:
+            with (self.gate if self.gate is not None else nullcontext()):
+                message = self.client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    system=DEFAULT_SYSTEM_PROMPT,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+        except anthropic.AuthenticationError as exc:
+            raise ApiKeyInvalidError("anthropic") from exc
         return LlmResponse(
             text=_message_text(message),
             model=self.model,
