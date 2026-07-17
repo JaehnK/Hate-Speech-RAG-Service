@@ -68,3 +68,23 @@
 - Ruff와 `compileall`: 통과
 - dev/test/prod Compose config: 통과
 - `git diff --check`: 통과
+
+## 로컬 실행 반영
+
+병합 후 web/frontend를 함께 bake하는 과정에서 Docker Buildx가 image export 단계에서 3분 이상 진전 없이 대기했다. 실행 중인 DB·worker에는 영향이 없었고, bake만 정상 중단했다. 이번 변경에는 새 runtime dependency가 없고 개발 Compose는 source bind mount를 사용하므로 다음 순서로 복구했다.
+
+1. 로컬에 남아 있던 직전 정상 frontend development image(`npm run dev`, `/app`)를 기존 service tag로 복원했다.
+2. `compose.yaml + compose.dev.yaml`을 명시해 web/frontend만 재생성했다.
+3. frontend 3000, web 8000 host port와 두 healthcheck를 확인했다.
+4. 실제 frontend origin에서 `/`, `/samples`, 공개 목록, 신규 공개 report 상세를 비로그인 상태로 호출했다.
+
+최종 runtime 확인 결과:
+
+- frontend, web, postgres: healthy
+- worker: running
+- `/`, `/samples`: HTTP 200, HTML title `HateScope`
+- 비로그인 `GET /api/auth/session`: HTTP 401
+- 비로그인 공개 목록: HTTP 200, 신규 sample 1건
+- 비로그인 신규 report 상세: HTTP 200
+
+production frontend 산출물 자체는 `npm run build`로 TypeScript와 Vite build를 통과했다. Docker exporter 지연은 애플리케이션 build 실패가 아니라 로컬 Docker image export 상태로 분리 기록하며, 배포 환경의 clean builder에서 production image bake를 다시 수행한다.
