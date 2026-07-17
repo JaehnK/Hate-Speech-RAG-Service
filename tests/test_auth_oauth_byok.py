@@ -52,7 +52,7 @@ async def _login(client: httpx.AsyncClient) -> None:
         follow_redirects=False,
     )
     assert callback.status_code == 302
-    assert callback.headers["location"] == "/analyze"
+    assert callback.headers["location"] == "/"
 
 
 @pytest.mark.asyncio

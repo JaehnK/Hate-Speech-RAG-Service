@@ -15,14 +15,14 @@
 - worker의 job별 키 복호화 및 RAG runtime 주입
 - provider가 키를 401/403으로 거부하면 RAG 단계를 `API_KEY_INVALID`로 중단하고 저장 키를 무효화
 - 관리자 토큰 기반 공개 샘플 지정·해제와 비로그인 공개 목록/상세 조회
-- Stitch desktop/mobile 산출물을 기준으로 한 공개 랜딩, 실제 공개 보고서 card, 빈 목록·오류 상태
-- 로그인 후 필수 키가 모두 준비된 경우에만 분석 요청 UI 노출
+- Stitch desktop/mobile 산출물을 기준으로 한 `/samples` 공개 랜딩, 실제 공개 보고서 card, 빈 목록·오류 상태
+- 분석 요청 UI는 공개하고, 로그인과 필수 키가 모두 준비된 경우에만 실제 분석 요청 허용
 - 브라우저 local storage 대신 계정 소유 job을 사용하는 분석 이력
 
 ## 요청 흐름
 
-1. `/` 방문자는 로그인 없이 `GET /api/reports/public`의 운영자 검토 보고서를 확인한다.
-2. 새 분석 CTA는 `GET /api/auth/google/login?return_to=/analyze`로 이동한다.
+1. `/samples` 방문자는 로그인 없이 `GET /api/reports/public`의 운영자 검토 보고서를 확인한다.
+2. 새 분석 CTA는 분석 메인 `/`로 이동하고, 비로그인 제출 시 `GET /api/auth/google/login?return_to=/`로 이동한다.
 3. callback은 Google ID token을 검증하고 `hsr_session` HttpOnly 쿠키를 발급한다.
 4. `/settings`에서 Anthropic/Upstage 키를 각각 검증·암호화 저장한다.
 5. `POST /api/analysis-jobs`는 세션, CSRF header/origin, 두 키의 유효 상태를 확인하고 `user_id`를 기록한다.
@@ -53,7 +53,7 @@ curl -X PUT \
 - `SESSION_COOKIE_DOMAIN` — 별도 설정이 필요한 도메인 구성에서만 사용
 - 서버 공용 `YOUTUBE_API_KEY`
 
-로컬 Docker 기본 callback은 `http://localhost:3000/api/auth/google/callback`이다. frontend reverse proxy가 `/api`를 web container로 전달하므로 callback 이후 `/analyze`는 frontend route로 정상 복귀한다. Google Cloud Console의 승인된 redirect URI와 글자 단위로 같아야 한다.
+로컬 Docker 기본 callback은 `http://localhost:3000/api/auth/google/callback`이다. frontend reverse proxy가 `/api`를 web container로 전달하므로 callback 이후 분석 메인 `/`로 정상 복귀한다. 기존 `/analyze`는 `/`로 호환 리다이렉트한다. Google Cloud Console의 승인된 redirect URI와 글자 단위로 같아야 한다.
 
 사용자 Anthropic/Upstage 키는 환경변수에 넣지 않는다. 기존 전역 키는 인증 기능이 설정되지 않은 개발/legacy job 호환 경로에만 남겨 두었다. production에서는 OAuth/BYOK 설정을 필수로 검증한다.
 
@@ -80,7 +80,7 @@ curl -X PUT \
 
 자동 테스트는 Google provider를 fake로 대체한다. 실제 배포 origin에서 아래 항목은 1회 수동 검증해야 한다.
 
-- Google consent → callback → `/analyze` 복귀
+- Google consent → callback → 분석 메인 `/` 복귀
 - production `Secure` 세션 쿠키 발급
 - 실제 Anthropic/Upstage 키 검증 및 짧은 분석 1건
 - 다른 브라우저에서 비공개 report 차단, 공개 sample 열람

@@ -396,6 +396,9 @@ button:disabled { cursor: wait; opacity: .65; }
 .public-header { height: 68px; padding: 0 max(24px, calc((100vw - 1180px) / 2)); display: flex; align-items: center; gap: 38px; border-bottom: 1px solid var(--outline); background: rgba(247,249,251,.94); }
 .public-header nav { margin-left: auto; display: flex; gap: 26px; color: var(--muted); font-size: 13px; font-weight: 600; }
 .public-header nav a:hover { color: var(--primary); }
+.public-account { display: flex; align-items: center; gap: 8px; color: #3d4655; font-size: 12px; font-weight: 600; }
+.public-account > a:not(.google-login), .public-account button { display: inline-flex; align-items: center; gap: 7px; }
+.public-account button { width: 32px; height: 32px; justify-content: center; color: var(--muted); background: transparent; border: 1px solid var(--outline); border-radius: 5px; }
 .google-login { min-height: 40px; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: #fff; background: var(--primary); border-radius: 5px; font-size: 12px; font-weight: 700; }
 .public-hero { min-height: 570px; padding: 78px max(24px, calc((100vw - 1180px) / 2)); display: grid; grid-template-columns: 1.12fr .88fr; align-items: center; gap: 76px; background-image: linear-gradient(#c6c6ce25 1px, transparent 1px), linear-gradient(90deg, #c6c6ce25 1px, transparent 1px); background-size: 36px 36px; }
 .public-hero h1 { margin: 18px 0; font-size: clamp(42px, 4.6vw, 66px); line-height: 1.08; letter-spacing: -.05em; }
@@ -541,7 +544,8 @@ button:disabled { cursor: wait; opacity: .65; }
   .reproduction-grid li:last-child { border-bottom: 0; }
   .public-header { height: 60px; padding: 0 16px; }
   .public-header nav { display: none; }
-  .public-header .google-login { margin-left: auto; min-height: 38px; padding: 0 11px; }
+  .public-header .public-account { margin-left: auto; }
+  .public-header .google-login { min-height: 38px; padding: 0 11px; }
   .public-hero { min-height: 0; padding: 54px 16px; gap: 38px; }
   .public-hero h1 { font-size: 40px; }
   .public-actions { align-items: stretch; flex-direction: column; }

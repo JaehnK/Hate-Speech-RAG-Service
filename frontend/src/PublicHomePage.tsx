@@ -1,14 +1,15 @@
-import { ArrowRight, BarChart3, FileSearch, LogIn, Network, ShieldCheck } from "lucide-react";
+import { ArrowRight, BarChart3, FileSearch, KeyRound, LogIn, LogOut, Network, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-import { getPublicReports } from "./api";
-import type { PublicReportSummary } from "./types";
+import { getAuthSession, getPublicReports, logout } from "./api";
+import type { AuthSession, PublicReportSummary } from "./types";
 import { categoryLabel, formatDate, formatNumber } from "./utils";
 
 export function PublicHomePage() {
   const [reports, setReports] = useState<PublicReportSummary[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -18,12 +19,19 @@ export function PublicHomePage() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
+
+  async function signOut() {
+    await logout();
+    window.location.assign("/samples");
+  }
+
   return (
     <div className="public-home">
       <header className="public-header">
-        <Link className="brand" to="/">SENTINEL-YT</Link>
-        <nav aria-label="공개 메뉴"><a href="#samples">공개 샘플</a><Link to="/rag-methodology">RAG 방법론</Link><a href="#principles">해석 원칙</a></nav>
-        <a className="google-login" href="/api/auth/google/login?return_to=/analyze"><LogIn size={17} /> Google로 로그인</a>
+        <Link className="brand" to="/">HateScope</Link>
+        <nav aria-label="공개 메뉴"><Link to="/">분석</Link><a href="#samples">공개 샘플</a><Link to="/rag-methodology">RAG 방법론</Link><a href="#principles">해석 원칙</a></nav>
+        <PublicAccount session={session} onSignOut={() => void signOut()} />
       </header>
       <main>
         <section className="public-hero">
@@ -31,7 +39,7 @@ export function PublicHomePage() {
             <span className="eyebrow">Evidence before sign-in</span>
             <h1>로그인 전에,<br />분석 결과를 먼저 확인하세요</h1>
             <p>공개 댓글과 자막을 발화 단위로 분류하고, 정의 문서와 유사 사례를 근거로 연결합니다. 운영자가 검토한 실제 샘플 보고서는 로그인 없이 열 수 있습니다.</p>
-            <div className="public-actions"><a className="google-login primary" href="/api/auth/google/login?return_to=/analyze">새 분석 시작 <ArrowRight size={17} /></a><a href="#samples">샘플 둘러보기</a></div>
+            <div className="public-actions"><Link className="google-login primary" to="/">새 분석 시작 <ArrowRight size={17} /></Link><a href="#samples">샘플 둘러보기</a></div>
           </div>
           <div className="preview-card" aria-label="분석 보고서 구성 미리보기">
             <header><span>REPORT PREVIEW</span><ShieldCheck size={20} /></header>
@@ -55,6 +63,14 @@ export function PublicHomePage() {
           <aside>모델 판정은 법적 판단이나 개인의 성향·의도를 진단하는 결과가 아닙니다. 수집 가능한 공개 데이터와 명시된 분류 기준 안에서 해석해야 합니다.</aside>
         </section>
       </main>
+    </div>
+  );
+}
+
+export function PublicAccount({ session, onSignOut }: { session: AuthSession | null | undefined; onSignOut: () => void }) {
+  return (
+    <div className="public-account">
+      {session === undefined ? <span>세션 확인 중</span> : session === null ? <a className="google-login" href="/api/auth/google/login?return_to=/samples"><LogIn size={17} /> Google로 로그인</a> : <><Link to="/settings"><KeyRound size={16} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={onSignOut}><LogOut size={16} /></button></>}
     </div>
   );
 }

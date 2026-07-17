@@ -58,7 +58,7 @@ def build_auth_router(
     def google_login(
         request: Request,
         session: SessionDependency,
-        return_to: str = Query("/analyze"),
+        return_to: str = Query("/"),
     ) -> Response:
         return_to = _safe_return_to(return_to)
         probe = Response()
@@ -169,5 +169,5 @@ def _key_payload(row) -> dict:
 
 def _safe_return_to(value: str) -> str:
     if not value.startswith("/") or value.startswith("//") or "\\" in value:
-        return "/analyze"
+        return "/"
     return value

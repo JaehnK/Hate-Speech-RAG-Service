@@ -446,3 +446,12 @@
 - 390px single-column, 44px touch target을 기준으로 mobile 스크린을 별도 생성했다.
 - Stitch의 가상 샘플은 layout 참조로만 사용하고, 실제 구현은 운영자가 검토해 `is_public_sample=true`로 지정한 report만 API에서 표시하도록 계약을 고정했다.
 - 화면 ID·권한 경계·data contract·후속 구현 순서는 `docs/33_prelogin_public_samples_stitch.md`에 기록했다.
+
+# 2026-07-17 HateScope 메인·공개 샘플 전환
+
+- 브랜치: `feat/hatescope-home-public-sample`
+- 기존 `/analyze` 분석 UI를 `/` 메인으로 옮기고 `/analyze`는 호환 리다이렉트로 유지했다.
+- 공개 샘플 랜딩을 `/samples`로 분리하고, 로그인된 경우 Google 로그인 버튼 대신 계정명·설정 링크·로그아웃 버튼을 표시했다.
+- 사용자 노출 브랜드와 frontend package 이름을 `SENTINEL-YT`에서 `HateScope`로 변경했다. DB·쿠키·CSRF header·Docker project/volume 같은 호환성 식별자는 유지했다.
+- `lecielgris1@gmail.com`의 Anthropic·Upstage BYOK로 영상 `hIwABxM30Ds`를 새로 분석하고, 완료 보고서를 공개 샘플로 지정하는 절차를 수행했다.
+- 상세 실행·검증 증적은 `docs/38_hatescope_home_public_sample_delivery.md`에 기록한다.
