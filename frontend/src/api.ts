@@ -1,4 +1,4 @@
-import type { CommentNetwork, CreatedJob, ExportStatus, Job, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
+import type { ApiKeySummary, AuthSession, CommentNetwork, CreatedJob, ExportStatus, Job, Page, PublicReportSummary, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -12,14 +12,53 @@ export class ApiError extends Error {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.method && init.method !== "GET" ? { "X-Requested-With": "hatespeechraw" } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     const message = payload?.error?.message ?? payload?.detail ?? `요청에 실패했습니다. (${response.status})`;
     throw new ApiError(message, response.status);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
+}
+
+export async function getAuthSession(): Promise<AuthSession | null> {
+  try {
+    return await request<AuthSession>("/api/auth/session");
+  } catch (cause) {
+    if (cause instanceof ApiError && cause.status === 401) return null;
+    throw cause;
+  }
+}
+
+export function logout(): Promise<void> {
+  return request<void>("/api/auth/logout", { method: "POST" });
+}
+
+export function getApiKeys(): Promise<{ items: ApiKeySummary[] }> {
+  return request("/api/me/api-keys");
+}
+
+export function putApiKey(provider: "anthropic" | "upstage", apiKey: string): Promise<ApiKeySummary> {
+  return request(`/api/me/api-keys/${provider}`, { method: "PUT", body: JSON.stringify({ api_key: apiKey }) });
+}
+
+export function deleteApiKey(provider: "anthropic" | "upstage"): Promise<void> {
+  return request<void>(`/api/me/api-keys/${provider}`, { method: "DELETE" });
+}
+
+export function getPublicReports(): Promise<Page<PublicReportSummary>> {
+  return request("/api/reports/public?limit=12");
+}
+
+export function getMyJobs(): Promise<Page<Job>> {
+  return request("/api/me/jobs?limit=200");
 }
 
 export function createJob(inputValue: string): Promise<CreatedJob> {

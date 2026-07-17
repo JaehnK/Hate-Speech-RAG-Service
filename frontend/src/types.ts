@@ -170,8 +170,38 @@ export interface ExportStatus {
   download_url: string | null;
 }
 
-export interface StoredJob {
-  jobId: string;
-  videoId: string;
-  createdAt: string;
+export interface AuthSession {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  api_keys_registered: { anthropic: boolean; upstage: boolean };
+}
+
+export interface ApiKeySummary {
+  provider: "anthropic" | "upstage";
+  key_fingerprint: string;
+  is_valid: boolean;
+  last_validated_at: string | null;
+}
+
+export interface PublicReportSummary {
+  report_id: string;
+  youtube_video_id: string | null;
+  status: string;
+  created_at: string;
+  title: string;
+  channel_title: string | null;
+  thumbnail_url: string | null;
+  comments_collected: number;
+  transcript_available: boolean;
+  hate_speech_ratio: number;
+  top_categories: string[];
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  next_cursor: number | null;
+  has_more: boolean;
 }
