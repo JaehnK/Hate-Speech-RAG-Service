@@ -18,7 +18,7 @@ from app.main import create_app
 
 @pytest.mark.asyncio
 async def test_job_api_worker_and_fake_report_end_to_end(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     transport = httpx.ASGITransport(app=app)
 
@@ -47,7 +47,7 @@ async def test_job_api_worker_and_fake_report_end_to_end(tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_invalid_input_and_unknown_job_return_contract_errors(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     transport = httpx.ASGITransport(app=app)
 
@@ -62,7 +62,7 @@ async def test_invalid_input_and_unknown_job_return_contract_errors(tmp_path) ->
 
 
 def test_required_step_failure_stops_downstream_pipeline(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'jobs.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     with app.state.session_factory() as session:
         job = AnalysisJobService(session).create_job("abcdefghijk")
@@ -85,7 +85,7 @@ def test_required_step_failure_stops_downstream_pipeline(tmp_path) -> None:
 
 
 def test_worker_recovers_a_stale_running_step(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'stale.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'stale.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     with app.state.session_factory() as session:
         job = AnalysisJobService(session).create_job("abcdefghijk")
@@ -111,7 +111,7 @@ def test_worker_recovers_a_stale_running_step(tmp_path) -> None:
 
 
 def test_worker_does_not_recover_an_active_running_step(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'active.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'active.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     with app.state.session_factory() as session:
         job = AnalysisJobService(session).create_job("abcdefghijk")
@@ -129,7 +129,7 @@ def test_worker_does_not_recover_an_active_running_step(tmp_path) -> None:
 
 
 def test_stale_step_attempt_cannot_finish_or_finalize_job(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'fencing.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'fencing.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     with app.state.session_factory() as session:
         job = AnalysisJobService(session).create_job("abcdefghijk")
@@ -161,7 +161,7 @@ def test_stale_step_attempt_cannot_finish_or_finalize_job(tmp_path) -> None:
 
 
 def test_worker_shutdown_releases_current_step_for_immediate_resume(tmp_path) -> None:
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'shutdown.db'}"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'shutdown.db'}", _env_file=None))
     Base.metadata.create_all(app.state.engine)
     with app.state.session_factory() as session:
         job_id = AnalysisJobService(session).create_job("abcdefghijk").id
