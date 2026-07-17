@@ -5,6 +5,7 @@ import {
   BarChart3,
   BrainCircuit,
   Check,
+  ChevronDown,
   CircleDashed,
   CloudDownload,
   Download,
@@ -527,14 +528,50 @@ function ScriptSegmentCard({ segment }: { segment: ReportScriptSegment }) {
   );
 }
 
-function HateCommentCard({ comment }: { comment: ReportComment }) {
+export function HateCommentCard({ comment }: { comment: ReportComment }) {
+  const similarCases = comment.analysis.similar_cases_used ?? [];
+  const definitionDocs = comment.analysis.definition_docs_used ?? [];
   return (
     <article className="case-card">
-      <div><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></div>
-      <p>{comment.text_original || "내용이 없는 댓글입니다."}</p>
-      <footer><span>{comment.analysis.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></footer>
+      <details>
+        <summary>
+          <span className="case-card-meta"><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></span>
+          <span className="case-card-text">{comment.text_original || "내용이 없는 댓글입니다."}</span>
+          <span className="case-card-footer"><span>{comment.analysis.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></span>
+          <span className="case-card-affordance">분석 근거 보기 <ChevronDown size={14} /></span>
+        </summary>
+        <div className="case-evidence">
+          <section>
+            <strong>분석 사유</strong>
+            <p>{comment.analysis.reasoning || "저장된 분석 사유가 없습니다."}</p>
+          </section>
+          <dl>
+            <div><dt>공격 대상</dt><dd>{comment.analysis.target_group || "특정되지 않음"}</dd></div>
+            <div><dt>표현 유형</dt><dd>{comment.analysis.hate_type || "특정되지 않음"}</dd></div>
+            <div><dt>RAG 근거</dt><dd>{ragContextLabel(comment.analysis.rag_context_status)}</dd></div>
+          </dl>
+          <section>
+            <strong>기록된 유사 사례 인용</strong>
+            {similarCases.length > 0 ? <ul>{similarCases.map((item, index) => <li key={`${item.doc_id ?? "case"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_dataset ?? "출처 미기록"}{item.mapped_categories?.length ? ` · ${item.mapped_categories.map(categoryLabel).join(", ")}` : ""}</span></li>)}</ul> : <p>인용된 유사 사례가 없습니다.</p>}
+          </section>
+          <section>
+            <strong>기록된 정의 문서 인용</strong>
+            {definitionDocs.length > 0 ? <ul>{definitionDocs.map((item, index) => <li key={`${item.doc_id ?? "definition"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_id === "internal_taxonomy" ? "HateScope 내부 분류 기준" : item.source_id ?? "출처 미기록"}</span></li>)}</ul> : <p>인용된 정의 문서가 없습니다.</p>}
+          </section>
+          <aside>문서 ID는 분류 결과에 기록된 참고 항목입니다. 현재 결과에서는 검색 후보와의 완전한 대조를 보증하지 않으며, 유사 사례는 최종 판단이나 법적 근거가 아닌 비교 자료입니다.</aside>
+        </div>
+      </details>
     </article>
   );
+}
+
+function ragContextLabel(status: string | null): string {
+  return {
+    complete: "정의·유사 사례 사용",
+    definition_only: "정의 문서만 사용",
+    example_only: "유사 사례만 사용",
+    unavailable: "검색 근거 없음",
+  }[status ?? ""] ?? "상태 미기록";
 }
 
 function PageTitle({ kicker, title, children }: { kicker?: string; title: string; children?: ReactNode }) {

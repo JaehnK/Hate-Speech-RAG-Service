@@ -199,13 +199,31 @@ button:disabled { cursor: wait; opacity: .65; }
 .cases-error { margin: 12px 14px 0; padding: 9px 11px; color: #8c2017; background: #fff0ed; border: 1px solid #ffb4ab; border-radius: 4px; font-size: 10px; }
 .cases-more { width: calc(100% - 28px); margin: 12px 14px 0; padding: 10px; color: var(--primary); background: #fff; border: 1px solid var(--outline); border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; }
 .cases-more:hover { color: #fff; background: var(--primary); }
-.case-card { margin: 12px 14px 0; padding: 14px; background: #fbfcfd; border: 1px solid #e0e3e5; border-left: 3px solid var(--crimson); border-radius: 4px; }
-.case-card > div, .case-card footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.case-card > div span { padding: 3px 6px; color: #fff; background: var(--crimson); border-radius: 2px; font: 600 8px "JetBrains Mono", monospace; }
+.case-card { margin: 12px 14px 0; background: #fbfcfd; border: 1px solid #e0e3e5; border-left: 3px solid var(--crimson); border-radius: 4px; }
+.case-card summary { padding: 14px; cursor: pointer; list-style: none; }
+.case-card summary::-webkit-details-marker { display: none; }
+.case-card summary:focus-visible { outline: 2px solid var(--primary-soft); outline-offset: -2px; }
+.case-card-meta, .case-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.case-card-meta span { padding: 3px 6px; color: #fff; background: var(--crimson); border-radius: 2px; font: 600 8px "JetBrains Mono", monospace; }
 .case-card code { color: var(--muted); font-size: 9px; }
-.case-card p { margin: 10px 0; color: #353941; font-size: 12px; line-height: 1.55; }
-.case-card footer { color: var(--crimson); font-size: 9px; font-weight: 700; }
-.case-card footer small { color: var(--muted); font-weight: 500; }
+.case-card-text { margin: 10px 0; display: block; color: #353941; font-size: 12px; line-height: 1.55; }
+.case-card-footer { color: var(--crimson); font-size: 9px; font-weight: 700; }
+.case-card-footer small { color: var(--muted); font-weight: 500; }
+.case-card-affordance { margin-top: 10px; padding-top: 9px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: var(--primary); border-top: 1px solid #e5e7ea; font-size: 9px; font-weight: 700; }
+.case-card details[open] .case-card-affordance svg { transform: rotate(180deg); }
+.case-evidence { padding: 14px; border-top: 1px solid #dfe3e8; background: #fff; }
+.case-evidence section + section { margin-top: 14px; }
+.case-evidence section > strong { color: var(--primary); font-size: 11px; }
+.case-evidence section > p { margin: 6px 0 0; color: #454b55; font-size: 11px; line-height: 1.65; }
+.case-evidence dl { margin: 12px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.case-evidence dl div { padding: 8px; background: var(--surface-low); }
+.case-evidence dt { color: var(--muted); font-size: 8px; }
+.case-evidence dd { margin: 4px 0 0; color: var(--primary); font-size: 9px; font-weight: 700; }
+.case-evidence ul { margin: 7px 0 0; padding: 0; display: grid; gap: 6px; list-style: none; }
+.case-evidence li { min-width: 0; padding: 7px 8px; display: grid; gap: 3px; background: var(--surface-low); }
+.case-evidence li code { overflow: hidden; color: var(--primary); text-overflow: ellipsis; white-space: nowrap; }
+.case-evidence li span { color: var(--muted); font-size: 9px; }
+.case-evidence aside { margin-top: 14px; padding: 9px 10px; color: #6b5415; background: #fff8db; font-size: 9px; line-height: 1.55; }
 .clean-state { min-height: 330px; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--success); text-align: center; }
 .clean-state p { margin: 0; color: var(--muted); font-size: 11px; }
 .script-panel { overflow: hidden; }
@@ -530,6 +548,7 @@ button:disabled { cursor: wait; opacity: .65; }
   .script-card { grid-template-columns: 1fr; }
   .script-card header { display: flex; align-items: center; justify-content: space-between; }
   .script-card footer { grid-column: 1; padding-top: 0; }
+  .case-evidence dl { grid-template-columns: 1fr; }
   .network-toolbar { align-items: flex-start; flex-wrap: wrap; }
   .network-legend { width: 100%; margin-left: 0; justify-content: flex-start; }
   .network-stage { height: 380px; }
