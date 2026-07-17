@@ -168,7 +168,7 @@ https://accounts.google.com/o/oauth2/v2/auth
 | `GOOGLE_OAUTH_REDIRECT_URI` | 콜백 URL, Google Cloud Console에 등록된 값과 정확히 일치해야 함 | |
 | `SESSION_COOKIE_NAME` | 기본 `hsr_session` | |
 | `SESSION_COOKIE_DOMAIN` | 세션 쿠키 Domain 속성 | 서브도메인 분리 시에만 설정 |
-| `SESSION_COOKIE_SECURE` | 기본 `true`, 로컬 개발만 `false` | |
+| `SESSION_COOKIE_SECURE` | production 필수 `true`, 로컬 개발 예시 기본값만 `false` | |
 | `SESSION_TTL_SECONDS` | 기본 `1209600`(14일) | |
 | `API_KEY_ENCRYPTION_KEY` | Fernet 마스터 키(base64, 32바이트) | 절대 로그/커밋 금지 |
 

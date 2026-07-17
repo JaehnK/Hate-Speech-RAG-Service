@@ -429,7 +429,7 @@ Query:
 | --- | --- | --- |
 | status | string nullable | job 상태 필터 |
 | limit | int | 페이지 크기 |
-| cursor | string nullable | 다음 페이지 cursor |
+| cursor | int | 0부터 시작하는 offset cursor |
 
 성공 응답 형식은 `GET /api/admin/jobs`의 `items`와 동일한 job 요약 구조를 사용하되, 요청자 본인 소유 job만 포함한다.
 
@@ -442,7 +442,7 @@ Query:
 | 이름 | 타입 | 설명 |
 | --- | --- | --- |
 | limit | int | 페이지 크기 |
-| cursor | string nullable | 다음 페이지 cursor |
+| cursor | int | 0부터 시작하는 offset cursor |
 
 성공 응답:
 
@@ -850,6 +850,14 @@ Query:
 
 - MVP 기본값은 같은 job의 실패 step부터 재실행이다.
 - 사용자가 새 분석을 요청하는 API와 다르다.
+
+### PUT /api/admin/reports/{report_id}/public-sample
+
+운영자가 공개 적합성을 검토한 report를 로그인 전 공개 샘플로 지정한다. 성공 시 `is_public_sample: true`를 반환한다.
+
+### DELETE /api/admin/reports/{report_id}/public-sample
+
+공개 샘플 지정을 해제한다. 성공 시 `is_public_sample: false`를 반환한다. 두 endpoint 모두 사용자 세션이 아닌 `X-Admin-Token`만 사용한다.
 
 ### GET /api/admin/settings
 

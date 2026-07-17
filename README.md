@@ -17,7 +17,7 @@ uv run uvicorn app.main:app --reload
 uv run python -m app.worker_main
 ```
 
-기본 `PIPELINE_MODE=fake`는 외부 API 없이 전체 job/report 경로를 검증한다. 실제 수집·분류는 `.env`에 `PIPELINE_MODE=production`, `YOUTUBE_API_KEY`, `ANTHROPIC_API_KEY`, `UPSTAGE_API_KEY`를 설정해야 한다.
+기본 `PIPELINE_MODE=fake`는 외부 API 없이 backend job/report 경로를 검증한다. 로그인 UI를 사용하려면 Google OAuth client와 `API_KEY_ENCRYPTION_KEY`를 설정한다. 실제 수집에는 서버 공용 `YOUTUBE_API_KEY`가 필요하고, Anthropic/Upstage 키는 로그인한 사용자가 `/settings`에서 직접 등록한다.
 
 ## Docker Compose
 
@@ -27,7 +27,7 @@ uv run python -m app.worker_main
 docker compose -f compose.yaml -f compose.dev.yaml up --build
 ```
 
-프론트는 `http://localhost:3000`, RAG 방법론은 `http://localhost:3000/rag-methodology`, 백엔드 API 문서는 `http://localhost:8000/docs`에서 확인한다. 호스트 포트가 사용 중이면 `FRONTEND_PORT=13000`, `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
+공개 샘플은 `http://localhost:3000`, 분석 화면은 `http://localhost:3000/analyze`, RAG 방법론은 `http://localhost:3000/rag-methodology`에서 확인한다. 개발용 API 문서는 `API_DOCS_ENABLED=true`일 때만 `http://localhost:8000/docs`에 열린다. 호스트 포트가 사용 중이면 `FRONTEND_PORT=13000`, `WEB_PORT=18000` 또는 `POSTGRES_PORT=15432`로 변경한다.
 
 프론트만 다시 빌드하고 시작하려면 다음을 실행한다.
 
@@ -45,7 +45,10 @@ docker compose -f compose.yaml -f compose.test.yaml run --rm test
 
 ```bash
 APP_ENV=production PIPELINE_MODE=production ADMIN_TOKEN='<strong-token>' \
-YOUTUBE_API_KEY='<key>' ANTHROPIC_API_KEY='<key>' UPSTAGE_API_KEY='<key>' \
+YOUTUBE_API_KEY='<key>' GOOGLE_CLIENT_ID='<client-id>' GOOGLE_CLIENT_SECRET='<secret>' \
+API_KEY_ENCRYPTION_KEY='<fernet-key>' SESSION_COOKIE_SECURE=true \
+FRONTEND_ORIGIN='https://service.example' \
+GOOGLE_OAUTH_REDIRECT_URI='https://service.example/api/auth/google/callback' \
 docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 ```
 
@@ -61,7 +64,7 @@ uv run python -m app.analysis.example_ingest --persist-directory .chroma
 
 기본 ingest는 `commercial_ok` license tier만 허용한다. raw dataset과 vector store는 Git에 커밋하지 않는다.
 
-## 요청 흐름
+## 개발용 요청 흐름
 
 ```bash
 curl -X POST http://localhost:8000/api/analysis-jobs \
@@ -69,7 +72,7 @@ curl -X POST http://localhost:8000/api/analysis-jobs \
   -d '{"input_value":"https://www.youtube.com/watch?v=VIDEO_ID"}'
 ```
 
-반환된 `status_url`을 polling하고, 완료 후 `links.report_page` 또는 `links.report_api`를 연다. 관리자 API에는 `X-Admin-Token`이 필요하다.
+이 curl은 OAuth 설정이 없는 `fake` 호환 모드에서만 사용한다. OAuth가 설정된 서비스에서는 브라우저 로그인·BYOK 등록 후 same-origin frontend가 CSRF header와 세션 쿠키를 포함해 요청한다. 반환된 `status_url`을 polling하고, 완료 후 report route를 연다. 관리자 API에는 별도의 `X-Admin-Token`이 필요하다.
 
 ## 검증
 
@@ -84,6 +87,8 @@ docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 ```
 
 실제 API E2E 절차와 배포 전 체크리스트는 `docs/15_predeploy_runbook.md`, 최종 외부 검증 증적은 `docs/17_live_validation_evidence.md`를 따른다.
+
+Google OAuth·BYOK·로그인 전 공개 샘플의 구현과 운영 절차는 `docs/34_google_oauth_public_samples_delivery.md`를 따른다.
 
 Stitch 기반 프론트 구조, 화면/API 매핑, Docker 실행 및 검증 기록은 `docs/18_stitch_frontend_delivery.md`에 정리되어 있다.
 
