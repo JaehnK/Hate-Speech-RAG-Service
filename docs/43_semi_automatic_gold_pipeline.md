@@ -28,6 +28,14 @@ legacy workbook
 | LLM judge | 포맷만 준비, 후속 구현 |
 | 사람 검수 UI/툴 | 후속 구현 |
 
+실제 레거시 workbook 변환 기준:
+
+| source | workbook row 수 | 변환 가능 row 수 | 제외 사유 |
+| --- | ---: | ---: | --- |
+| `legacy-comments` | 21,989 | 21,987 | 빈 `comment_text` 2건 |
+| `legacy-scripts` | 11,891 | 11,891 | 없음 |
+| `intercoder` | 2,377 | 2,375 | 코드북 row 1건, 빈 row 1건 |
+
 ## 2. 변환 명령
 
 실제 댓글 legacy RAG 결과:
