@@ -4,7 +4,7 @@
 | --- | --- |
 | 기준일 | 2026-07-18 KST |
 | 대상 | `category-rag-v0.3.1`, three-vector RAG |
-| 결론 | 현재 저장소에는 운영 정확도를 주장할 수 있는 실제 gold test set이 없다. |
+| 결론 | 현재 저장소에는 운영 정확도를 주장할 수 있는 실제 YouTube gold test set이 없다. 다만 레거시 작업공간에는 공개 라벨셋 기반 평가 자산이 남아 있다. |
 
 ## 1. 현재 보유한 평가 자료
 
@@ -14,8 +14,12 @@
 | sample input 50건 | `experiments/sample_inputs/comments_50.jsonl` | 실험 runner 입력 예시 | gold label 없음 |
 | live RAG smoke outputs | `experiments/outputs/live_rag_*.jsonl` | 과거 prompt·threshold 회귀 증적 | 불가 |
 | live E2E evidence | `experiments/outputs/live_e2e_evidence.json` | 실제 API 경로와 report 생성 증적 | 정확도 평가 아님 |
+| legacy UNSMILE valid | `legacy/hateSpeechRAG/data/raw/korean_unsmile_dataset/unsmile_valid_v1.0.tsv` | 공개 한국어 혐오표현 라벨셋 기반 회귀 평가 후보 | 제한적 가능 |
+| legacy UNSMILE 평가 결과 | `legacy/hateSpeechRAG/scripts/hate_speech_evaluation_20250918_183926.json` | 과거 RAG 평가 지표 증적 | 현재 모델 직접 성능 주장 불가 |
 
 `synthetic_smoke_5.jsonl`에서 1.000이 나오더라도 이는 “평가 코드와 회귀 경로가 동작한다”는 뜻이지, YouTube 댓글 분석 정확도가 100%라는 뜻이 아니다.
+
+레거시의 UNSMILE 평가는 공개 라벨셋 기준의 재현 가능한 성능 점검 후보로 볼 수 있다. 하지만 운영 서비스가 분석하는 YouTube 댓글·답글·자막의 분포와 다르므로, 그 결과만으로 실제 YouTube 분석 정확도를 대표한다고 말하면 안 된다. 레거시 자산의 위치와 사용 판단은 `docs/42_legacy_evaluation_inventory.md`에 기록한다.
 
 ## 2. 이미 있는 평가 도구
 
