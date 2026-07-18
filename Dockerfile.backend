@@ -12,6 +12,7 @@ ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 RUN groupadd --system app && useradd --system --gid app --home /app app
 COPY --from=prod-builder --chown=app:app /app /app
-USER app
+COPY --chmod=755 docker/railway-backend-entrypoint.sh /usr/local/bin/railway-backend-entrypoint
 EXPOSE 8000
+ENTRYPOINT ["railway-backend-entrypoint"]
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
