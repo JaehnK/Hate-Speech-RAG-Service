@@ -99,6 +99,8 @@
 3. 혐오표현 gold 구축용 샘플링 풀
    - 검증: 모델 산출값을 참고값으로만 두고, gold label은 별도 코더가 확정한다.
 
+반자동 gold 후보 구축 명령과 review queue 생성 절차는 `docs/43_semi_automatic_gold_pipeline.md`를 기준으로 한다.
+
 ## 4. UNSMILE schema
 
 레거시 validation split은 다음 열을 갖는다.
