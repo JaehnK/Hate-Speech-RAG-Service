@@ -12,3 +12,14 @@ data/reports
 experiments/outputs
 legacy
 frontend
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/nginx.conf
+!frontend/docker-entrypoint.d
+!frontend/tsconfig.json
+!frontend/tsconfig.app.json
+!frontend/tsconfig.node.json
+!frontend/vite.config.ts
+!frontend/src
+!frontend/public
