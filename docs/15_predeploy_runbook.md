@@ -1,5 +1,7 @@
 # 배포 전 실행 절차
 
+Railway 배포를 한국어판 기준으로 시작하기 전 남은 태스크와 서비스 경계는 `docs/44_korean_railway_predeploy_plan.md`를 우선 확인한다. 이 문서는 실행 절차의 상세 checklist로 사용한다.
+
 ## 1. Secret 준비
 
 - `ADMIN_TOKEN`: 충분히 긴 무작위 값
