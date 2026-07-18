@@ -13,6 +13,12 @@
 - 구현: `feat/google-oauth-public-samples`에서 OAuth, server session, Fernet BYOK, 소유권, 공개 sample API, job별 RAG key 주입과 frontend를 구현했다.
 - 검증·배포 전 결과는 `34_google_oauth_public_samples_delivery.md`에 기록한다.
 
+## 2026-07-18 — 배포 산출물·샘플 데이터셋 인벤토리
+
+- 브랜치: `docs/public-artifact-inventory`
+- 공개 화면, 내부 배포 문서, production RAG 적재 자료, 보류 데이터셋을 `docs/40_public_artifact_inventory.md`에 한 번에 추적하도록 정리했다.
+- raw dataset과 vector store volume은 Git에 올리지 않고, 공개 화면에는 운영 secret·prompt 원문·내부 collection 세부를 노출하지 않는 경계를 함께 기록했다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.
