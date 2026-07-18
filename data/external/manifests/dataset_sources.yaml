@@ -48,6 +48,7 @@ datasets:
     name: K-HATERS Korean Hate Speech Detection Corpus
     role: examples_and_target_rating_reference
     source_url: https://github.com/ssu-humane/K-HATERS
+    huggingface_repo: humane-lab/K-HATERS
     paper_url: https://aclanthology.org/2023.findings-emnlp.952/
     local_path: data/external/datasets/k-haters
     data_local_path: data/external/datasets/k-haters-hf
