@@ -63,6 +63,46 @@
 
 외부 definition 문서는 manifest의 `corpus_target.definitions=true`이고 license tier가 `commercial_ok`로 정규화되는 source만 적재한다. 현재 이 조건을 통과하는 기본 source는 K-HATERS뿐이다.
 
+### 2.1 현재 한계
+
+현재 definition collection은 내부 taxonomy가 23/31건을 차지한다. 내부 taxonomy는 서비스 출력 형식과 category 경계를 안정화하는 데 필요하지만, 그 자체가 외부 권위 문서는 아니다. 따라서 검색 결과가 내부 taxonomy에 과도하게 치우치면 다음 문제가 생길 수 있다.
+
+| 위험 | 영향 |
+| --- | --- |
+| 기준 순환 | 우리가 만든 category 정의가 다시 판단 근거로 쓰여 외부 기준과의 거리감을 확인하기 어렵다. |
+| 권위 근거 부족 | report에서 “왜 혐오표현인가”를 설명할 때 공신력 있는 기준이나 플랫폼 정책과 연결하기 어렵다. |
+| recall 편향 | YouTube 댓글, 정책 위반, 인권·차별 맥락보다 내부 category keyword에 가까운 사례가 우선 검색될 수 있다. |
+| 감사 어려움 | 분류 기준 변경 시 외부 기준과 내부 taxonomy 중 무엇이 결과를 움직였는지 분리하기 어렵다. |
+
+따라서 내부 taxonomy는 계속 유지하되, 공식·권위 문서를 별도 source로 추가하고 retrieval 결과에서 내부 taxonomy와 외부 기준 문서의 비율을 통제하는 보강이 필요하다.
+
+### 2.2 공식·권위 문서 후보
+
+아래 문서는 현재 vector store에 올라가지 않는다. license와 이용 조건, chunk 범위, attribution 문구를 확인한 뒤 별도 작업으로 ingest해야 한다.
+
+| 후보 문서 | source URL | 역할 | 적재 상태 |
+| --- | --- | --- | --- |
+| 국가인권위원회 `혐오표현 예방·대응 가이드라인 마련 실태조사` | `https://www.humanrights.go.kr/base/board/read?boardManagementNo=17&boardNo=7603675` | 한국어 혐오표현 정의, 예방·대응 관점, 차별·인권 맥락 보강 | 후보, 미적재 |
+| 국가인권위원회 `혐오표현 리포트` | `https://www.humanrights.go.kr/site/program/board/basicboard/view?boardid=7604691&boardtypeid=17&menuid=001003001003004` | 한국 사회의 혐오표현 범위와 사회적 영향 설명 | 후보, 미적재 |
+| YouTube Hate speech policy | `https://support.google.com/youtube/answer/2801939` | YouTube 플랫폼에서 금지하는 보호 속성 기반 폭력·증오 기준 | 후보, 미적재 |
+| YouTube Harassment & cyberbullying policies | `https://support.google.com/youtube/answer/2802268` | 개인 대상 모욕, 반복 괴롭힘, 보호 속성 기반 공격의 플랫폼 경계 | 후보, 미적재 |
+| OHCHR Rabat Plan of Action / threshold test | `https://www.ohchr.org/en/documents/outcome-documents/rabat-plan-action` | 표현의 자유와 차별·적대·폭력 선동 사이의 높은 threshold 기준 | 후보, 미적재 |
+
+공식 문서를 추가할 때는 원문 전체를 무비판적으로 넣지 않는다. RAG definition source에는 정의, 판단 요건, 보호 속성, 예외·문맥 판단, threshold test처럼 분류에 직접 필요한 절만 chunking한다. 서비스 category code와 직접 맞지 않는 표현은 metadata의 `related_categories`로 연결하되, 원문 의미를 category에 억지로 맞추지 않는다.
+
+### 2.3 보강 시 권장 retrieval 구조
+
+공식 문서를 추가하면 단순히 같은 collection에 섞는 것보다 source type을 구분해야 한다.
+
+| source type | 예 | 권장 역할 |
+| --- | --- | --- |
+| `internal_taxonomy` | 현재 23개 taxonomy card | 출력 schema, category 경계, conflict rule |
+| `authoritative_guideline` | 국가인권위원회, OHCHR | 정의, threshold, 인권·차별 해석 기준 |
+| `platform_policy` | YouTube policy | 플랫폼 맥락의 금지 기준과 보호 속성 |
+| `dataset_guideline` | K-HATERS README | dataset label 체계와 사례 corpus 설명 |
+
+후속 구현에서는 definition retrieval 결과를 source type별로 균형 있게 가져오는 방식을 검토한다. 예를 들어 taxonomy 3건, authoritative guideline 3건, platform policy 1건, dataset guideline 1건처럼 slot을 나누면 내부 taxonomy가 모든 context를 독점하는 문제를 줄일 수 있다.
+
 ## 3. `hate_speech_examples`
 
 예시 collection은 LLM에게 유사 댓글 사례를 제공하기 위한 row 단위 corpus다. 검색 시 최대 6개를 가져오고 `score >= 0.40`인 예시만 prompt와 `similar_cases_used` 후보에 남긴다.

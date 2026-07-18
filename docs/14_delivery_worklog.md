@@ -25,6 +25,12 @@
 - `docs/40_public_artifact_inventory.md`의 범위를 공개 산출물 목록에서 Chroma collection에 실제 적재되는 문서·row 목록으로 정정했다.
 - `hate_speech_definitions`의 내부 taxonomy 23건, K-HATERS README chunk 8건과 `hate_speech_examples`의 K-HATERS train row 172,157건을 doc id 패턴, source file, loader 코드와 함께 기록했다.
 
+## 2026-07-18 — 공식·권위 RAG 문서 후보 기록
+
+- 브랜치: `docs/authoritative-rag-sources`
+- 내부 taxonomy가 definition collection을 과도하게 지배할 때 생길 수 있는 기준 순환, 권위 근거 부족, recall 편향, 감사 어려움을 기록했다.
+- 국가인권위원회, YouTube 정책, OHCHR Rabat Plan of Action을 공식·권위 definition source 후보로 추가하고, source type별 균형 retrieval 보강 방향을 문서화했다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.
