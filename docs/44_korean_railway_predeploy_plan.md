@@ -10,6 +10,8 @@
 | 배포 목표 | Railway 배포 시작 직전까지 필요한 코드·데이터·운영 조건 확정 |
 | 제외 범위 | 영문 분석, 영문 RAG corpus, 영문 평가셋, 영문 report 생성 |
 
+Railway 웹에서 사용자가 해야 할 작업과 Codex가 처리할 작업의 체크리스트는 `docs/45_railway_deploy_checklist.md`를 따른다.
+
 ## 결정 사항
 
 이번 배포 후보는 한국어판으로 고정한다.
