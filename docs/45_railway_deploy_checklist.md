@@ -40,7 +40,7 @@
 
 ```bash
 # web
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT}
 
 # worker
 python -m app.worker_main
@@ -136,6 +136,7 @@ Google OAuth:
 - [ ] `SESSION_COOKIE_DOMAIN=<필요 시만>`
 - [ ] `REPORT_STORAGE_DIR=<Railway volume mount path>`
 - [ ] `CHROMA_PERSIST_DIRECTORY=<Railway volume mount path>`
+- [ ] frontend service를 별도 배포할 경우 `API_UPSTREAM=<backend web service URL>`
 
 ### 2.4 도메인과 OAuth 설정
 
