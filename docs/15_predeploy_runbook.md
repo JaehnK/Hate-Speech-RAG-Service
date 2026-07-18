@@ -88,7 +88,7 @@ runner는 prompt version과 `example_min_similarity`까지 report snapshot에서
 합성 smoke set은 실행 경로만 검증한다. 배포 승인에는 익명화한 실제 댓글·스크립트 gold set을 사용한다.
 
 - 2인 독립 라벨링과 불일치 조정
-- `haiku_only`, `definitions_only`, `examples_only`, `dual_rag` 동일 입력 비교
+- `haiku_only`, `definitions_only`, `examples_only`, `three_vector_rag` 동일 입력 비교
 - binary accuracy와 category micro F1 기록
 - 동일 입력 3회 반복 안정성 확인
 - dual RAG가 baseline보다 악화되면 배포를 중단하고 retrieval/prompt를 조정

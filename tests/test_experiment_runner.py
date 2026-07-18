@@ -19,7 +19,7 @@ class FakeClassifier:
 def test_run_item_records_repeat_index() -> None:
     row = _run_item(
         FakeClassifier(),
-        ExperimentVariant("dual_rag", taxonomy_k=4, definition_k=4, example_k=6),
+        ExperimentVariant("three_vector_rag", taxonomy_k=4, definition_k=4, example_k=6),
         ExperimentInput("item-1", "text", "comment"),
         repeat_index=2,
     )

@@ -30,16 +30,20 @@ VARIANTS: dict[str, ExperimentVariant] = {
         definition_k=0,
         example_k=6,
     ),
-    "dual_rag": ExperimentVariant(
-        name="dual_rag",
+    "three_vector_rag": ExperimentVariant(
+        name="three_vector_rag",
         taxonomy_k=4,
         definition_k=4,
         example_k=6,
     ),
 }
 
+ALIASES: dict[str, str] = {
+    "dual_rag": "three_vector_rag",
+}
+
 
 def get_variants(names: list[str] | None = None) -> list[ExperimentVariant]:
     if not names:
         return list(VARIANTS.values())
-    return [VARIANTS[name] for name in names]
+    return [VARIANTS[ALIASES.get(name, name)] for name in names]
