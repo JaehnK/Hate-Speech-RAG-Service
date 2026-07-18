@@ -19,6 +19,12 @@
 - 공개 화면, 내부 배포 문서, production RAG 적재 자료, 보류 데이터셋을 `docs/40_public_artifact_inventory.md`에 한 번에 추적하도록 정리했다.
 - raw dataset과 vector store volume은 Git에 올리지 않고, 공개 화면에는 운영 secret·prompt 원문·내부 collection 세부를 노출하지 않는 경계를 함께 기록했다.
 
+## 2026-07-18 — 벡터스토어 적재 문서 인벤토리 정정
+
+- 브랜치: `docs/vectorstore-document-inventory`
+- `docs/40_public_artifact_inventory.md`의 범위를 공개 산출물 목록에서 Chroma collection에 실제 적재되는 문서·row 목록으로 정정했다.
+- `hate_speech_definitions`의 내부 taxonomy 23건, K-HATERS README chunk 8건과 `hate_speech_examples`의 K-HATERS train row 172,157건을 doc id 패턴, source file, loader 코드와 함께 기록했다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.
