@@ -38,6 +38,13 @@
 - prompt version을 `category-rag-v0.3.1`로 올리고 `taxonomy_context`, `authoritative_context`, `example_context`를 명시적으로 분리했다.
 - bootstrap summary, worker analysis config, admin settings, vector store inventory와 재현성 문서를 새 구조 기준으로 갱신했다.
 
+## 2026-07-18 — RAG 정확도 평가셋·결과 현황 정리
+
+- 브랜치: `docs/rag-accuracy-evaluation-status`
+- 현재 저장소에는 운영 정확도를 주장할 실제 YouTube gold test set이 없고, `synthetic_smoke_5.jsonl`은 회귀 smoke 용도임을 명확히 기록했다.
+- 실험 variant의 현재 구조 이름을 `three_vector_rag`로 정렬하고, 과거 `dual_rag`는 호환 alias로만 유지했다.
+- 실제 gold set의 JSONL schema, 2인 라벨링·불일치 조정 절차, 최소 pilot/validation/test 규모와 보고 지표를 `docs/41_rag_accuracy_evaluation_status.md`에 추가했다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.

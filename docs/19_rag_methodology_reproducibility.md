@@ -365,7 +365,7 @@ curl -X POST http://localhost:8000/api/analysis-jobs \
 
 ### 10.3 네 variant 품질 실험
 
-동일 입력으로 LLM only, definition only, example only, dual RAG를 비교한다.
+동일 입력으로 LLM only, definition only, example only, three-vector RAG를 비교한다.
 
 ```bash
 uv run python -m experiments.run_rag_experiment \
@@ -378,7 +378,7 @@ uv run python -m experiments.evaluate_results \
   --gold-path experiments/gold_labels/synthetic_smoke_5.jsonl
 ```
 
-평가기는 coverage, binary accuracy, category micro precision/recall/F1, 반복 안정성을 출력한다. 실제 배포 판단에는 합성 smoke만 사용하지 말고 독립적인 실제 gold set과 사람 검토를 포함한다.
+평가기는 coverage, binary accuracy, category micro precision/recall/F1, 반복 안정성을 출력한다. 실제 배포 판단에는 합성 smoke만 사용하지 말고 독립적인 실제 gold set과 사람 검토를 포함한다. 현재 정확도 평가셋과 결과 현황은 `docs/41_rag_accuracy_evaluation_status.md`를 기준으로 한다.
 
 ## 11. 재현 체크리스트와 알려진 한계
 

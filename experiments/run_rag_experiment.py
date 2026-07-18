@@ -21,7 +21,7 @@ class DryRunLlmClient:
             text=(
                 '{"input_text": "dry-run", "is_hate_speech": false, '
                 '"categories": ["unclassified"], "target_group": null, '
-                '"hate_type": null, "reasoning": "dry-run", '
+                '"hate_type": null, "reasoning": "드라이런 결과입니다.", '
                 '"similar_cases_used": [], "definition_docs_used": []}'
             ),
             model=self.model,
@@ -83,9 +83,9 @@ def main() -> None:
 
 
 def get_variant_names() -> list[str]:
-    from experiments.variants import VARIANTS
+    from experiments.variants import ALIASES, VARIANTS
 
-    return list(VARIANTS)
+    return [*VARIANTS, *ALIASES]
 
 
 def _build_llm_client(settings):

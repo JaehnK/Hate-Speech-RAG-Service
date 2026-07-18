@@ -7,8 +7,8 @@ def test_evaluate_reports_binary_and_category_metrics() -> None:
         {"item_id": "2", "is_hate_speech": False, "categories": ["unclassified"]},
     ]
     rows = [
-        {"item_id": "1", "variant": "dual_rag", "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
-        {"item_id": "2", "variant": "dual_rag", "status": "succeeded", "payload": {"is_hate_speech": False, "categories": ["unclassified"]}},
+        {"item_id": "1", "variant": "three_vector_rag", "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
+        {"item_id": "2", "variant": "three_vector_rag", "status": "succeeded", "payload": {"is_hate_speech": False, "categories": ["unclassified"]}},
     ]
 
     summary = evaluate(rows, gold)[0]
@@ -21,9 +21,9 @@ def test_evaluate_reports_binary_and_category_metrics() -> None:
 def test_evaluate_measures_repeat_stability_without_inflating_coverage() -> None:
     gold = [{"item_id": "1", "is_hate_speech": True, "categories": ["gender"]}]
     rows = [
-        {"item_id": "1", "variant": "dual_rag", "repeat_index": 0, "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
-        {"item_id": "1", "variant": "dual_rag", "repeat_index": 1, "status": "succeeded", "payload": {"is_hate_speech": False, "categories": ["unclassified"]}},
-        {"item_id": "1", "variant": "dual_rag", "repeat_index": 2, "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
+        {"item_id": "1", "variant": "three_vector_rag", "repeat_index": 0, "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
+        {"item_id": "1", "variant": "three_vector_rag", "repeat_index": 1, "status": "succeeded", "payload": {"is_hate_speech": False, "categories": ["unclassified"]}},
+        {"item_id": "1", "variant": "three_vector_rag", "repeat_index": 2, "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["gender"]}},
     ]
 
     summary = evaluate(rows, gold)[0]
