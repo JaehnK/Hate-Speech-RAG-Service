@@ -26,9 +26,10 @@ class FakeCollection:
 
 
 class FakeClient:
-    def __init__(self, definition, example) -> None:
+    def __init__(self, taxonomy, authoritative, example) -> None:
         self.collections = {
-            "hate_speech_definitions": definition,
+            "hate_speech_taxonomy": taxonomy,
+            "hate_speech_authoritative": authoritative,
             "hate_speech_examples": example,
         }
 
@@ -67,43 +68,52 @@ def _example_result():
 
 def test_dual_retriever_reuses_one_query_embedding() -> None:
     embedding = FakeEmbedding()
-    definition = FakeCollection(_definition_result())
+    taxonomy = FakeCollection(_definition_result())
+    authoritative = FakeCollection(_definition_result())
     example = FakeCollection(_example_result())
-    retriever = DualVectorRetriever("unused", embedding, FakeClient(definition, example))
+    retriever = DualVectorRetriever("unused", embedding, FakeClient(taxonomy, authoritative, example))
 
-    bundle = retriever.retrieve("query", definition_n=8, example_n=6)
+    bundle = retriever.retrieve("query", taxonomy_n=4, authoritative_n=4, example_n=6)
 
     assert embedding.calls == [["query"]]
-    assert definition.calls == [{"query_embeddings": [[0.1, 0.2]], "n_results": 8}]
+    assert taxonomy.calls == [{"query_embeddings": [[0.1, 0.2]], "n_results": 4}]
+    assert authoritative.calls == [{"query_embeddings": [[0.1, 0.2]], "n_results": 4}]
     assert example.calls == [{"query_embeddings": [[0.1, 0.2]], "n_results": 6}]
-    assert bundle.definitions[0].doc_id == "definition:1"
+    assert bundle.taxonomy[0].doc_id == "definition:1"
+    assert bundle.authoritative[0].doc_id == "definition:1"
     assert bundle.examples[0].doc_id == "example:1"
     assert bundle.failures == ()
 
 
 @pytest.mark.parametrize(
-    ("failed_collection", "expected_failures", "definition_count", "example_count"),
+    ("failed_collection", "expected_failures", "taxonomy_count", "authoritative_count", "example_count"),
     [
-        ("definition", ("definitions",), 0, 1),
-        ("example", ("examples",), 1, 0),
+        ("taxonomy", ("taxonomy",), 0, 1, 1),
+        ("authoritative", ("authoritative",), 1, 0, 1),
+        ("example", ("examples",), 1, 1, 0),
     ],
 )
 def test_dual_retriever_preserves_degraded_results(
     failed_collection,
     expected_failures,
-    definition_count,
+    taxonomy_count,
+    authoritative_count,
     example_count,
 ) -> None:
-    definition = FakeCollection(_definition_result())
+    taxonomy = FakeCollection(_definition_result())
+    authoritative = FakeCollection(_definition_result())
     example = FakeCollection(_example_result())
-    if failed_collection == "definition":
-        definition.error = RuntimeError("definition unavailable")
+    if failed_collection == "taxonomy":
+        taxonomy.error = RuntimeError("taxonomy unavailable")
+    elif failed_collection == "authoritative":
+        authoritative.error = RuntimeError("authoritative unavailable")
     else:
         example.error = RuntimeError("example unavailable")
-    retriever = DualVectorRetriever("unused", FakeEmbedding(), FakeClient(definition, example))
+    retriever = DualVectorRetriever("unused", FakeEmbedding(), FakeClient(taxonomy, authoritative, example))
 
-    bundle = retriever.retrieve("query", definition_n=8, example_n=6)
+    bundle = retriever.retrieve("query", taxonomy_n=4, authoritative_n=4, example_n=6)
 
     assert bundle.failures == expected_failures
-    assert len(bundle.definitions) == definition_count
+    assert len(bundle.taxonomy) == taxonomy_count
+    assert len(bundle.authoritative) == authoritative_count
     assert len(bundle.examples) == example_count

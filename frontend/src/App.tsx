@@ -114,7 +114,7 @@ function AppShell() {
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
-          <div className="sidebar-note"><ShieldCheck size={18} /><span>정의·유사 사례 기반<br />dual-vector RAG</span></div>
+          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·공식 기준·사례 기반<br />three-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
       </div>

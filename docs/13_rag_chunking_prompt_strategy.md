@@ -16,19 +16,20 @@
 ## 기본 방향
 
 - RAG는 단순 혐오/비혐오 판단이 아니라 `categories` 선택을 보강한다.
-- `hate_speech_examples`와 `hate_speech_definitions`는 다른 종류의 근거이므로 분리한다.
+- `hate_speech_taxonomy`, `hate_speech_authoritative`, `hate_speech_examples`는 서로 다른 종류의 근거이므로 분리한다.
 - prompt는 검색된 사례에 끌려가지 않고 taxonomy 규칙을 먼저 따른다.
 - 공개 데모 또는 상업 가능성이 있는 환경에서는 license tier에 따라 corpus를 제한한다.
 - raw dataset과 vector store는 git에 커밋하지 않는다.
 
 ## Vector Collections
 
-MVP는 다음 두 collection을 기본으로 사용한다.
+MVP는 다음 세 collection을 기본으로 사용한다.
 
 | collection | 역할 | 주요 입력 |
 | --- | --- | --- |
+| `hate_speech_taxonomy` | 출력 schema와 category 경계 검색 | 내부 taxonomy, 내부 category card |
+| `hate_speech_authoritative` | 공식·권위 기준과 외부 guideline 검색 | 공식 문서, 플랫폼 정책, annotation guideline |
 | `hate_speech_examples` | 입력 문장과 유사한 한국어 댓글 사례 검색 | 공개 데이터셋의 라벨된 row |
-| `hate_speech_definitions` | 정의, 라벨 기준, 카테고리 판단 규칙 검색 | 내부 taxonomy, 공식 문서, annotation guideline |
 
 운영 환경이 Redis vector search로 바뀌더라도 위 logical collection 이름은 유지한다.
 
@@ -137,7 +138,7 @@ seed = 20260709
 
 ### 우선순위
 
-`hate_speech_definitions`는 다음 순서로 구성한다.
+definition 계열 corpus는 다음 순서로 구성한다.
 
 1. 내부 taxonomy 문서
 2. 내부 카테고리 판단 카드
@@ -234,11 +235,11 @@ prompt에는 검색 결과를 슬롯별로 분리해 넣는다.
 
 | 슬롯 | collection | 기본 k | 역할 |
 | --- | --- | --- | --- |
-| `taxonomy_context` | `hate_speech_definitions` | 4 | 카테고리 규칙 |
-| `definition_context` | `hate_speech_definitions` | 4 | 외부 정의/판단 기준 |
+| `taxonomy_context` | `hate_speech_taxonomy` | 4 | 카테고리 규칙 |
+| `authoritative_context` | `hate_speech_authoritative` | 4 | 외부 정의/판단 기준 |
 | `example_context` | `hate_speech_examples` | 6 | 유사 한국어 사례 |
 
-현재 구현은 definition collection의 cosine 유사도 상위 8건을 앞 4건과 뒤 4건으로 나누므로 `taxonomy_context`가 항상 내부 card라는 보장은 없다. 내부 card 우선 필터나 고정 주입은 검색 recall 평가 후 별도 변경한다.
+현재 구현은 query embedding을 한 번 만든 뒤 세 collection을 독립 조회한다. taxonomy가 authoritative 기준을 밀어내거나, 예시가 공식 기준처럼 쓰이는 것을 막기 위해 prompt slot도 분리한다.
 
 ### Reranking
 
@@ -261,7 +262,7 @@ prompt에는 검색 결과를 슬롯별로 분리해 넣는다.
 초기 prompt version:
 
 ```text
-category-rag-v0.3.0
+category-rag-v0.3.1
 ```
 
 prompt version이 바뀌면 analysis run에 기록한다.
@@ -275,7 +276,7 @@ prompt version이 바뀌면 analysis run에 기록한다.
 | `input_text` | 분석 대상 텍스트 |
 | `source_type` | comment, reply, script_segment |
 | `taxonomy_context` | 내부 taxonomy 검색 결과 |
-| `definition_context` | 외부 정의 문서 검색 결과 |
+| `authoritative_context` | 외부 정의 문서 검색 결과 |
 | `example_context` | 유사 예시 검색 결과 |
 
 ### 판단 순서
@@ -378,7 +379,7 @@ retry는 1회만 수행한다.
 ingest 후 다음 테스트를 수행한다.
 
 1. `hate_speech_examples` count가 예상 row 수와 일치한다.
-2. `hate_speech_definitions`에 내부 taxonomy card가 모두 들어 있다.
+2. `hate_speech_taxonomy`에 내부 taxonomy card가 모두 들어 있다.
 3. 정치 관련 query가 정치 axis chunk를 검색한다.
 4. 보호 속성 query가 관련 category card를 검색한다.
 5. 비혐오 query에서 example retrieval이 과도하게 혐오 사례만 반환하지 않는다.

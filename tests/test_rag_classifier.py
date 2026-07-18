@@ -69,7 +69,7 @@ def test_rag_classifier_returns_valid_payload(tmp_path) -> None:
     assert result.model == "claude-haiku-4-5-20251001"
     assert result.rag_context_status == "complete"
     assert result.example_collection == "hate_speech_examples"
-    assert result.definition_collection == "hate_speech_definitions"
+    assert result.definition_collection == "hate_speech_authoritative"
     assert result.definition_corpus_version
     assert result.retrieved_examples
     assert result.retrieved_definitions

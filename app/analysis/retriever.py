@@ -8,8 +8,9 @@ import chromadb
 from app.analysis.embeddings import HashEmbeddingFunction
 from app.analysis.models import RetrievalBundle
 from app.analysis.vector_store import (
-    DEFINITION_COLLECTION_NAME,
+    AUTHORITATIVE_COLLECTION_NAME,
     EXAMPLE_COLLECTION_NAME,
+    TAXONOMY_COLLECTION_NAME,
     _get_collection,
     parse_definition_query_result,
     parse_example_query_result,
@@ -25,9 +26,15 @@ class DualVectorRetriever:
     ) -> None:
         self.embedding_function = embedding_function or HashEmbeddingFunction()
         self.client = client or chromadb.PersistentClient(path=str(persist_directory))
-        self.definition_collection = _get_collection(
+        self.taxonomy_collection = _get_collection(
             persist_directory,
-            DEFINITION_COLLECTION_NAME,
+            TAXONOMY_COLLECTION_NAME,
+            embedding_function=self.embedding_function,
+            client=self.client,
+        )
+        self.authoritative_collection = _get_collection(
+            persist_directory,
+            AUTHORITATIVE_COLLECTION_NAME,
             embedding_function=self.embedding_function,
             client=self.client,
         )
@@ -38,17 +45,31 @@ class DualVectorRetriever:
             client=self.client,
         )
 
-    def retrieve(self, query_text: str, *, definition_n: int, example_n: int) -> RetrievalBundle:
+    def retrieve(
+        self,
+        query_text: str,
+        *,
+        taxonomy_n: int,
+        authoritative_n: int,
+        example_n: int,
+    ) -> RetrievalBundle:
         vector = self.embedding_function.embed_query([query_text])[0]
-        definitions = []
+        taxonomy = []
+        authoritative = []
         examples = []
         failures = []
 
         try:
-            result = self.definition_collection.query(query_embeddings=[vector], n_results=definition_n)
-            definitions = parse_definition_query_result(result)
+            result = self.taxonomy_collection.query(query_embeddings=[vector], n_results=taxonomy_n)
+            taxonomy = parse_definition_query_result(result)
         except Exception:
-            failures.append("definitions")
+            failures.append("taxonomy")
+
+        try:
+            result = self.authoritative_collection.query(query_embeddings=[vector], n_results=authoritative_n)
+            authoritative = parse_definition_query_result(result)
+        except Exception:
+            failures.append("authoritative")
 
         try:
             result = self.example_collection.query(query_embeddings=[vector], n_results=example_n)
@@ -57,7 +78,8 @@ class DualVectorRetriever:
             failures.append("examples")
 
         return RetrievalBundle(
-            definitions=tuple(definitions),
+            taxonomy=tuple(taxonomy),
+            authoritative=tuple(authoritative),
             examples=tuple(examples),
             failures=tuple(failures),
         )

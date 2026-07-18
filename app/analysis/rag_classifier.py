@@ -16,7 +16,7 @@ from app.analysis.prompt_template import PROMPT_VERSION, build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.retriever import DualVectorRetriever
 from app.analysis.retry import RetryCancelled
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.jobs.exceptions import WorkerShutdownRequested
 
@@ -84,7 +84,8 @@ class RagClassifier:
             try:
                 bundle = self.retriever.retrieve(
                     _retrieval_query(input_text, source_type),
-                    definition_n=self.taxonomy_k + self.definition_k,
+                    taxonomy_n=self.taxonomy_k,
+                    authoritative_n=self.definition_k,
                     example_n=self.example_k,
                 )
             except RetryCancelled as exc:
@@ -94,10 +95,12 @@ class RagClassifier:
                 raise
             except Exception as exc:
                 raise ClassificationError(
-                    "both RAG vector stores are unavailable",
+                    "all RAG vector stores are unavailable",
                     code="RAG_RETRIEVAL_ERROR",
                 ) from exc
-            definitions = list(bundle.definitions)
+            taxonomy = list(bundle.taxonomy)
+            authoritative = list(bundle.authoritative)
+            definitions = [*taxonomy, *authoritative]
             examples = list(bundle.examples)
             examples = [
                 result
@@ -105,15 +108,15 @@ class RagClassifier:
                 if _example_similarity(result) >= self.example_min_similarity
             ]
 
-        if len(bundle.failures) == 2:
-            raise ClassificationError("both RAG vector stores are unavailable", code="RAG_RETRIEVAL_ERROR")
+        if len(bundle.failures) == 3:
+            raise ClassificationError("all RAG vector stores are unavailable", code="RAG_RETRIEVAL_ERROR")
         context_status = _context_status(definitions, examples)
 
         prompt = build_category_prompt(
             input_text=input_text,
             source_type=source_type,
-            taxonomy_context=[_definition_document(result) for result in definitions[: self.taxonomy_k]],
-            definition_context=[_definition_document(result) for result in definitions[self.taxonomy_k :]],
+            taxonomy_context=[_definition_document(result) for result in taxonomy],
+            authoritative_context=[_definition_document(result) for result in authoritative],
             example_context=[_example_document(result) for result in examples],
         )
 
@@ -153,7 +156,7 @@ class RagClassifier:
                     attempts=attempt,
                     rag_context_status=context_status,
                     example_collection=EXAMPLE_COLLECTION_NAME,
-                    definition_collection=DEFINITION_COLLECTION_NAME,
+                    definition_collection=AUTHORITATIVE_COLLECTION_NAME,
                     definition_corpus_version=self.definition_corpus_version,
                     retrieved_examples=tuple(examples),
                     retrieved_definitions=tuple(definitions),

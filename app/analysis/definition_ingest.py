@@ -42,6 +42,7 @@ def ingest_manifest_definitions(
     allowed_license_tiers: tuple[str, ...] = DEFAULT_DEFINITION_LICENSE_TIERS,
     corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
     embedding_function=None,
+    reset: bool = False,
 ) -> tuple[int, int]:
     documents = load_manifest_definition_documents(
         manifest_path,
@@ -49,7 +50,12 @@ def ingest_manifest_definitions(
         allowed_license_tiers,
         corpus_version,
     )
-    count = ingest_definition_documents(persist_directory, documents, embedding_function=embedding_function)
+    count = ingest_definition_documents(
+        persist_directory,
+        documents,
+        reset=reset,
+        embedding_function=embedding_function,
+    )
     return len(documents), count
 
 

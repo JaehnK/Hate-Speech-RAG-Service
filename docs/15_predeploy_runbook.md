@@ -25,10 +25,10 @@ docker compose --profile tools run --rm corpus
 ```
 
 1. dataset source revision과 license tier를 확인한다.
-2. internal taxonomy를 `hate_speech_definitions`에 ingest한다.
-3. 허용된 외부 definition 문서를 같은 collection에 추가한다.
+2. internal taxonomy를 `hate_speech_taxonomy`에 ingest한다.
+3. 허용된 외부 definition 문서를 `hate_speech_authoritative`에 ingest한다.
 4. 허용된 example dataset만 `hate_speech_examples`에 ingest한다.
-5. 두 collection의 document count와 retrieval smoke test를 확인한다.
+5. 세 collection의 document count와 retrieval smoke test를 확인한다.
 
 ## 3. 자동 검증
 
