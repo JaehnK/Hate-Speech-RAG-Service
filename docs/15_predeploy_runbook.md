@@ -18,6 +18,8 @@
 
 라이선스가 허용된 production corpus는 다음 one-shot 서비스로 named volume에 생성한다. 실제 전체 적재는 limit 없이 실행하며, 외부 API 연결 smoke에만 `--limit-per-dataset`을 사용한다.
 
+배포에 포함할 문서·공개 샘플·RAG 자료 목록은 `docs/40_public_artifact_inventory.md`를 기준으로 한다.
+
 ```bash
 docker compose --profile tools run --rm corpus
 ```
