@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from collections.abc import Iterator
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 import yaml
+from huggingface_hub import hf_hub_download
 
 from app.analysis.license_policy import DEFAULT_EXAMPLE_LICENSE_TIERS, examples_allowed
 from app.analysis.license_policy import normalize_license_tier
@@ -103,6 +105,8 @@ def _load_k_haters(source: dict[str, Any], split: str, root: Path) -> Iterator[E
         return
 
     path = _source_path(source, root, path_key="data_local_path") / relative_path
+    if not path.exists():
+        path = _download_huggingface_dataset_file(source, relative_path)
     with path.open("r", encoding="utf-8") as file:
         for index, line in enumerate(file):
             row = json.loads(line)
@@ -220,6 +224,14 @@ def _source_path(source: dict[str, Any], root: Path, path_key: str = "local_path
     if path.is_absolute():
         return path
     return root / path
+
+
+def _download_huggingface_dataset_file(source: dict[str, Any], filename: str) -> Path:
+    repo_id = source.get("huggingface_repo")
+    if not repo_id:
+        raise FileNotFoundError(filename)
+    cache_dir = os.getenv("HF_HOME") or "/tmp/huggingface"
+    return Path(hf_hub_download(repo_id=str(repo_id), filename=filename, repo_type="dataset", cache_dir=cache_dir))
 
 
 def _limit(documents: Iterator[ExampleDocument], limit: int | None) -> list[ExampleDocument]:

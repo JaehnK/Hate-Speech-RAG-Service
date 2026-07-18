@@ -2,6 +2,7 @@ from pathlib import Path
 
 import yaml
 
+import app.analysis.example_loaders as example_loaders
 from app.analysis.example_loaders import load_example_documents
 from app.analysis.license_policy import COMMERCIAL_OK, SHAREALIKE_REVIEW
 from app.analysis.license_policy import examples_allowed, normalize_license_tier
@@ -106,6 +107,45 @@ def test_k_haters_loader_maps_commercial_rows(tmp_path) -> None:
     assert loaded[0].mapped_categories == ("gender",)
     assert loaded[0].target_labels == ("gender",)
     assert loaded[1].mapped_categories == ("unclassified",)
+
+
+def test_k_haters_loader_downloads_huggingface_file_when_local_missing(tmp_path, monkeypatch) -> None:
+    downloaded = tmp_path / "downloaded-train.jsonl"
+    downloaded.write_text(
+        '{"text": "성별 비하 댓글", "label": "L1_hate", "target_label": ["gender"]}',
+        encoding="utf-8",
+    )
+
+    def fake_hf_hub_download(repo_id: str, filename: str, repo_type: str, cache_dir: str) -> str:
+        assert repo_id == "humane-lab/K-HATERS"
+        assert filename == "train.jsonl"
+        assert repo_type == "dataset"
+        assert cache_dir
+        return str(downloaded)
+
+    monkeypatch.setattr(example_loaders, "hf_hub_download", fake_hf_hub_download)
+    manifest_path = _write_manifest(
+        tmp_path,
+        [
+            {
+                "id": "k-haters",
+                "data_local_path": str(tmp_path / "missing"),
+                "huggingface_repo": "humane-lab/K-HATERS",
+                "source_revision": "rev",
+                "license_status": "cc_by_4_0_observed",
+                "corpus_target": {"examples": True},
+            }
+        ],
+    )
+
+    loaded = load_example_documents(
+        manifest_path,
+        project_root=tmp_path,
+        allowed_license_tiers=(COMMERCIAL_OK,),
+    )
+
+    assert len(loaded) == 1
+    assert loaded[0].mapped_categories == ("gender",)
 
 
 def test_kodoli_loader_uses_deterministic_split(tmp_path) -> None:
