@@ -14,7 +14,7 @@ RUN groupadd --system app && useradd --system --gid app --home /app app
 COPY --from=prod-builder --chown=app:app /app /app
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS test
 WORKDIR /app
