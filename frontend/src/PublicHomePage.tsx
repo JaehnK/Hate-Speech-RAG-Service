@@ -57,7 +57,7 @@ export function PublicHomePage() {
         </section>
 
         <section className="public-principles" id="principles">
-          <article><strong>01</strong><h3>이중 근거 검색</h3><p>혐오표현 정의와 유사 판정 사례를 분리 검색해 문맥과 기준을 함께 제시합니다.</p></article>
+          <article><strong>01</strong><h3>세 근거 검색</h3><p>분류 체계, 공식 기준, 유사 판정 사례를 분리 검색해 문맥과 기준을 함께 제시합니다.</p></article>
           <article><strong>02</strong><h3>발화 단위 분석</h3><p>댓글과 공개 자막을 각각 분석해 영상 안팎의 표현 양상을 구분합니다.</p></article>
           <article><strong>03</strong><h3>상호작용 구조</h3><p>답글 관계를 네트워크로 구성해 빈도와 연결 구조를 탐색할 수 있습니다.</p></article>
           <aside>모델 판정은 법적 판단이나 개인의 성향·의도를 진단하는 결과가 아닙니다. 수집 가능한 공개 데이터와 명시된 분류 기준 안에서 해석해야 합니다.</aside>

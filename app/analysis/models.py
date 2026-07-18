@@ -76,9 +76,14 @@ class ExampleSearchResult:
 
 @dataclass(frozen=True)
 class RetrievalBundle:
-    definitions: tuple[DefinitionSearchResult, ...]
+    taxonomy: tuple[DefinitionSearchResult, ...]
+    authoritative: tuple[DefinitionSearchResult, ...]
     examples: tuple[ExampleSearchResult, ...]
     failures: tuple[str, ...] = ()
+
+    @property
+    def definitions(self) -> tuple[DefinitionSearchResult, ...]:
+        return (*self.taxonomy, *self.authoritative)
 
 
 @dataclass(frozen=True)

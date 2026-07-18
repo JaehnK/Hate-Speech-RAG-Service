@@ -123,7 +123,7 @@ def _report(case: str) -> dict:
         "video": {"title": "Video"},
         "analysis_config": {
             "llm_model": "model",
-            "prompt_versions": {"comment": "category-rag-v0.3.0", "script": "category-rag-v0.3.0"},
+            "prompt_versions": {"comment": "category-rag-v0.3.1", "script": "category-rag-v0.3.1"},
             "retriever_config": {"example_min_similarity": 0.4},
         },
         "collection_summary": {

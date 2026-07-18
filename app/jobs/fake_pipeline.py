@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, TAXONOMY_VERSION
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.db.models import AnalysisJob, AnalysisRun, ReportSnapshot, VideoMetadataSnapshot
 from app.jobs.orchestrator import StepResult
 
@@ -46,9 +46,15 @@ def _create_analysis_run(session: Session, job: AnalysisJob) -> StepResult:
             embedding_provider="hash",
             embedding_model="hash-v1",
             example_vector_collection=EXAMPLE_COLLECTION_NAME,
-            definition_vector_collection=DEFINITION_COLLECTION_NAME,
+            definition_vector_collection=AUTHORITATIVE_COLLECTION_NAME,
             definition_corpus_version=DEFAULT_DEFINITION_CORPUS_VERSION,
-            retriever_config={"mode": "fake", "taxonomy_version": TAXONOMY_VERSION},
+            retriever_config={
+                "mode": "fake",
+                "taxonomy_version": TAXONOMY_VERSION,
+                "taxonomy_collection": TAXONOMY_COLLECTION_NAME,
+                "authoritative_collection": AUTHORITATIVE_COLLECTION_NAME,
+                "example_collection": EXAMPLE_COLLECTION_NAME,
+            },
             prompt_versions={"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
         )
     )

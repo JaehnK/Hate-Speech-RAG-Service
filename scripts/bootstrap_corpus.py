@@ -27,7 +27,7 @@ def main() -> None:
         api_key=settings.embedding_api_key,
         base_url=settings.upstage_embedding_base_url,
     )
-    internal_count = ingest_internal_taxonomy(
+    taxonomy_count = ingest_internal_taxonomy(
         persist_directory,
         reset=args.reset,
         embedding_function=embedding,
@@ -36,6 +36,7 @@ def main() -> None:
         args.manifest_path,
         persist_directory,
         project_root=args.project_root,
+        reset=args.reset,
         embedding_function=embedding,
     )
     examples_loaded, example_count = ingest_manifest_examples(
@@ -51,9 +52,9 @@ def main() -> None:
             {
                 "embedding_provider": settings.embedding_provider,
                 "embedding_model": settings.embedding_model,
-                "internal_definition_count": internal_count,
-                "external_definitions_loaded": external_loaded,
-                "definition_collection_count": definition_count,
+                "taxonomy_collection_count": taxonomy_count,
+                "external_authoritative_loaded": external_loaded,
+                "authoritative_collection_count": definition_count,
                 "examples_loaded": examples_loaded,
                 "example_collection_count": example_count,
                 "limited": args.limit_per_dataset is not None,

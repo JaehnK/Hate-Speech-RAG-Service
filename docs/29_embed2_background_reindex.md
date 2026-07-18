@@ -8,7 +8,7 @@
 - endpoint: `https://api.upstage.ai/v1/embeddings`
 - vector dimensions: 4096
 - distance: cosine
-- 대상 collection: `hate_speech_definitions`, `hate_speech_examples`
+- 대상 collection: `hate_speech_taxonomy`, `hate_speech_authoritative`, `hate_speech_examples`
 - 실행 container: `hatespeechraw-embed2-reindex`
 - 시작 시각: 2026-07-16 21:44 KST
 - 설정 commit: `1bd9c2f`
@@ -25,9 +25,9 @@
 {
   "embedding_provider": "upstage",
   "embedding_model": "embedding",
-  "internal_definition_count": 23,
-  "external_definitions_loaded": 8,
-  "definition_collection_count": 31,
+  "taxonomy_collection_count": 23,
+  "external_authoritative_loaded": 8,
+  "authoritative_collection_count": 8,
   "examples_loaded": 172157,
   "example_collection_count": 172157,
   "limited": false

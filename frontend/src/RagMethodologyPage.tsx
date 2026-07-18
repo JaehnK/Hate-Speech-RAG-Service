@@ -56,18 +56,18 @@ export function RagMethodologyPage() {
       <header className="rag-method-header">
         <div>
           <span className="rag-kicker">METHODOLOGY · RESPONSIBLE AI</span>
-          <h1>Dual-Vector RAG 분류 파이프라인</h1>
-          <p>댓글, 답글, 스크립트 세그먼트를 정의 문서와 유사 사례라는 서로 다른 근거로 검색하고 분류합니다.</p>
+          <h1>Three-Vector RAG 분류 파이프라인</h1>
+          <p>댓글, 답글, 스크립트 세그먼트를 분류 체계, 공식 기준, 유사 사례라는 서로 다른 근거로 검색하고 분류합니다.</p>
         </div>
         <div className="rag-badges">
-          <span>Dual Evidence</span>
+          <span>Three Evidence</span>
           <span>설명 가능한 판정</span>
           <span>책임 있는 해석</span>
         </div>
       </header>
 
       <MethodSection number="01" title="호출 파이프라인" icon={<GitBranch size={18} />}>
-        <p className="section-intro">데이터 수집부터 두 종류의 근거 검색, 분류 검증, 네트워크 분석과 보고서 생성까지의 흐름을 보여줍니다.</p>
+        <p className="section-intro">데이터 수집부터 세 종류의 근거 검색, 분류 검증, 네트워크 분석과 보고서 생성까지의 흐름을 보여줍니다.</p>
         <RagPipelineFlow />
       </MethodSection>
 
@@ -75,11 +75,19 @@ export function RagMethodologyPage() {
         <div className="evidence-grid">
           <EvidenceCard
             icon={<BookOpenCheck size={22} />}
-            title="정의·분류 기준"
-            subtitle="개념적 근거"
-            rows={[["역할", "판정 기준 제공"], ["구성", "정의·경계·예외"], ["효과", "일관성 향상"]]}
+            title="분류 체계"
+            subtitle="출력 규칙"
+            rows={[["역할", "범주 경계 제공"], ["구성", "정의·경계·예외"], ["효과", "일관성 향상"]]}
           >
-            혐오표현의 정의, 포함·제외 기준과 인접 범주의 경계를 검색해 판정 기준을 구성합니다.
+            허용 범주, 포함·제외 기준과 인접 범주의 경계를 검색해 결과 형식을 안정화합니다.
+          </EvidenceCard>
+          <EvidenceCard
+            icon={<Scale size={22} />}
+            title="공식 기준"
+            subtitle="권위 근거"
+            rows={[["역할", "외부 기준 제공"], ["구성", "정책·가이드"], ["효과", "기준 순환 완화"]]}
+          >
+            공식·권위 문서의 판단 요건과 보호 속성 기준을 별도로 검색해 내부 분류 체계에 치우치지 않도록 합니다.
           </EvidenceCard>
           <EvidenceCard
             icon={<Boxes size={22} />}

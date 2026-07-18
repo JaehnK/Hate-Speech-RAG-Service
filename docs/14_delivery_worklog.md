@@ -31,6 +31,13 @@
 - 내부 taxonomy가 definition collection을 과도하게 지배할 때 생길 수 있는 기준 순환, 권위 근거 부족, recall 편향, 감사 어려움을 기록했다.
 - 국가인권위원회, YouTube 정책, OHCHR Rabat Plan of Action을 공식·권위 definition source 후보로 추가하고, source type별 균형 retrieval 보강 방향을 문서화했다.
 
+## 2026-07-18 — 3분리 RAG vector store 구현
+
+- 브랜치: `feat/three-vector-rag`
+- Chroma collection을 `hate_speech_taxonomy`, `hate_speech_authoritative`, `hate_speech_examples`로 분리하고 retriever가 query embedding 1회로 세 collection을 독립 조회하도록 변경했다.
+- prompt version을 `category-rag-v0.3.1`로 올리고 `taxonomy_context`, `authoritative_context`, `example_context`를 명시적으로 분리했다.
+- bootstrap summary, worker analysis config, admin settings, vector store inventory와 재현성 문서를 새 구조 기준으로 갱신했다.
+
 ## 작업 원칙
 
 - 기능 묶음마다 별도 브랜치를 사용하고 검증 후 `main`에 병합한다.

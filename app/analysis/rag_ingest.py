@@ -9,12 +9,12 @@ from app.analysis.embeddings import DEFAULT_UPSTAGE_EMBEDDING_BASE_URL
 from app.analysis.embeddings import DEFAULT_UPSTAGE_EMBEDDING_MODEL
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, build_internal_taxonomy_documents
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, ingest_definition_documents
+from app.analysis.vector_store import TAXONOMY_COLLECTION_NAME, ingest_definition_documents
 
 
 def ingest_internal_taxonomy(
     persist_directory: Path | str,
-    collection_name: str = DEFINITION_COLLECTION_NAME,
+    collection_name: str = TAXONOMY_COLLECTION_NAME,
     corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
     reset: bool = False,
     embedding_function=None,
@@ -32,7 +32,7 @@ def ingest_internal_taxonomy(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Ingest internal taxonomy cards into Chroma.")
     parser.add_argument("--persist-directory", default=".chroma", help="Chroma persistent directory.")
-    parser.add_argument("--collection-name", default=DEFINITION_COLLECTION_NAME)
+    parser.add_argument("--collection-name", default=TAXONOMY_COLLECTION_NAME)
     parser.add_argument("--corpus-version", default=DEFAULT_DEFINITION_CORPUS_VERSION)
     parser.add_argument("--embedding-provider", default=os.getenv("EMBEDDING_PROVIDER", "hash"))
     parser.add_argument("--embedding-model", default=os.getenv("EMBEDDING_MODEL", DEFAULT_UPSTAGE_EMBEDDING_MODEL))

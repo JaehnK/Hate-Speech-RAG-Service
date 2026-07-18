@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.core.config import Settings
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog, ReportSnapshot
@@ -113,7 +113,8 @@ def build_admin_router(get_session: Callable[[], Iterator[Session]], settings: S
             "vector_stores": {
                 "provider": "chroma",
                 "examples": {"collection": EXAMPLE_COLLECTION_NAME, "is_configured": vector_path.exists()},
-                "definitions": {"collection": DEFINITION_COLLECTION_NAME, "corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION, "is_configured": vector_path.exists()},
+                "taxonomy": {"collection": TAXONOMY_COLLECTION_NAME, "corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION, "is_configured": vector_path.exists()},
+                "authoritative": {"collection": AUTHORITATIVE_COLLECTION_NAME, "corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION, "is_configured": vector_path.exists()},
             },
         }
 

@@ -7,8 +7,9 @@ describe("RAG methodology page", () => {
   it("explains the portfolio methodology without operational details", () => {
     const html = renderToStaticMarkup(<RagMethodologyPage />);
 
-    expect(html).toContain("Dual-Vector RAG 분류 파이프라인");
-    expect(html).toContain("정의·분류 기준");
+    expect(html).toContain("Three-Vector RAG 분류 파이프라인");
+    expect(html).toContain("분류 체계");
+    expect(html).toContain("공식 기준");
     expect(html).toContain("유사 분석 사례");
     expect(html).toContain("판정 원칙");
     expect(html).toContain("결과 검증");
@@ -18,7 +19,7 @@ describe("RAG methodology page", () => {
     expect(html).toContain("인과관계");
     expect(html).toContain("개인 제재");
     expect(html).toContain("주장하면 안 되는 것");
-    expect(html).toContain("Dual-Vector RAG 분석");
+    expect(html).toContain("Three-Vector RAG 분석");
     expect(html).toContain("형식 + 규칙");
     expect(html).toContain("운영 품질 관리");
     expect(html).toContain("Taxonomy 판정 가이드");
@@ -31,9 +32,11 @@ describe("RAG methodology page", () => {
     for (const internalDetail of [
       "Embed 2",
       "Embedding 비용·마이그레이션",
-      "category-rag-v0.3.0",
+      "category-rag-v0.3.1",
       "claude-haiku-4-5-20251001",
       "hate_speech_definitions",
+      "hate_speech_taxonomy",
+      "hate_speech_authoritative",
       "embedding-passage",
       "4096",
       "172,157",

@@ -11,7 +11,8 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult
 
 
-DEFINITION_COLLECTION_NAME = "hate_speech_definitions"
+TAXONOMY_COLLECTION_NAME = "hate_speech_taxonomy"
+AUTHORITATIVE_COLLECTION_NAME = "hate_speech_authoritative"
 EXAMPLE_COLLECTION_NAME = "hate_speech_examples"
 UPSERT_BATCH_SIZE = 100
 
@@ -19,7 +20,7 @@ UPSERT_BATCH_SIZE = 100
 def ingest_definition_documents(
     persist_directory: Path | str,
     documents: list[DefinitionDocument],
-    collection_name: str = DEFINITION_COLLECTION_NAME,
+    collection_name: str = AUTHORITATIVE_COLLECTION_NAME,
     reset: bool = False,
     embedding_function: Any | None = None,
 ) -> int:
@@ -43,7 +44,7 @@ def ingest_definition_documents(
 def query_definition_documents(
     persist_directory: Path | str,
     query_text: str,
-    collection_name: str = DEFINITION_COLLECTION_NAME,
+    collection_name: str = AUTHORITATIVE_COLLECTION_NAME,
     n_results: int = 5,
     embedding_function: Any | None = None,
 ) -> list[DefinitionSearchResult]:

@@ -18,7 +18,7 @@ from app.analysis.result_store import AnalysisResultStore
 from app.analysis.retry import RetryPolicy
 from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, TAXONOMY_VERSION
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.auth.crypto import KeyEncryptionService
 from app.auth.services import decrypt_api_keys_for_job
 from app.collectors.comments import CommentCollector
@@ -206,9 +206,12 @@ def _analysis_run_values(settings: Settings) -> dict:
         "embedding_provider": settings.embedding_provider,
         "embedding_model": settings.embedding_model,
         "example_vector_collection": EXAMPLE_COLLECTION_NAME,
-        "definition_vector_collection": DEFINITION_COLLECTION_NAME,
+        "definition_vector_collection": AUTHORITATIVE_COLLECTION_NAME,
         "definition_corpus_version": DEFAULT_DEFINITION_CORPUS_VERSION,
         "retriever_config": {
+            "taxonomy_collection": TAXONOMY_COLLECTION_NAME,
+            "authoritative_collection": AUTHORITATIVE_COLLECTION_NAME,
+            "example_collection": EXAMPLE_COLLECTION_NAME,
             "taxonomy_k": 4,
             "definition_k": 4,
             "example_k": 6,

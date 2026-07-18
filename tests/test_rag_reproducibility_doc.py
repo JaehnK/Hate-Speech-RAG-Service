@@ -8,7 +8,7 @@ from app.analysis.taxonomy import (
     DEFAULT_DEFINITION_CORPUS_VERSION,
     TAXONOMY_VERSION,
 )
-from app.analysis.vector_store import DEFINITION_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME
+from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 
 
 def test_rag_reproducibility_doc_tracks_runtime_contract() -> None:
@@ -20,7 +20,8 @@ def test_rag_reproducibility_doc_tracks_runtime_contract() -> None:
         DEFAULT_SYSTEM_PROMPT,
         DEFAULT_DEFINITION_CORPUS_VERSION,
         TAXONOMY_VERSION,
-        DEFINITION_COLLECTION_NAME,
+        TAXONOMY_COLLECTION_NAME,
+        AUTHORITATIVE_COLLECTION_NAME,
         EXAMPLE_COLLECTION_NAME,
         f"score >= {DEFAULT_EXAMPLE_MIN_SIMILARITY:.2f}",
         *ALLOWED_CATEGORIES,
