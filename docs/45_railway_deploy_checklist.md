@@ -97,7 +97,9 @@ python -m scripts.bootstrap_corpus --persist-directory $CHROMA_PERSIST_DIRECTORY
 ### 2.2 서비스별 command 설정
 
 - [ ] `web` start command를 입력한다.
+- [ ] `web` Dockerfile path를 `/Dockerfile.backend`로 입력한다.
 - [ ] `worker` start command를 입력한다.
+- [ ] `worker` Dockerfile path를 `/Dockerfile.backend`로 입력한다.
 - [ ] `frontend` Dockerfile path를 `/Dockerfile.frontend`로 입력한다.
 - [ ] migration을 one-shot으로 실행할 수 있는 방법을 준비한다.
 - [ ] corpus bootstrap을 one-shot으로 실행할 수 있는 방법을 준비한다.
