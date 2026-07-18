@@ -69,16 +69,16 @@
 
 레거시에는 실제 YouTube 댓글·자막에 legacy RAG 산출값을 붙인 workbook도 있다.
 
-| 자산 | row 수 | 주요 필드 | 판단 |
-| --- | ---: | --- | --- |
-| `legacy/hateSpeechRAG/scripts/youtube_comments_20250909_111405.xlsx` | 21,989 | `comment_text`, `is_hate_speech`, `categories`, `target_group`, `hate_type`, `used_prompt` | 실제 댓글 분석 결과셋 |
-| `legacy/hateSpeechRAG/scripts/scripts.xlsx` | 11,891 | `video_id`, `script_index`, `input_text`, `is_hate_speech`, `categories`, `reasoning` | 실제 자막/스크립트 분석 결과셋 |
+| 자산 | workbook row 수 | 변환 가능 row 수 | 주요 필드 | 판단 |
+| --- | ---: | ---: | --- | --- |
+| `legacy/hateSpeechRAG/scripts/youtube_comments_20250909_111405.xlsx` | 21,989 | 21,987 | `comment_text`, `is_hate_speech`, `categories`, `target_group`, `hate_type`, `used_prompt` | 실제 댓글 분석 결과셋 |
+| `legacy/hateSpeechRAG/scripts/scripts.xlsx` | 11,891 | 11,891 | `video_id`, `script_index`, `input_text`, `is_hate_speech`, `categories`, `reasoning` | 실제 자막/스크립트 분석 결과셋 |
 
 댓글 workbook의 legacy RAG 분포:
 
 | 값 | 건수 |
 | --- | ---: |
-| `is_hate_speech=False` | 19,267 |
+| `is_hate_speech=False` | 19,265 |
 | `is_hate_speech=True` | 2,722 |
 
 자막 workbook의 legacy RAG 분포:
@@ -89,6 +89,8 @@
 | `is_hate_speech=True` | 979 |
 
 이 두 파일은 실제 운영형 데이터 분포를 보는 데 중요하다. 하지만 `is_hate_speech`와 `categories`는 사람이 확정한 gold label이 아니라 legacy RAG 산출값으로 보인다. 따라서 “과거 실제 분석 결과셋”으로는 쓸 수 있지만, 정확도 평가의 정답지로 쓰려면 별도 검수·재라벨링이 필요하다.
+
+댓글 workbook은 원 row 중 `comment_text`가 빈 2건을 변환에서 제외한다. 인터코더 workbook은 코드북 row 1건과 빈 row 1건을 제외해 2,375건이 변환 가능하다.
 
 권장 용도:
 
