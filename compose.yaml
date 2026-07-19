@@ -31,7 +31,6 @@ x-app-environment: &app-environment
   UPSTAGE_EMBEDDING_BASE_URL: ${UPSTAGE_EMBEDDING_BASE_URL:-https://api.upstage.ai/v1/embeddings}
   UPSTAGE_API_KEY: ${UPSTAGE_API_KEY:-}
   CHROMA_PERSIST_DIRECTORY: /data/chroma
-  REPORT_STORAGE_DIR: /data/reports
 
 services:
   frontend:
@@ -61,10 +60,9 @@ services:
       context: .
       target: runtime
     user: root
-    command: ["chown", "-R", "app:app", "/data/chroma", "/data/reports"]
+    command: ["chown", "-R", "app:app", "/data/chroma"]
     volumes:
       - chroma_data:/data/chroma
-      - report_storage:/data/reports
 
   corpus:
     profiles: ["tools"]
@@ -115,7 +113,6 @@ services:
         condition: service_completed_successfully
     volumes:
       - chroma_data:/data/chroma:ro
-      - report_storage:/data/reports
 
   worker:
     build:
@@ -128,9 +125,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - chroma_data:/data/chroma
-      - report_storage:/data/reports
 
 volumes:
   postgres_data:
   chroma_data:
-  report_storage:

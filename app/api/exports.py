@@ -1,10 +1,8 @@
 from collections.abc import Callable, Iterator
-from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response
-from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.auth.http import AuthResolver
@@ -15,12 +13,10 @@ from app.db.models import ReportExport, ReportSnapshot
 
 def build_exports_router(
     get_session: Callable[[], Iterator[Session]],
-    storage_dir: str,
     settings: Settings,
 ) -> APIRouter:
     router = APIRouter(prefix="/api/exports", tags=["exports"])
     SessionDependency = Annotated[Session, Depends(get_session)]
-    storage_root = Path(storage_dir).resolve()
     resolver = AuthResolver(settings)
 
     @router.get("/{export_id}")
@@ -49,16 +45,18 @@ def build_exports_router(
         request: Request,
         response: Response,
         session: SessionDependency,
-    ) -> FileResponse:
+    ) -> Response:
         export = _export(session, export_id)
         _authorize_export(session, export, request, response, settings, resolver)
-        if export.status != "succeeded" or not export.file_uri:
+        if export.status != "succeeded" or not export.file_blob:
             raise DomainError("EXPORT_NOT_READY", "Export 파일이 준비되지 않았습니다.", status_code=409)
-        path = Path(export.file_uri).resolve()
-        if storage_root not in path.parents or not path.is_file():
-            raise DomainError("EXPORT_FILE_NOT_FOUND", "Export 파일을 찾을 수 없습니다.", status_code=404)
         media_type = "text/html" if export.format == "html" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        return FileResponse(path, media_type=media_type, filename=path.name)
+        filename = f"{export.id}.{export.format}"
+        return Response(
+            content=export.file_blob,
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     return router
 

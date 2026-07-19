@@ -142,7 +142,6 @@ def _app(tmp_path):
     app = create_app(
         Settings(
             database_url=f"sqlite:///{tmp_path / 'reporting.db'}",
-            report_storage_dir=str(tmp_path / "reports"),
             admin_token="test-admin-secret",
             _env_file=None,
         )

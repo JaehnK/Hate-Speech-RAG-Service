@@ -22,17 +22,17 @@ from app.db.models import (
     TranscriptSegment,
 )
 from app.reporting.exports import ExportService
-from app.reporting.renderers import FileStorage, HtmlReportRenderer
+from app.reporting.renderers import HtmlReportRenderer
 
 
 class ExportRequest(BaseModel):
     format: str
 
 
-def build_reports_router(get_session: Callable[[], Iterator[Session]], storage_dir: str, settings: Settings) -> APIRouter:
+def build_reports_router(get_session: Callable[[], Iterator[Session]], settings: Settings) -> APIRouter:
     router = APIRouter(prefix="/api/reports", tags=["reports"])
     SessionDependency = Annotated[Session, Depends(get_session)]
-    export_service = ExportService(FileStorage(storage_dir))
+    export_service = ExportService()
     resolver = AuthResolver(settings)
 
     @router.get("/public")

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+import hashlib
+
 from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.db.models import ReportExport, ReportSnapshot, utcnow
-from app.reporting.renderers import ExcelExporter, FileStorage, HtmlReportRenderer
+from app.reporting.renderers import ExcelExporter, HtmlReportRenderer
 
 
 class ExportService:
-    def __init__(self, storage: FileStorage) -> None:
-        self.storage = storage
+    def __init__(self) -> None:
         self.html = HtmlReportRenderer()
         self.excel = ExcelExporter()
 
@@ -21,11 +22,10 @@ class ExportService:
         session.flush()
         try:
             content = self.html.render(report).encode("utf-8") if format == "html" else self.excel.render(session, report)
-            uri, size, checksum = self.storage.write(f"{report.id}/{export.id}.{format}", content)
             export.status = "succeeded"
-            export.file_uri = uri
-            export.file_size_bytes = size
-            export.checksum = checksum
+            export.file_blob = content
+            export.file_size_bytes = len(content)
+            export.checksum = hashlib.sha256(content).hexdigest()
         except Exception as exc:
             export.status = "failed"
             export.error_code = "EXPORT_ERROR"
