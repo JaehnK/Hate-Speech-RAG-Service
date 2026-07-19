@@ -338,7 +338,7 @@ class ReportExport(Base):
     report_snapshot_id: Mapped[UUID] = mapped_column(ForeignKey("report_snapshots.id", ondelete="CASCADE"), index=True)
     format: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(32), default="pending")
-    file_uri: Mapped[str | None] = mapped_column(Text)
+    file_blob: Mapped[bytes | None] = mapped_column(LargeBinary)
     file_size_bytes: Mapped[int | None] = mapped_column(BigInteger)
     checksum: Mapped[str | None] = mapped_column(String(128))
     error_code: Mapped[str | None] = mapped_column(String(64))

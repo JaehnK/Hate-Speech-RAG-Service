@@ -64,9 +64,9 @@ def create_app(
     app.include_router(build_auth_router(get_session, settings, oauth_provider, api_key_validator))
     app.include_router(build_me_router(get_session, settings))
     app.include_router(build_jobs_router(get_session, settings))
-    app.include_router(build_reports_router(get_session, settings.report_storage_dir, settings))
+    app.include_router(build_reports_router(get_session, settings))
     app.include_router(build_report_pages_router(get_session, settings))
-    app.include_router(build_exports_router(get_session, settings.report_storage_dir, settings))
+    app.include_router(build_exports_router(get_session, settings))
     app.include_router(build_admin_router(get_session, settings))
 
     @app.exception_handler(DomainError)

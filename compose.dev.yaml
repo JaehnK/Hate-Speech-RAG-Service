@@ -21,12 +21,10 @@ services:
     volumes:
       - ./app:/app/app
       - chroma_data:/data/chroma:ro
-      - report_storage:/data/reports
   worker:
     volumes:
       - ./app:/app/app
       - chroma_data:/data/chroma
-      - report_storage:/data/reports
   postgres:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"

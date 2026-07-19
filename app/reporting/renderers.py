@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 
@@ -19,20 +18,6 @@ from app.db.models import (
     ScriptAnalysisResult,
     TranscriptSegment,
 )
-
-
-class FileStorage:
-    def __init__(self, root: Path | str) -> None:
-        self.root = Path(root).resolve()
-        self.root.mkdir(parents=True, exist_ok=True)
-
-    def write(self, relative_path: str, content: bytes) -> tuple[str, int, str]:
-        path = (self.root / relative_path).resolve()
-        if self.root not in path.parents:
-            raise ValueError("invalid storage path")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(content)
-        return str(path), len(content), hashlib.sha256(content).hexdigest()
 
 
 class HtmlReportRenderer:
