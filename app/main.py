@@ -1,5 +1,4 @@
 from collections.abc import Iterator
-from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
@@ -97,7 +96,6 @@ def create_app(
             "status": "ok",
             "checks": {
                 "database": "ok",
-                "chroma": "ok" if Path(settings.chroma_persist_directory).exists() else "not_initialized",
                 "youtube_api_key": "configured" if settings.youtube_api_key else "not_configured",
                 "llm_api_key": "configured" if settings.llm_api_key else "not_configured",
             },
