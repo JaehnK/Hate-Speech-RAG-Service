@@ -6,6 +6,10 @@
 __pycache__
 *.pyc
 data/external/datasets
+!data/external/datasets/k-haters
+!data/external/datasets/k-haters/README.md
+data/external/datasets/k-haters/.git
+data/external/datasets/k-haters/label_transformation.py
 data/external/papers
 data/external/policies
 data/reports
