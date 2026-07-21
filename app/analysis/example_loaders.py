@@ -43,6 +43,32 @@ def load_example_documents(
     return documents
 
 
+def stratified_sample(
+    documents: list[ExampleDocument],
+    sample_size: int,
+    seed: str = SPLIT_SEED,
+) -> list[ExampleDocument]:
+    """Sample documents down to sample_size, preserving each primary category's share."""
+    if sample_size >= len(documents):
+        return documents
+
+    groups: dict[str, list[ExampleDocument]] = {}
+    for document in documents:
+        key = document.mapped_categories[0] if document.mapped_categories else "unclassified"
+        groups.setdefault(key, []).append(document)
+
+    sampled: list[ExampleDocument] = []
+    for group in groups.values():
+        take = min(round(len(group) / len(documents) * sample_size), len(group))
+        ranked = sorted(group, key=lambda document: _sample_rank(seed, document.doc_id))
+        sampled.extend(ranked[:take])
+    return sampled
+
+
+def _sample_rank(seed: str, doc_id: str) -> str:
+    return sha256(f"{seed}:sample:{doc_id}".encode("utf-8")).hexdigest()
+
+
 def _load_sources(manifest_path: Path) -> list[dict[str, Any]]:
     with manifest_path.open("r", encoding="utf-8") as file:
         manifest = yaml.safe_load(file)

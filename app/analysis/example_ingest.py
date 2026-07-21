@@ -8,7 +8,7 @@ from pathlib import Path
 from app.analysis.embeddings import DEFAULT_UPSTAGE_EMBEDDING_BASE_URL
 from app.analysis.embeddings import DEFAULT_UPSTAGE_EMBEDDING_MODEL
 from app.analysis.embeddings import create_embedding_function
-from app.analysis.example_loaders import load_example_documents
+from app.analysis.example_loaders import load_example_documents, stratified_sample
 from app.analysis.license_policy import DEFAULT_EXAMPLE_LICENSE_TIERS
 from app.analysis.vector_store import EXAMPLE_COLLECTION_NAME, ingest_example_documents
 
@@ -21,6 +21,7 @@ def ingest_manifest_examples(
     split: str = "train",
     allowed_license_tiers: tuple[str, ...] = DEFAULT_EXAMPLE_LICENSE_TIERS,
     limit_per_dataset: int | None = None,
+    stratified_sample_size: int | None = None,
     reset: bool = False,
     embedding_function=None,
 ) -> tuple[int, int]:
@@ -31,6 +32,8 @@ def ingest_manifest_examples(
         project_root=project_root,
         limit_per_dataset=limit_per_dataset,
     )
+    if stratified_sample_size is not None:
+        documents = stratified_sample(documents, stratified_sample_size)
     count = ingest_example_documents(
         persist_directory=persist_directory,
         documents=documents,
@@ -65,6 +68,12 @@ def main() -> None:
         default=os.getenv("UPSTAGE_EMBEDDING_BASE_URL", DEFAULT_UPSTAGE_EMBEDDING_BASE_URL),
     )
     parser.add_argument("--limit-per-dataset", type=int, default=None)
+    parser.add_argument(
+        "--stratified-sample-size",
+        type=int,
+        default=None,
+        help="Downsample to this many documents, preserving each primary category's share.",
+    )
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
 
@@ -83,6 +92,7 @@ def main() -> None:
         split=args.split,
         allowed_license_tiers=allowed_tiers,
         limit_per_dataset=args.limit_per_dataset,
+        stratified_sample_size=args.stratified_sample_size,
         reset=args.reset,
         embedding_function=embedding_function,
     )
