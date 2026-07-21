@@ -16,6 +16,12 @@ def main() -> None:
     parser.add_argument("--project-root", default=".")
     parser.add_argument("--persist-directory", default=None)
     parser.add_argument("--limit-per-dataset", type=int, default=None)
+    parser.add_argument(
+        "--stratified-sample-size",
+        type=int,
+        default=None,
+        help="Downsample examples to this many documents, preserving each primary category's share.",
+    )
     parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
 
@@ -44,6 +50,7 @@ def main() -> None:
         persist_directory,
         project_root=args.project_root,
         limit_per_dataset=args.limit_per_dataset,
+        stratified_sample_size=args.stratified_sample_size,
         reset=args.reset,
         embedding_function=embedding,
     )
@@ -58,6 +65,7 @@ def main() -> None:
                 "examples_loaded": examples_loaded,
                 "example_collection_count": example_count,
                 "limited": args.limit_per_dataset is not None,
+                "stratified_sample_size": args.stratified_sample_size,
             },
             ensure_ascii=False,
         )

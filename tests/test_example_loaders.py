@@ -3,9 +3,10 @@ from pathlib import Path
 import yaml
 
 import app.analysis.example_loaders as example_loaders
-from app.analysis.example_loaders import load_example_documents
+from app.analysis.example_loaders import load_example_documents, stratified_sample
 from app.analysis.license_policy import COMMERCIAL_OK, SHAREALIKE_REVIEW
 from app.analysis.license_policy import examples_allowed, normalize_license_tier
+from app.analysis.models import ExampleDocument
 
 
 def test_license_policy_defaults_to_commercial_ok_only() -> None:
@@ -179,6 +180,48 @@ def test_kodoli_loader_uses_deterministic_split(tmp_path) -> None:
     assert loaded
     assert {document.source_split for document in loaded} == {"train"}
     assert all(document.mapped_categories == ("profanity",) for document in loaded)
+
+
+def test_stratified_sample_preserves_category_shares() -> None:
+    documents = (
+        [_example("profanity", index) for index in range(80)]
+        + [_example("unclassified", index) for index in range(15)]
+        + [_example("identity", index) for index in range(5)]
+    )
+
+    sampled = stratified_sample(documents, sample_size=20)
+
+    assert len(sampled) == 20
+    counts = {category: 0 for category in ("profanity", "unclassified", "identity")}
+    for document in sampled:
+        counts[document.mapped_categories[0]] += 1
+    assert counts["profanity"] == 16
+    assert counts["unclassified"] == 3
+    assert counts["identity"] == 1
+
+
+def test_stratified_sample_is_deterministic_and_noop_when_target_exceeds_pool() -> None:
+    documents = [_example("profanity", index) for index in range(10)]
+
+    first = stratified_sample(documents, sample_size=5)
+    second = stratified_sample(documents, sample_size=5)
+    unchanged = stratified_sample(documents, sample_size=100)
+
+    assert [document.doc_id for document in first] == [document.doc_id for document in second]
+    assert unchanged == documents
+
+
+def _example(category: str, index: int) -> ExampleDocument:
+    return ExampleDocument(
+        doc_id=f"{category}:{index}",
+        text=f"{category} sample {index}",
+        source_dataset="k-haters",
+        source_split="train",
+        source_revision="rev",
+        license_tier=COMMERCIAL_OK,
+        mapped_categories=(category,),
+        is_hate_speech=category != "unclassified",
+    )
 
 
 def _write_manifest(tmp_path: Path, datasets: list[dict]) -> Path:
