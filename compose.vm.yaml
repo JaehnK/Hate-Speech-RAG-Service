@@ -1,0 +1,17 @@
+services:
+  postgres:
+    ports: ["5432:5432"]
+    restart: unless-stopped
+
+  init-volumes:
+    build: null
+    image: ${IMG_BACKEND}
+
+  migrate:
+    build: null
+    image: ${IMG_BACKEND}
+
+  worker:
+    build: null
+    image: ${IMG_BACKEND}
+    restart: unless-stopped
