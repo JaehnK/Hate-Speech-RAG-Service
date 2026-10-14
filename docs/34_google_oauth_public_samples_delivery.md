@@ -62,7 +62,7 @@ curl -X PUT \
 - 상태 변경 사용자 API는 `Origin == FRONTEND_ORIGIN`과 `X-Requested-With: hatespeechraw`를 모두 요구한다.
 - 세션 원문과 API 키 원문은 응답 payload, operation log, 분석 result에 기록하지 않는다.
 - 비공개 report와 연결된 export는 소유자만 상태 조회·다운로드할 수 있다.
-- 공개 sample은 report 상세·댓글·자막·network·기존 export 읽기에만 인증 예외가 적용된다. 새 export 생성은 report 소유자 인증과 CSRF 검사를 요구한다.
+- 공개 sample은 report 상세·댓글·자막·network·export 읽기에 인증 예외가 적용된다. 공개 sample의 export 생성도 로그인 없이 허용하되 CSRF 검사는 유지하고, 같은 형식의 성공한 export가 있으면 새로 렌더링하지 않고 재사용한다(2026-10-14 변경). 비공개 report의 export 생성은 여전히 소유자 인증을 요구한다.
 - Swagger/ReDoc/OpenAPI는 production에서 설정값과 관계없이 비활성화된다.
 
 ## 작업 시퀀스와 정합성 확인

@@ -135,6 +135,8 @@ async def test_private_report_is_owner_only_until_admin_publishes_sample(tmp_pat
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as visitor:
         assert (await visitor.get(report_path)).status_code == 401
         assert (await visitor.get("/api/reports/public")).json()["items"] == []
+        private_export = await visitor.post(f"{report_path}/exports", json={"format": "html"}, headers=headers)
+        assert private_export.status_code == 401
         report_id = report_path.rsplit("/", 1)[-1]
         published = await visitor.put(
             f"/api/admin/reports/{report_id}/public-sample",
@@ -143,9 +145,5 @@ async def test_private_report_is_owner_only_until_admin_publishes_sample(tmp_pat
         assert published.status_code == 200
         assert (await visitor.get(report_path)).status_code == 200
         assert (await visitor.get("/api/reports/public")).json()["total"] == 1
-        export = await visitor.post(
-            f"{report_path}/exports",
-            json={"format": "html"},
-            headers=headers,
-        )
-        assert export.status_code == 401
+        no_csrf = await visitor.post(f"{report_path}/exports", json={"format": "html"})
+        assert no_csrf.status_code == 403

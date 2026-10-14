@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
@@ -36,3 +37,15 @@ class ExportService:
         export.finished_at = utcnow()
         session.commit()
         return export
+
+    def latest_succeeded(self, session: Session, report: ReportSnapshot, format: str) -> ReportExport | None:
+        return session.scalars(
+            select(ReportExport)
+            .where(
+                ReportExport.report_snapshot_id == report.id,
+                ReportExport.format == format,
+                ReportExport.status == "succeeded",
+            )
+            .order_by(ReportExport.created_at.desc())
+            .limit(1)
+        ).first()

@@ -2,7 +2,9 @@ from io import BytesIO
 
 import httpx
 import pytest
+from cryptography.fernet import Fernet
 from openpyxl import load_workbook
+from sqlalchemy import func, select
 
 from app.core.config import Settings
 from app.db.base import Base
@@ -10,6 +12,8 @@ from app.db.models import (
     AnalysisRun,
     CommentAnalysisResult,
     CommentSnapshot,
+    ReportExport,
+    ReportSnapshot,
     ScriptAnalysisResult,
     TranscriptSegment,
     TranscriptSnapshot,
@@ -138,12 +142,51 @@ async def test_report_comments_sort_hate_speech_by_likes(tmp_path) -> None:
     assert not second.json()["has_more"]
 
 
-def _app(tmp_path):
+@pytest.mark.asyncio
+async def test_public_sample_export_is_anonymous_and_reused(tmp_path) -> None:
+    app = _app(
+        tmp_path,
+        frontend_origin="http://test",
+        google_client_id="google-client-id",
+        google_client_secret="google-client-secret",
+        api_key_encryption_key=Fernet.generate_key().decode(),
+    )
+    with app.state.session_factory.begin() as session:
+        report = _seed_report(session)
+        report_id = report.id
+    headers = {"Origin": "http://test", "X-Requested-With": "hatespeechraw"}
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as visitor:
+        private = await visitor.post(f"/api/reports/{report_id}/exports", json={"format": "html"}, headers=headers)
+        assert private.status_code == 401
+
+        with app.state.session_factory.begin() as session:
+            session.get(ReportSnapshot, report_id).is_public_sample = True
+
+        export_ids = {}
+        for format in ("html", "xlsx"):
+            first = await visitor.post(f"/api/reports/{report_id}/exports", json={"format": format}, headers=headers)
+            again = await visitor.post(f"/api/reports/{report_id}/exports", json={"format": format}, headers=headers)
+            assert first.status_code == again.status_code == 202
+            assert again.json()["export_id"] == first.json()["export_id"]
+            export_ids[format] = first.json()["export_id"]
+            status_response = await visitor.get(first.json()["status_url"])
+            download = await visitor.get(status_response.json()["download_url"])
+            assert download.status_code == 200
+            assert download.content
+        assert export_ids["html"] != export_ids["xlsx"]
+
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(ReportExport)) == 2
+
+
+def _app(tmp_path, **overrides):
     app = create_app(
         Settings(
             database_url=f"sqlite:///{tmp_path / 'reporting.db'}",
             admin_token="test-admin-secret",
             _env_file=None,
+            **overrides,
         )
     )
     Base.metadata.create_all(app.state.engine)
