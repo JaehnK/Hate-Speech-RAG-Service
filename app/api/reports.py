@@ -174,13 +174,14 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
     def create_export(report_id: UUID, body: ExportRequest, request: Request, response: Response, session: SessionDependency) -> dict[str, Any]:
         if settings.auth_configured:
             require_csrf(request, settings)
+        report = _report(session, report_id)
+        if settings.auth_configured and not report.is_public_sample:
             user = resolver.required(request, response, session)
-            report = _report(session, report_id)
             if report.owner_user_id != user.id:
                 raise DomainError("REPORT_FORBIDDEN", "이 보고서의 export를 생성할 권한이 없습니다.", status_code=403)
-        else:
-            report = _report(session, report_id)
-        export = export_service.create(session, report, body.format)
+        # Public samples are exportable anonymously; reuse the last file so anonymous traffic renders each format once.
+        export = export_service.latest_succeeded(session, report, body.format) if report.is_public_sample else None
+        export = export or export_service.create(session, report, body.format)
         return {
             "export_id": str(export.id),
             "report_id": str(report.id),
