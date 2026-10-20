@@ -201,7 +201,7 @@ def build_report_pages_router(get_session: Callable[[], Iterator[Session]], sett
 
     @router.get("/reports/{report_id}", response_class=HTMLResponse)
     def report_page(report_id: UUID, request: Request, response: Response, session: SessionDependency) -> str:
-        return renderer.render(_authorized_report(session, report_id, request, response, settings, resolver))
+        return renderer.render(session, _authorized_report(session, report_id, request, response, settings, resolver))
 
     return router
 

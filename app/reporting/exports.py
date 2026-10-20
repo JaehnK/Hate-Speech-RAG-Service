@@ -14,6 +14,8 @@ class ExportService:
     def __init__(self) -> None:
         self.html = HtmlReportRenderer()
         self.excel = ExcelExporter()
+        # Exports rendered by an older deploy may use outdated templates, so only reuse files from this process.
+        self.started_at = utcnow()
 
     def create(self, session: Session, report: ReportSnapshot, format: str) -> ReportExport:
         if format not in {"html", "xlsx"}:
@@ -22,7 +24,7 @@ class ExportService:
         session.add(export)
         session.flush()
         try:
-            content = self.html.render(report).encode("utf-8") if format == "html" else self.excel.render(session, report)
+            content = self.html.render(session, report).encode("utf-8") if format == "html" else self.excel.render(session, report)
             export.status = "succeeded"
             export.file_blob = content
             export.file_size_bytes = len(content)
@@ -45,6 +47,7 @@ class ExportService:
                 ReportExport.report_snapshot_id == report.id,
                 ReportExport.format == format,
                 ReportExport.status == "succeeded",
+                ReportExport.created_at >= self.started_at,
             )
             .order_by(ReportExport.created_at.desc())
             .limit(1)

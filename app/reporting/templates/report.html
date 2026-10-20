@@ -3,28 +3,145 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ report.title }}</title>
+  <title>{{ video.title or report.title }} · HateScope 분석 보고서</title>
   <style>
-    :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; color: #191c1e; background: #f7f9fb; }
-    body { max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px; }
-    h1, h2 { color: #182442; } .meta { color: #62666d; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-    .card { background: white; border: 1px solid #e0e3e5; border-radius: 8px; padding: 20px; margin: 16px 0; }
-    .metric { font-size: 28px; font-weight: 700; } .risk { color: #bb0112; }
-    table { width: 100%; border-collapse: collapse; } th, td { padding: 10px; border-bottom: 1px solid #e0e3e5; text-align: left; }
-    .warning { border-left: 4px solid #bb0112; padding-left: 12px; }
+    :root { color-scheme: light; --primary: #182442; --crimson: #bb0112; --success: #147c52; --surface-low: #f2f4f6; --surface-high: #e6e8ea; --outline: #c6c6ce; --muted: #61636b; font-family: Inter, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; color: #191c1e; background: #f7f9fb; }
+    * { box-sizing: border-box; }
+    body { max-width: 1120px; margin: 0 auto; padding: 32px 20px 64px; line-height: 1.55; }
+    h1, h2, h3 { color: var(--primary); margin: 0; } h2 { font-size: 19px; margin-bottom: 14px; }
+    small.kicker { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+    .muted { color: var(--muted); } .risk { color: var(--crimson); }
+    .panel { background: #fff; border: 1px solid var(--surface-high); border-radius: 10px; padding: 22px; margin: 16px 0; }
+    .hero { display: grid; grid-template-columns: 220px 1fr; gap: 22px; align-items: center; }
+    .hero img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--surface-low); }
+    .hero h1 { font-size: 24px; margin: 6px 0; }
+    .warning { border-left: 4px solid var(--crimson); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .stats .panel { margin: 0; } .stat-value { font-size: 30px; font-weight: 800; color: var(--primary); }
+    .stat-value.danger { color: var(--crimson); }
+    .bar-row { display: grid; grid-template-columns: 130px 1fr 60px; gap: 12px; align-items: center; padding: 6px 0; }
+    .bar { height: 8px; background: var(--surface-low); border-radius: 4px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--crimson); }
+    .bar-row strong { text-align: right; }
+    .ratio { display: flex; gap: 20px; margin-bottom: 12px; }
+    .case, .segment { border: 1px solid var(--surface-high); border-radius: 8px; padding: 14px 16px; margin: 10px 0; break-inside: avoid; }
+    .case-meta, .segment header { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); }
+    .flag { color: var(--crimson); font-weight: 700; } .ok { color: var(--success); font-weight: 700; }
+    .case p, .segment p { margin: 8px 0; white-space: pre-wrap; word-break: break-word; }
+    details summary { cursor: pointer; color: var(--primary); font-weight: 600; font-size: 14px; }
+    .evidence { background: var(--surface-low); border-radius: 6px; padding: 12px 14px; margin-top: 8px; font-size: 14px; }
+    .evidence dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; } .evidence dt { color: var(--muted); font-size: 12px; } .evidence dd { margin: 0; }
+    .evidence ul { margin: 4px 0 10px; padding-left: 18px; } .evidence code { font-size: 12px; }
+    .evidence aside { color: var(--muted); font-size: 12px; }
+    .reason { white-space: pre-wrap; }
+    .segment.flagged { border-color: var(--crimson); background: #fff7f7; }
+    .segment small { display: block; color: var(--muted); white-space: pre-wrap; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 16px; }
+    .metrics div { background: var(--surface-low); border-radius: 6px; padding: 10px 12px; } .metrics dt { color: var(--muted); font-size: 12px; } .metrics dd { margin: 2px 0 0; font-weight: 700; font-size: 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; } th, td { padding: 9px 10px; border-bottom: 1px solid var(--surface-high); text-align: left; } th { color: var(--muted); font-weight: 600; }
+    footer.method { color: var(--muted); font-size: 13px; }
+    @media (max-width: 720px) { .hero, .stats, .metrics, .evidence dl { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 96px 1fr 48px; } }
+    @media print { body { background: #fff; } details { display: block; } details > summary { display: none; } details > .evidence { display: block; } }
   </style>
 </head>
 <body>
-  <header><h1>{{ report.title }}</h1><p class="meta">Video ID: {{ payload.youtube_video_id }} · 상태: {{ report.status }}</p></header>
-  {% if payload.failure_summary %}<section class="card warning"><h2>부분 실패</h2><ul>{% for item in payload.failure_summary %}<li>{{ item.step_key }}: {{ item.error_code or item.status }}</li>{% endfor %}</ul></section>{% endif %}
-  <section class="card"><h2>영상</h2><p>{{ payload.video.title }}</p><p class="meta">{{ payload.video.channel_title }}</p></section>
-  <section class="grid">
-    <article class="card"><h2>댓글</h2><div class="metric">{{ payload.comment_analysis_summary.total }}</div><p>혐오표현 <span class="risk">{{ payload.comment_analysis_summary.hate_speech_count }}</span></p></article>
-    <article class="card"><h2>스크립트</h2><div class="metric">{{ payload.script_analysis_summary.total }}</div><p>혐오표현 <span class="risk">{{ payload.script_analysis_summary.hate_speech_count }}</span></p></article>
-    <article class="card"><h2>네트워크</h2><div class="metric">{{ payload.network_summary.node_count or 0 }}</div><p>엣지 {{ payload.network_summary.edge_count or 0 }}</p></article>
+  <section class="panel hero">
+    {% if video.thumbnail_url %}<img src="{{ video.thumbnail_url }}" alt="영상 썸네일">{% else %}<div></div>{% endif %}
+    <div>
+      <small class="kicker">HATESCOPE ANALYSIS REPORT</small>
+      <h1>{{ video.title or report.title }}</h1>
+      <p class="muted">{{ video.channel_title or "채널 정보 없음" }} · 분석일 {{ report.created_at.strftime("%Y-%m-%d %H:%M") }} UTC · <a href="https://www.youtube.com/watch?v={{ payload.youtube_video_id }}">YouTube에서 보기</a></p>
+    </div>
   </section>
-  <section class="card"><h2>카테고리 분포</h2><table><thead><tr><th>카테고리</th><th>건수</th></tr></thead><tbody>{% for category, count in payload.comment_analysis_summary.category_distribution.items() %}<tr><td>{{ category }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody></table></section>
-  <section class="card"><h2>대표 사례</h2>{% for item in payload.representative_comments %}<article><p>{{ item.text }}</p><p class="meta">{{ item.categories|join(', ') }} · {{ item.reasoning }}</p></article>{% else %}<p>표시할 혐오표현 사례가 없습니다.</p>{% endfor %}</section>
+
+  {% if payload.failure_summary %}
+  <section class="panel warning">
+    <h2>일부 분석이 건너뛰어졌습니다</h2>
+    <p class="muted">아래 결과는 수집 가능한 데이터 기준입니다.</p>
+    <ul>{% for item in payload.failure_summary %}<li>{{ item.step_key }}: {{ item.error_code or item.status }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <section class="stats">
+    <div class="panel"><small class="kicker">수집 댓글</small><div class="stat-value">{{ collected|number }}</div></div>
+    <div class="panel"><small class="kicker">분석 완료</small><div class="stat-value">{{ summary.succeeded|number }}</div></div>
+    <div class="panel"><small class="kicker">혐오표현 비율</small><div class="stat-value{% if hate_ratio > 0 %} danger{% endif %}">{{ "%.1f"|format(hate_ratio) }}%</div></div>
+  </section>
+
+  <section class="panel">
+    <h2>카테고리 분포</h2>
+    <div class="ratio"><span>정상 <strong>{{ "%.1f"|format(100 - hate_ratio) }}%</strong></span><span class="risk">혐오표현 <strong>{{ "%.1f"|format(hate_ratio) }}%</strong></span><span class="muted">분석 {{ summary.total|number }}건 중 혐오표현 {{ summary.hate_speech_count|number }}건</span></div>
+    {% for name, count, percent in categories %}
+    <div class="bar-row"><span>{{ name|category }}</span><div class="bar"><i style="width: {{ "%.2f"|format(percent) }}%"></i></div><strong>{{ count|number }}</strong></div>
+    {% else %}<p class="muted">분류된 혐오 카테고리가 없습니다.</p>{% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>전체 혐오 댓글 <span class="muted">({{ hate_comments|length|number }}건 · 좋아요 많은 순)</span></h2>
+    {% for comment, result in hate_comments %}
+    <article class="case">
+      <div class="case-meta"><span><span class="flag">FLAGGED</span> · <code>{{ comment.youtube_comment_id[:12] }}</code>{% if comment.is_reply %} · 답글{% endif %}</span><span>좋아요 {{ comment.like_count|number }}</span></div>
+      <p>{{ comment.text_original or "내용이 없는 댓글입니다." }}</p>
+      <div class="muted">{{ (result.categories or [])|map("category")|join(", ") or "미분류" }}</div>
+      <details>
+        <summary>분석 근거 보기</summary>
+        <div class="evidence">
+          <strong>분석 사유</strong>
+          <p class="reason">{{ result.reasoning or "저장된 분석 사유가 없습니다." }}</p>
+          <dl>
+            <div><dt>공격 대상</dt><dd>{{ result.target_group or "특정되지 않음" }}</dd></div>
+            <div><dt>표현 유형</dt><dd>{{ result.hate_type or "특정되지 않음" }}</dd></div>
+            <div><dt>RAG 근거</dt><dd>{{ result.rag_context_status|rag_context }}</dd></div>
+          </dl>
+          <strong>기록된 유사 사례 인용</strong>
+          {% if result.similar_cases_used %}<ul>{% for item in result.similar_cases_used %}<li><code>{{ item.doc_id or "문서 ID 없음" }}</code> {{ item.source_dataset or "출처 미기록" }}{% if item.mapped_categories %} · {{ item.mapped_categories|map("category")|join(", ") }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="muted">인용된 유사 사례가 없습니다.</p>{% endif %}
+          <strong>기록된 정의 문서 인용</strong>
+          {% if result.definition_docs_used %}<ul>{% for item in result.definition_docs_used %}<li><code>{{ item.doc_id or "문서 ID 없음" }}</code> {{ "HateScope 내부 분류 기준" if item.source_id == "internal_taxonomy" else (item.source_id or "출처 미기록") }}</li>{% endfor %}</ul>{% else %}<p class="muted">인용된 정의 문서가 없습니다.</p>{% endif %}
+          <aside>문서 ID는 분류 결과에 기록된 참고 항목입니다. 현재 결과에서는 검색 후보와의 완전한 대조를 보증하지 않으며, 유사 사례는 최종 판단이나 법적 근거가 아닌 비교 자료입니다.</aside>
+        </div>
+      </details>
+    </article>
+    {% else %}<p class="muted">현재 보고서에서 탐지된 혐오 댓글이 없습니다.</p>{% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>자막 RAG 분석 <span class="muted">(영상 시간순 · 분석 완료 {{ script_summary.succeeded|number }} · <span class="risk">혐오표현 {{ script_summary.hate_speech_count|number }}</span>)</span></h2>
+    {% for segment, result in script_segments %}
+    {% set failed = result.status == "failed" %}{% set flagged = result.is_hate_speech %}
+    <article class="segment{% if flagged %} flagged{% endif %}">
+      <header><time>{{ segment.start_seconds|playback }}–{{ segment.end_seconds|playback }}</time><span class="{{ 'flag' if flagged else 'ok' }}">{{ "분석 실패" if failed else ("혐오표현" if flagged else "정상") }}</span></header>
+      <p>{{ segment.text }}</p>
+      {% if result.reasoning %}<small><strong>분석 사유</strong> {{ result.reasoning }}</small>{% endif %}
+      <small>{{ (result.categories or [])|map("category")|join(", ") or "분류 없음" }}</small>
+    </article>
+    {% else %}<p class="muted">공개 자막이 없거나 자막 분석 결과가 생성되지 않았습니다.</p>{% endfor %}
+  </section>
+
+  <section class="panel">
+    <h2>댓글 네트워크 분석</h2>
+    {% if network %}
+    <dl class="metrics">
+      <div><dt>전체 작성자</dt><dd>{{ network.node_count|number }}</dd></div>
+      <div><dt>답글 관계</dt><dd>{{ network.edge_count|number }}</dd></div>
+      <div><dt>연결 작성자</dt><dd>{{ network.connected_nodes|number }}</dd></div>
+      <div><dt>고립 작성자</dt><dd>{{ network.isolated_nodes|number }}</dd></div>
+      <div><dt>혐오 포함 작성자</dt><dd>{{ network.hate_nodes|number }}</dd></div>
+      <div><dt>혐오 답글</dt><dd>{{ network.hate_edges|number }}</dd></div>
+      <div><dt>평균 연결 차수</dt><dd>{{ "%.2f"|format(network.average_degree) }}</dd></div>
+      <div><dt>관계 밀도</dt><dd>{{ "%.2f"|format(network.density) }}%</dd></div>
+    </dl>
+    {% if network.top_authors %}
+    <h3>혐오 댓글이 많은 작성자 상위 {{ network.top_authors|length }}명</h3>
+    <table><thead><tr><th>작성자</th><th>댓글</th><th>혐오 댓글</th><th>혐오 비율</th><th>연결 차수</th></tr></thead><tbody>
+    {% for node in network.top_authors %}<tr><td>{{ node.label or "이름 없는 작성자" }}</td><td>{{ node.comment_count|number }}</td><td class="risk">{{ node.hate_speech_count|number }}</td><td>{{ "%.0f"|format(node.hate_speech_ratio * 100) }}%</td><td>{{ (node.metrics or {}).get("degree", 0) }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% endif %}
+    <p class="muted">관계 그래프는 웹 보고서에서 인터랙티브하게 확인할 수 있습니다.</p>
+    {% else %}<p class="muted">댓글 네트워크가 생성되지 않았습니다.</p>{% endif %}
+  </section>
+
+  <footer class="method">
+    <p>HateScope는 정의 문서·분류 기준·유사 사례를 검색해 LLM이 판정하는 RAG 방식으로 분석합니다. 판정은 참고용이며 법적 판단이 아닙니다.</p>
+    {% if config %}<p>모델 {{ config.llm_model or "미기록" }}{% if config.prompt_versions %} · 프롬프트 {{ config.prompt_versions.comment or "-" }}{% endif %} · 보고서 ID {{ report.id }}</p>{% endif %}
+  </footer>
 </body>
 </html>
