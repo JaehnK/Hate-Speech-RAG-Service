@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from io import BytesIO
 
 import httpx
@@ -22,6 +23,7 @@ from app.db.models import (
 from app.db.repositories import AnalysisJobRepository
 from app.main import create_app
 from app.reporting.builder import ReportBuilder
+from app.reporting.exports import ExportService
 from app.reporting.network import CommentNetworkBuilder
 from app.reporting.renderers import ExcelExporter, HtmlReportRenderer
 
@@ -33,9 +35,12 @@ def test_network_report_html_and_excel_builders(tmp_path) -> None:
         assert report.payload["comment_analysis_summary"]["hate_speech_count"] == 1
         assert report.payload["network_summary"]["node_count"] == 2
         assert report.payload["analysis_config"]["retriever_config"]["example_min_similarity"] == 0.4
-        report.payload["representative_comments"][0]["text"] = "<script>alert(1)</script>"
-        rendered = HtmlReportRenderer().render(report)
-        assert "대표 사례" in rendered
+        session.scalar(select(CommentSnapshot).where(CommentSnapshot.youtube_comment_id == "reply")).text_original = "<script>alert(1)</script>"
+        rendered = HtmlReportRenderer().render(session, report)
+        for heading in ("카테고리 분포", "전체 혐오 댓글", "자막 RAG 분석", "댓글 네트워크 분석"):
+            assert heading in rendered
+        assert "성별" in rendered and "targeted" in rendered
+        assert "normal script" in rendered
         assert "<script>alert(1)</script>" not in rendered
         assert "&lt;script&gt;" in rendered
         workbook = load_workbook(BytesIO(ExcelExporter().render(session, report)))
@@ -178,6 +183,19 @@ async def test_public_sample_export_is_anonymous_and_reused(tmp_path) -> None:
 
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(ReportExport)) == 2
+
+
+def test_public_sample_does_not_reuse_exports_from_previous_deploy(tmp_path) -> None:
+    app = _app(tmp_path)
+    with app.state.session_factory() as session:
+        report = _seed_report(session)
+        report.is_public_sample = True
+        session.add(ReportExport(report_snapshot_id=report.id, format="html", status="succeeded", file_blob=b"old", created_at=datetime(2026, 1, 1, tzinfo=UTC)))
+        session.commit()
+        service = ExportService()
+        assert service.latest_succeeded(session, report, "html") is None
+        fresh = service.create(session, report, "html")
+        assert service.latest_succeeded(session, report, "html").id == fresh.id
 
 
 def _app(tmp_path, **overrides):

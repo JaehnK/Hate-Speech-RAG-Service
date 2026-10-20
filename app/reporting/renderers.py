@@ -5,7 +5,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from openpyxl import Workbook
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -20,6 +20,31 @@ from app.db.models import (
 )
 
 
+# Mirrors CATEGORY_LABELS in frontend/src/utils.ts so the export reads like the web report.
+CATEGORY_LABELS = {
+    "gender": "성별",
+    "age": "연령",
+    "identity": "정체성",
+    "profanity": "욕설",
+    "state_authority": "국가 권위체",
+    "non_state_authority": "비국가 권위체",
+    "state_regime": "국가 제도",
+    "non_state_regime": "비국가 제도",
+    "state_community": "국가 공동체",
+    "non_state_community": "비국가 공동체",
+    "no_target": "대상 없음",
+    "other": "기타",
+    "unclassified": "미분류",
+}
+
+RAG_CONTEXT_LABELS = {
+    "complete": "정의·유사 사례 사용",
+    "definition_only": "정의 문서만 사용",
+    "example_only": "유사 사례만 사용",
+    "unavailable": "검색 근거 없음",
+}
+
+
 class HtmlReportRenderer:
     def __init__(self) -> None:
         template_dir = Path(__file__).with_name("templates")
@@ -27,9 +52,89 @@ class HtmlReportRenderer:
             loader=FileSystemLoader(template_dir),
             autoescape=select_autoescape(("html", "xml")),
         )
+        self.environment.filters["category"] = category_label
+        self.environment.filters["rag_context"] = lambda status: RAG_CONTEXT_LABELS.get(status or "", "상태 미기록")
+        self.environment.filters["playback"] = _playback_time
+        self.environment.filters["number"] = lambda value: f"{value or 0:,}"
 
-    def render(self, report: ReportSnapshot) -> str:
-        return self.environment.get_template("report.html").render(report=report, payload=report.payload)
+    def render(self, session: Session, report: ReportSnapshot) -> str:
+        payload = report.payload
+        summary = payload.get("comment_analysis_summary") or {}
+        collection = payload.get("collection_summary") or {}
+        total = summary.get("total") or 0
+        categories = sorted((summary.get("category_distribution") or {}).items(), key=lambda item: item[1], reverse=True)
+        hate_comments = [
+            (comment, result)
+            for comment, result in session.execute(
+                select(CommentSnapshot, CommentAnalysisResult)
+                .join(CommentAnalysisResult, CommentAnalysisResult.comment_snapshot_id == CommentSnapshot.id)
+                .where(CommentAnalysisResult.analysis_run_id == report.analysis_run_id, CommentAnalysisResult.is_hate_speech.is_(True))
+                .order_by(func.coalesce(CommentSnapshot.like_count, 0).desc(), CommentSnapshot.collected_at.desc(), CommentSnapshot.id)
+            )
+        ]
+        script_segments = session.execute(
+            select(TranscriptSegment, ScriptAnalysisResult)
+            .join(ScriptAnalysisResult, ScriptAnalysisResult.transcript_segment_id == TranscriptSegment.id)
+            .where(ScriptAnalysisResult.analysis_run_id == report.analysis_run_id)
+            .order_by(TranscriptSegment.segment_index)
+        ).all()
+        return self.environment.get_template("report.html").render(
+            report=report,
+            payload=payload,
+            video=payload.get("video") or {},
+            collected=(collection.get("comments_collected") or 0) + (collection.get("replies_collected") or 0),
+            summary=summary,
+            hate_ratio=_percent(summary.get("hate_speech_count") or 0, total),
+            categories=[(name, count, _percent(count, total)) for name, count in categories],
+            hate_comments=hate_comments,
+            script_summary=payload.get("script_analysis_summary") or {},
+            script_segments=script_segments,
+            network=_network_overview(session, report),
+            config=payload.get("analysis_config") or {},
+        )
+
+
+def category_label(category: str) -> str:
+    return CATEGORY_LABELS.get(category, f"알 수 없는 분류 ({category})")
+
+
+def _percent(part: int, total: int) -> float:
+    return part / total * 100 if total else 0.0
+
+
+def _playback_time(value) -> str:
+    seconds = max(0, int(float(value or 0)))
+    hours, minutes, remainder = seconds // 3600, seconds % 3600 // 60, seconds % 60
+    return f"{hours}:{minutes:02d}:{remainder:02d}" if hours else f"{minutes}:{remainder:02d}"
+
+
+def _network_overview(session: Session, report: ReportSnapshot) -> dict | None:
+    network = session.scalar(select(CommentNetwork).where(CommentNetwork.analysis_run_id == report.analysis_run_id))
+    if network is None:
+        return None
+    nodes = list(session.scalars(select(CommentNetworkNode).where(CommentNetworkNode.network_id == network.id)))
+    edges = list(session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)))
+    # Same formulas as buildNetworkMetrics in frontend/src/CommentNetworkGraph.tsx.
+    connected = {key for edge in edges for key in (edge.source_node_key, edge.target_node_key)}
+    unique_edges = {(edge.source_node_key, edge.target_node_key) for edge in edges if edge.source_node_key != edge.target_node_key}
+    node_count = len(nodes)
+    degrees = [float((node.metrics or {}).get("degree") or 0) for node in nodes]
+    top_authors = sorted(
+        (node for node in nodes if node.hate_speech_count),
+        key=lambda node: (node.hate_speech_count, node.comment_count, float((node.metrics or {}).get("degree") or 0)),
+        reverse=True,
+    )[:10]
+    return {
+        "node_count": node_count,
+        "edge_count": len(edges),
+        "connected_nodes": len(connected),
+        "isolated_nodes": max(0, node_count - len(connected)),
+        "hate_nodes": sum(1 for node in nodes if node.hate_speech_count > 0),
+        "hate_edges": sum(1 for edge in edges if edge.is_hate_speech),
+        "average_degree": sum(degrees) / node_count if node_count else 0.0,
+        "density": len(unique_edges) / (node_count * (node_count - 1)) * 100 if node_count > 1 else 0.0,
+        "top_authors": top_authors,
+    }
 
 
 class ExcelExporter:
