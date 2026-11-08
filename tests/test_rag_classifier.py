@@ -115,3 +115,39 @@ def test_example_similarity_excludes_missing_and_low_scores() -> None:
     assert _example_similarity(result(None)) == float("-inf")
     assert _example_similarity(result(0.61)) < 0.4
     assert _example_similarity(result(0.6)) == 0.4
+
+
+_VALID_NON_HATE = """
+{"input_text": "좋은 영상", "is_hate_speech": false, "categories": ["unclassified"],
+ "target_group": null, "hate_type": null, "reasoning": "혐오 표현이 없다.",
+ "similar_cases_used": [], "definition_docs_used": []}
+"""
+
+
+def test_rag_classifier_llm_only_baseline_runs_without_retrieval(tmp_path) -> None:
+    llm = FakeLlmClient([_VALID_NON_HATE])
+
+    result = RagClassifier(
+        tmp_path, llm, embedding_function=HashEmbeddingFunction(), taxonomy_k=0, definition_k=0, example_k=0
+    ).classify_text("좋은 영상", "comment")
+
+    assert result.payload["is_hate_speech"] is False
+    assert result.rag_context_status == "unavailable"
+
+
+def test_rag_classifier_fails_when_every_requested_store_fails(tmp_path) -> None:
+    import pytest
+
+    from app.analysis.rag_classifier import ClassificationError
+    from app.analysis.retriever import RetrievalBundle
+
+    class BrokenRetriever:
+        def retrieve(self, *_args, **_kwargs):
+            return RetrievalBundle(taxonomy=(), authoritative=(), examples=(), failures=("examples",))
+
+    classifier = RagClassifier(
+        tmp_path, FakeLlmClient([_VALID_NON_HATE]), retriever=BrokenRetriever(), taxonomy_k=0, definition_k=0
+    )
+
+    with pytest.raises(ClassificationError):
+        classifier.classify_text("좋은 영상", "comment")

@@ -127,3 +127,22 @@ def test_anthropic_client_disables_hidden_sdk_retries() -> None:
         assert client.client.max_retries == 0
     finally:
         client.close()
+
+
+def test_anthropic_client_maps_low_credit_400_to_billing_error() -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    response = httpx.Response(400, request=request)
+
+    class NoCreditMessages(FakeMessages):
+        def create(self, **kwargs):
+            raise anthropic.BadRequestError(
+                "Your credit balance is too low to access the Anthropic API.", response=response, body=None
+            )
+
+    fake_client = FakeAnthropicClient()
+    fake_client.messages = NoCreditMessages()
+    client = AnthropicLlmClient(api_key=None, client=fake_client, retry_policy=RetryPolicy(max_attempts=1))
+
+    with pytest.raises(LlmRequestError) as error:
+        client.complete("prompt")
+    assert error.value.code == "LLM_BILLING_ERROR"

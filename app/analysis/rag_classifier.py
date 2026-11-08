@@ -108,7 +108,8 @@ class RagClassifier:
                 if _example_similarity(result) >= self.example_min_similarity
             ]
 
-        if len(bundle.failures) == 3:
+        requested = sum(k > 0 for k in (self.taxonomy_k, self.definition_k, self.example_k))
+        if requested and len(bundle.failures) == requested:
             raise ClassificationError("all RAG vector stores are unavailable", code="RAG_RETRIEVAL_ERROR")
         context_status = _context_status(definitions, examples)
 

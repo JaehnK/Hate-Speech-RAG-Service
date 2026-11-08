@@ -53,29 +53,26 @@ class DualVectorRetriever:
         authoritative_n: int,
         example_n: int,
     ) -> RetrievalBundle:
+        if max(taxonomy_n, authoritative_n, example_n) <= 0:
+            # LLM-only baseline: nothing to retrieve, so skip the embedding call too.
+            return RetrievalBundle(taxonomy=(), authoritative=(), examples=(), failures=())
         vector = self.embedding_function.embed_query([query_text])[0]
-        taxonomy = []
-        authoritative = []
-        examples = []
-        failures = []
+        failures: list[str] = []
 
-        try:
-            result = self.taxonomy_collection.query(query_embeddings=[vector], n_results=taxonomy_n)
-            taxonomy = parse_definition_query_result(result)
-        except Exception:
-            failures.append("taxonomy")
+        def query(name: str, collection, n: int, parse) -> list:
+            if n <= 0:
+                return []
+            try:
+                return parse(collection.query(query_embeddings=[vector], n_results=n))
+            except Exception:
+                failures.append(name)
+                return []
 
-        try:
-            result = self.authoritative_collection.query(query_embeddings=[vector], n_results=authoritative_n)
-            authoritative = parse_definition_query_result(result)
-        except Exception:
-            failures.append("authoritative")
-
-        try:
-            result = self.example_collection.query(query_embeddings=[vector], n_results=example_n)
-            examples = parse_example_query_result(result)
-        except Exception:
-            failures.append("examples")
+        taxonomy = query("taxonomy", self.taxonomy_collection, taxonomy_n, parse_definition_query_result)
+        authoritative = query(
+            "authoritative", self.authoritative_collection, authoritative_n, parse_definition_query_result
+        )
+        examples = query("examples", self.example_collection, example_n, parse_example_query_result)
 
         return RetrievalBundle(
             taxonomy=tuple(taxonomy),
