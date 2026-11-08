@@ -2,6 +2,24 @@
 
 단일 YouTube 영상의 metadata, 전체 댓글·대댓글, 공개 자막을 수집하고 three-vector RAG로 분류해 웹/JSON/Excel 보고서를 생성하는 FastAPI 서비스다.
 
+## 분류 정확도
+
+공개 한국어 혐오표현 benchmark의 held-out split(K-HATERS test 499건, BEEP dev 471건, 데이터셋 원작자의 사람 라벨)에서 검색 구성을 바꿔 가며 같은 입력을 분류했다. 모델은 `claude-haiku-4-5-20251001`, temperature 0이다. 괄호 안은 95% bootstrap 구간이다.
+
+| 구성 | 혐오 여부 정확도 | 혐오 여부 F1 | category macro F1 |
+| --- | ---: | ---: | ---: |
+| RAG 미적용 | 0.573 | 0.601 | 0.390 |
+| 정의 문서만 | 0.623 | 0.667 | 0.397 |
+| 유사 사례만 | 0.739 | 0.795 | 0.484 |
+| **three-vector RAG** | **0.748** (0.722–0.778) | **0.804** (0.779–0.829) | **0.493** |
+
+- RAG 미적용 대비 정확도 +17.5%p (McNemar p < 0.0001). 검색 corpus에 없는 BEEP에서도 F1이 0.414에서 0.704로 오른다.
+- 혐오 여부 판정의 개선은 유사 사례 검색이 주도한다. 정의 문서는 정치 category 판정을 유의하게 개선한다(유사 사례만 대비 political F1 +0.09).
+- precision 0.947, recall 0.698로, 주된 오류는 대상 없는 욕설·공격적 표현을 혐오로 보지 않는 놓침이다.
+- 공개 benchmark 성능이며 실제 YouTube 댓글·자막 정확도가 아니다. 실제 YouTube gold set 평가는 아직 수행하지 않았다.
+
+평가셋 구성, 구성요소별 검정, K-HATERS category 매핑 수정의 전후 효과와 재현 명령은 `docs/46_public_benchmark_accuracy_results.md`에 있다.
+
 ## 로컬 실행
 
 ```bash
