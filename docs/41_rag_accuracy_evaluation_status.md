@@ -117,13 +117,14 @@ gold label 파일:
 
 가능:
 
-- “공개 혐오표현 benchmark(K-HATERS·BEEP held-out 970건)에서 혐오 여부 F1 0.805, 정확도 0.749.”
-- “같은 benchmark에서 RAG 미적용(`haiku_only`) 대비 F1 +0.20, 정확도 +17.6%p (McNemar p < 0.0001).”
+- “공개 혐오표현 benchmark(K-HATERS·BEEP held-out 970건)에서 혐오 여부 정확도 0.748, F1 0.804.”
+- “같은 benchmark에서 RAG 미적용(`haiku_only`) 대비 정확도 +17.5%p, F1 +0.20 (McNemar p < 0.0001).”
 - “검색 corpus에 없는 BEEP에서도 F1 0.414 → 0.704.”
+- “정의 문서 검색은 정치 category 분류를 유의하게 개선했다 (examples-only 대비 political F1 +0.09).”
 - “실제 YouTube gold set 기반 정확도 평가는 아직 수행 전이다.”
 
 불가:
 
 - “YouTube 댓글 분류 정확도는 75%다.” (benchmark 성능이지 YouTube 성능이 아니다)
-- “정의 문서를 더해 유사 사례만 쓸 때보다 정확도가 더 올랐다.” (`examples_only` 대비 +1.3%p, p=0.10으로 유의하지 않다. 정의 문서 단독은 baseline 대비 합산 +5.0%p로 유의하다)
+- “정의 문서를 더해 혐오 여부 정확도가 더 올랐다.” (examples-only 대비 +0.9%p, p = 0.26)
 - “현재 결과가 YouTube 댓글 전체를 대표한다.”
