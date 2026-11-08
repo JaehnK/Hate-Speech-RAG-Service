@@ -57,7 +57,15 @@ benchmark 라벨 체계는 `gender/age/identity/profanity/other`뿐이다. evalu
 ## 3. 해석
 
 1. RAG 효과는 유의하다. 합산 binary F1 +0.204, 정확도 +17.6%p이며 두 셋 모두 McNemar p < 0.0001이다.
-2. 개선은 example 검색이 주도한다. `examples_only`와 `three_vector_rag`의 차이는 두 셋 모두 유의하지 않다(BEEP p=0.81, K-HATERS p=0.10). `definitions_only`는 BEEP에서 baseline과 거의 같다.
+2. 구성요소는 각각 효과가 있지만 더해지지는 않는다. baseline 대비 McNemar 결과는 다음과 같다.
+
+   | 비교 | 합산 acc 변화 | 합산 p | K-HATERS p | BEEP p |
+   | --- | ---: | ---: | ---: | ---: |
+   | `definitions_only` vs `haiku_only` | +5.0%p | < 0.0001 | < 0.0001 | 0.86 |
+   | `examples_only` vs `haiku_only` | +16.3%p | < 0.0001 | < 0.0001 | < 0.0001 |
+   | `three_vector_rag` vs `examples_only` | +1.3%p | 0.10 | 0.10 | 0.81 |
+
+   정의 문서는 단독으로 유의한 개선을 주지만 corpus 밖 BEEP에서는 효과가 없다. example 검색 위에 정의 문서를 더한 추가 개선은 확인되지 않았다.
 3. corpus 밖 데이터에서도 효과가 유지된다. BEEP는 검색 corpus에 없는 데이터셋인데도 F1 0.414 → 0.704로 올랐다.
 4. 주된 오류는 놓침(false negative)이다. precision은 0.93~0.99로 높지만 BEEP recall은 0.55다. BEEP와 K-HATERS는 대상 없는 욕설·공격적 표현(`offensive`)도 혐오로 라벨링하는데, 모델은 이를 혐오로 보지 않는 경향이 있다. `profanity` F1 0.36이 같은 원인을 보여준다. 이는 서비스 taxonomy와 benchmark 라벨 정의의 차이이기도 하므로, 기준을 맞출지는 별도 결정이 필요하다.
 5. `identity`와 `other`는 F1 0.4대로 낮다. 대상 집단 분류는 binary 판정보다 신뢰도가 낮다.
