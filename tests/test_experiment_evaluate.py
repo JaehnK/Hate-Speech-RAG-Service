@@ -87,3 +87,19 @@ def test_evaluate_counts_failures_separately_from_coverage() -> None:
 
     assert summary["coverage"] == 0.5
     assert summary["failure_rate"] == 0.5
+
+
+def test_evaluate_scores_political_family_against_coarse_gold() -> None:
+    gold = [
+        {"item_id": "1", "is_hate_speech": True, "categories": ["political"]},
+        {"item_id": "2", "is_hate_speech": True, "categories": ["other"]},
+    ]
+    rows = [
+        {"item_id": "1", "variant": "v", "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["non_state_community"]}},
+        {"item_id": "2", "variant": "v", "status": "succeeded", "payload": {"is_hate_speech": True, "categories": ["no_target"]}},
+    ]
+
+    summary = evaluate(rows, gold, bootstrap_samples=0)[0]
+
+    assert summary["per_category"]["political"]["f1"] == 1
+    assert summary["per_category"]["other"]["f1"] == 1

@@ -74,14 +74,26 @@ def _sample_with_floor(documents: list[ExampleDocument], sample_size: int, floor
 
 
 def _primary_category(document: ExampleDocument) -> str:
-    return document.mapped_categories[0] if document.mapped_categories else "unclassified"
+    return _gold_categories(document)[0] if _gold_categories(document) else "unclassified"
+
+
+def _gold_categories(document: ExampleDocument) -> list[str]:
+    """Corpus mapping, plus a coarse "political" label the evaluator can score.
+
+    The corpus leaves political targets uncategorised because the six state/non-state
+    categories cannot be recovered from the dataset; for scoring, any of them counts.
+    """
+    categories = list(document.mapped_categories)
+    if document.is_hate_speech and "political" in document.target_labels:
+        categories.append("political")
+    return categories
 
 
 def _gold_row(document: ExampleDocument) -> dict:
     return {
         "item_id": document.doc_id,
         "is_hate_speech": document.is_hate_speech,
-        "categories": list(document.mapped_categories),
+        "categories": _gold_categories(document),
         "raw_labels": document.raw_labels,
         "source_dataset": document.source_dataset,
         "source_split": document.source_split,
