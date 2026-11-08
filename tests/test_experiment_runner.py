@@ -26,3 +26,17 @@ def test_run_item_records_repeat_index() -> None:
 
     assert row["status"] == "succeeded"
     assert row["repeat_index"] == 2
+
+
+def test_completed_keys_only_counts_succeeded_rows(tmp_path) -> None:
+    from experiments.io import append_jsonl
+    from experiments.run_rag_experiment import completed_keys
+
+    path = tmp_path / "results.jsonl"
+    append_jsonl(path, [
+        {"item_id": "a", "variant": "v", "repeat_index": 0, "status": "succeeded"},
+        {"item_id": "b", "variant": "v", "repeat_index": 0, "status": "failed"},
+    ])
+
+    assert completed_keys(path) == {("a", "v", 0)}
+    assert completed_keys(tmp_path / "missing.jsonl") == set()

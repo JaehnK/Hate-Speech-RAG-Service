@@ -117,3 +117,27 @@ def test_dual_retriever_preserves_degraded_results(
     assert len(bundle.taxonomy) == taxonomy_count
     assert len(bundle.authoritative) == authoritative_count
     assert len(bundle.examples) == example_count
+
+
+def test_retriever_skips_collections_with_zero_k() -> None:
+    taxonomy = FakeCollection(_definition_result())
+    authoritative = FakeCollection(_definition_result())
+    example = FakeCollection(_example_result())
+    retriever = DualVectorRetriever("unused", FakeEmbedding(), FakeClient(taxonomy, authoritative, example))
+
+    bundle = retriever.retrieve("query", taxonomy_n=0, authoritative_n=0, example_n=6)
+
+    assert bundle.failures == ()
+    assert taxonomy.calls == [] and authoritative.calls == []
+    assert len(bundle.examples) == 1
+
+
+def test_retriever_llm_only_baseline_skips_embedding() -> None:
+    embedding = FakeEmbedding()
+    collections = [FakeCollection(error=RuntimeError("must not query")) for _ in range(3)]
+    retriever = DualVectorRetriever("unused", embedding, FakeClient(*collections))
+
+    bundle = retriever.retrieve("query", taxonomy_n=0, authoritative_n=0, example_n=0)
+
+    assert bundle.failures == ()
+    assert embedding.calls == []

@@ -43,6 +43,21 @@ def load_example_documents(
     return documents
 
 
+def load_dataset_split(
+    manifest_path: Path | str,
+    dataset_id: str,
+    split: str,
+    project_root: Path | str | None = None,
+) -> list[ExampleDocument]:
+    """Load one dataset split regardless of license tier, for internal evaluation only."""
+    root = Path(project_root) if project_root else Path.cwd()
+    source = next((item for item in _load_sources(Path(manifest_path)) if item.get("id") == dataset_id), None)
+    loader = _loader_for(dataset_id)
+    if source is None or loader is None:
+        raise ValueError(f"no loader for dataset: {dataset_id}")
+    return _limit(loader(source, split, root), None)
+
+
 def stratified_sample(
     documents: list[ExampleDocument],
     sample_size: int,

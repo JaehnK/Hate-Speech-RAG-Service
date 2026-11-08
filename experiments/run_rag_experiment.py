@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,7 +11,9 @@ from app.analysis.llm_client import AnthropicLlmClient, LlmResponse
 from app.analysis.observability import LangfuseConfig, build_observability_client
 from app.analysis.rag_classifier import ClassificationError, RagClassifier
 from app.core.config import load_settings
-from experiments.io import ExperimentInput, append_jsonl, read_inputs
+from experiments.io import ExperimentInput, append_jsonl, read_inputs, read_jsonl
+from pathlib import Path
+from queue import Queue
 from experiments.variants import ExperimentVariant, get_variants
 
 
@@ -38,9 +42,17 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--concurrency", type=int, default=1, help="Parallel classifier slots.")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Skip (item, variant, repeat) rows that already succeeded in --output-path.",
+    )
     args = parser.parse_args()
     if args.repeat < 1:
         parser.error("--repeat must be at least 1")
+    if args.concurrency < 1:
+        parser.error("--concurrency must be at least 1")
 
     settings = load_settings()
     persist_directory = args.persist_directory or settings.chroma_persist_directory
@@ -62,24 +74,65 @@ def main() -> None:
     )
 
     inputs = read_inputs(args.input_path, limit=args.limit)
-    rows = []
-    for variant in get_variants(args.variant):
-        classifier = RagClassifier(
-            persist_directory=persist_directory,
-            llm_client=llm_client,
-            embedding_function=embedding_function,
-            observability=observability,
-            taxonomy_k=variant.taxonomy_k,
-            definition_k=variant.definition_k,
-            example_k=variant.example_k,
-        )
-        for repeat_index in range(args.repeat):
-            for item in inputs:
-                rows.append(_run_item(classifier, variant, item, repeat_index))
+    done = completed_keys(args.output_path) if args.resume else set()
+    tasks = [
+        (variant, repeat_index, item)
+        for variant in get_variants(args.variant)
+        for repeat_index in range(args.repeat)
+        for item in inputs
+        if (item.item_id, variant.name, repeat_index) not in done
+    ]
+    print(f"{len(tasks)} tasks to run ({len(done)} already succeeded)", flush=True)
 
-    append_jsonl(args.output_path, rows)
+    # Chroma clients race when created concurrently, so build every slot up front and
+    # hand them out through a per-variant queue (one classifier per in-flight task).
+    pools: dict[str, Queue[RagClassifier]] = {}
+    for variant in get_variants(args.variant):
+        pools[variant.name] = Queue()
+        for _ in range(args.concurrency):
+            pools[variant.name].put(
+                RagClassifier(
+                    persist_directory=persist_directory,
+                    llm_client=llm_client,
+                    embedding_function=embedding_function,
+                    observability=observability,
+                    taxonomy_k=variant.taxonomy_k,
+                    definition_k=variant.definition_k,
+                    example_k=variant.example_k,
+                )
+            )
+    write_lock = threading.Lock()
+
+    def run(task: tuple[ExperimentVariant, int, ExperimentInput]) -> dict[str, Any]:
+        variant, repeat_index, item = task
+        classifier = pools[variant.name].get()
+        try:
+            row = _run_item(classifier, variant, item, repeat_index)
+        finally:
+            pools[variant.name].put(classifier)
+        with write_lock:
+            append_jsonl(args.output_path, [row])
+        return row
+
+    failed = 0
+    with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+        futures = [executor.submit(run, task) for task in tasks]
+        for count, future in enumerate(as_completed(futures), start=1):
+            failed += future.result()["status"] != "succeeded"
+            if count % 50 == 0 or count == len(futures):
+                print(f"{count}/{len(futures)} done, {failed} failed", flush=True)
     observability.flush()
-    print(f"wrote {len(rows)} rows to {args.output_path}")
+    print(f"wrote {len(tasks)} rows to {args.output_path}")
+
+
+def completed_keys(path: Path | str) -> set[tuple[str, str, int]]:
+    if not Path(path).exists():
+        return set()
+    return {
+        (str(row["item_id"]), str(row["variant"]), int(row.get("repeat_index", 0)))
+        for row in read_jsonl(path)
+        if row.get("status") == "succeeded"
+    }
 
 
 def get_variant_names() -> list[str]:

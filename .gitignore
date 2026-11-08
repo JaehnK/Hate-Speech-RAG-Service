@@ -20,7 +20,7 @@ frontend/vite.config.js
 frontend/vite.config.d.ts
 
 # Local vector stores
-.chroma/
+.chroma*/
 data/vectorstores/
 
 # Experiment outputs
