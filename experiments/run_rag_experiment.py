@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import threading
+from threading import BoundedSemaphore
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import UTC, datetime
 from typing import Any
@@ -9,12 +10,43 @@ from typing import Any
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.llm_client import AnthropicLlmClient, LlmResponse
 from app.analysis.observability import LangfuseConfig, build_observability_client
+from app.analysis.retry import RetryPolicy
 from app.analysis.rag_classifier import ClassificationError, RagClassifier
 from app.core.config import load_settings
 from experiments.io import ExperimentInput, append_jsonl, read_inputs, read_jsonl
 from pathlib import Path
 from queue import Queue
 from experiments.variants import ExperimentVariant, get_variants
+
+
+EXPERIMENT_MAX_ATTEMPTS = 8
+
+
+class CachingEmbedding:
+    """Memoise query embeddings so variants sharing an input embed it once.
+
+    Everything except embed_query is delegated, so Chroma still sees the wrapped
+    function's name and configuration.
+    """
+
+    def __init__(self, inner: Any) -> None:
+        self._inner = inner
+        self._cache: dict[str, list[float]] = {}
+        self._lock = threading.Lock()
+
+    def embed_query(self, input: list[str]) -> list[list[float]]:
+        missing = [text for text in input if text not in self._cache]
+        if missing:
+            vectors = self._inner.embed_query(missing)
+            with self._lock:
+                self._cache.update(zip(missing, vectors, strict=True))
+        return [self._cache[text] for text in input]
+
+    def __call__(self, input):
+        return self._inner(input)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
 
 
 class DryRunLlmClient:
@@ -56,13 +88,20 @@ def main() -> None:
 
     settings = load_settings()
     persist_directory = args.persist_directory or settings.chroma_persist_directory
+    # Same transient-error handling as the worker: retry 429/5xx with backoff and cap
+    # concurrent embedding calls, so rate limits do not show up as classification failures.
+    retry_policy = RetryPolicy(max_attempts=EXPERIMENT_MAX_ATTEMPTS, max_delay_seconds=60.0)
     embedding_function = create_embedding_function(
         provider="hash" if args.dry_run else settings.embedding_provider,
         model=settings.embedding_model,
         api_key=settings.embedding_api_key,
         base_url=settings.upstage_embedding_base_url,
+        timeout=settings.rag_request_timeout_seconds,
+        gate=BoundedSemaphore(min(settings.rag_embedding_concurrency, args.concurrency)),
+        retry_policy=retry_policy,
     )
-    llm_client = DryRunLlmClient() if args.dry_run else _build_llm_client(settings)
+    embedding_function = CachingEmbedding(embedding_function)
+    llm_client = DryRunLlmClient() if args.dry_run else _build_llm_client(settings, retry_policy)
     observability = build_observability_client(
         LangfuseConfig(
             enabled=settings.langfuse_enabled,
@@ -141,7 +180,7 @@ def get_variant_names() -> list[str]:
     return [*VARIANTS, *ALIASES]
 
 
-def _build_llm_client(settings):
+def _build_llm_client(settings, retry_policy: RetryPolicy):
     if settings.llm_provider != "anthropic":
         raise ValueError(f"unsupported LLM provider: {settings.llm_provider}")
     return AnthropicLlmClient(
@@ -149,6 +188,8 @@ def _build_llm_client(settings):
         model=settings.llm_model,
         max_tokens=settings.llm_max_tokens,
         temperature=settings.llm_temperature,
+        timeout=settings.rag_request_timeout_seconds,
+        retry_policy=retry_policy,
     )
 
 
@@ -190,10 +231,18 @@ def _run_item(
             "prompt_version": None,
             "usage": {},
             "attempts": 2,
-            "error": str(exc),
+            "error": _error_text(exc),
             "started_at": started_at.isoformat(),
             "finished_at": datetime.now(UTC).isoformat(),
         }
+
+
+def _error_text(exc: Exception) -> str:
+    """Keep the root cause; the classifier wraps retrieval failures in a generic message."""
+    cause = exc.__cause__
+    if cause is None:
+        return f"{getattr(exc, 'code', type(exc).__name__)}: {exc}"
+    return f"{getattr(exc, 'code', type(exc).__name__)}: {exc} <- {type(cause).__name__}: {cause}"[:500]
 
 
 def _stable_hash(text: str) -> str:
