@@ -213,23 +213,34 @@ def _beep_categories(bias: str, hate: str) -> tuple[str, ...]:
     return tuple(categories or ["unclassified"])
 
 
+# K-HATERS target_label values as they appear in the released data. Region and
+# disability are protected attributes under the "identity" card; "race" is kept for
+# robustness although the release has no such label.
+K_HATERS_TARGET_CATEGORIES: dict[str, str] = {
+    "gender": "gender",
+    "age": "age",
+    "region": "identity",
+    "religion": "identity",
+    "disabled": "identity",
+    "race": "identity",
+}
+
+
 def _k_haters_categories(label: str, target_labels: tuple[str, ...]) -> tuple[str, ...]:
     if label == "normal":
         return ("unclassified",)
 
-    categories: list[str] = []
-    for target_label in target_labels:
-        if target_label == "gender":
-            categories.append("gender")
-        elif target_label == "age":
-            categories.append("age")
-        elif target_label in {"race", "religion", "disability"}:
-            categories.append("identity")
-
-    if label == "offensive" and not categories:
-        categories.append("profanity")
-
-    return tuple(dict.fromkeys(categories or ["other"]))
+    categories = [K_HATERS_TARGET_CATEGORIES[t] for t in target_labels if t in K_HATERS_TARGET_CATEGORIES]
+    if categories:
+        return tuple(dict.fromkeys(categories))
+    if label == "offensive":
+        return ("profanity",)
+    if "political" in target_labels:
+        # Political hate maps to one of six state/non-state categories, but the dataset
+        # does not say which. Leave the category empty rather than call it "other",
+        # which the taxonomy explicitly reserves for non-political targets.
+        return ()
+    return ("other",)
 
 
 def _example(
