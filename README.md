@@ -1,6 +1,6 @@
 # YouTube Hate Speech Report
 
-단일 YouTube 영상의 metadata, 전체 댓글·대댓글, 공개 자막을 수집하고 dual-vector RAG로 분류해 웹/JSON/Excel 보고서를 생성하는 FastAPI 서비스다.
+단일 YouTube 영상의 metadata, 전체 댓글·대댓글, 공개 자막을 수집하고 three-vector RAG로 분류해 웹/JSON/Excel 보고서를 생성하는 FastAPI 서비스다.
 
 ## 로컬 실행
 
@@ -92,7 +92,7 @@ Google OAuth·BYOK·로그인 전 공개 샘플의 구현과 운영 절차는 `d
 
 Stitch 기반 프론트 구조, 화면/API 매핑, Docker 실행 및 검증 기록은 `docs/18_stitch_frontend_delivery.md`에 정리되어 있다.
 
-실제 dual-vector 검색, 전체 prompt, validation/retry, 저장되는 provenance와 재현 절차는 `docs/19_rag_methodology_reproducibility.md`를 따른다.
+실제 three-vector 검색, 전체 prompt, validation/retry, 저장되는 provenance와 재현 절차는 `docs/19_rag_methodology_reproducibility.md`를 따른다.
 
 단일 job worker 내부의 RAG item 병렬 처리, checkpoint, rate limit과 단계별 검증 계획은 `docs/22_rag_parallel_processing_plan.md`를 따른다.
 
