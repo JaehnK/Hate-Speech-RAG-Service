@@ -27,3 +27,17 @@ def test_build_benchmark_drops_train_overlap_and_keeps_category_floor(tmp_path) 
     assert len(gold) == len(inputs) == 10
     assert {row["item_id"] for row in inputs} == {row["item_id"] for row in gold}
     assert all(row["text"] != "중복 문장" for row in inputs)
+
+
+def test_build_benchmark_marks_political_targets_for_scoring(tmp_path) -> None:
+    manifest = tmp_path / "manifest.yaml"
+    manifest.write_text(yaml.safe_dump({"datasets": [{"id": "k-haters", "local_path": "k-haters", "data_local_path": "k-haters-hf"}]}))
+    _write_k_haters(tmp_path, "train", [])
+    _write_k_haters(tmp_path, "test", [
+        {"text": "정치 혐오", "label": "L2_hate", "target_label": ["political"]},
+        {"text": "지역 혐오", "label": "L1_hate", "target_label": ["region"]},
+    ])
+
+    _, gold, _ = build_benchmark("k-haters", "test", None, manifest_path=manifest, project_root=tmp_path)
+
+    assert [row["categories"] for row in gold] == [["political"], ["identity"]]

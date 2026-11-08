@@ -243,3 +243,15 @@ def _dataset_yaml(dataset: dict) -> str:
         else:
             lines.append(f"    {key}: {value}")
     return "\n".join(lines)
+
+
+def test_k_haters_target_labels_follow_identity_card() -> None:
+    from app.analysis.example_loaders import _k_haters_categories
+
+    assert _k_haters_categories("L2_hate", ("region",)) == ("identity",)
+    assert _k_haters_categories("L1_hate", ("disabled", "gender")) == ("identity", "gender")
+    assert _k_haters_categories("L2_hate", ("political",)) == ()
+    assert _k_haters_categories("L2_hate", ("political", "region")) == ("identity",)
+    assert _k_haters_categories("offensive", ("political",)) == ("profanity",)
+    assert _k_haters_categories("L1_hate", ("job",)) == ("other",)
+    assert _k_haters_categories("normal", ("region",)) == ("unclassified",)
