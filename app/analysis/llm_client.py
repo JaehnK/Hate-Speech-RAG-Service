@@ -147,7 +147,8 @@ def _map_anthropic_error(exc: Exception) -> LlmRequestError | None:
         return LlmRequestError("LLM_TIMEOUT", "Anthropic 응답 시간이 초과되었습니다.")
     if isinstance(exc, anthropic.APIConnectionError):
         return LlmRequestError("LLM_CONNECTION_ERROR", "Anthropic 서비스에 연결할 수 없습니다.")
-    if status_code == 402:
+    # Anthropic reports an exhausted credit balance as 400 invalid_request_error, not 402.
+    if status_code == 402 or (status_code == 400 and "credit balance" in str(exc).lower()):
         return LlmRequestError("LLM_BILLING_ERROR", "Anthropic 결제 또는 크레딧 상태를 확인해주세요.")
     if status_code == 529:
         return LlmRequestError("LLM_OVERLOADED", "Anthropic 서비스가 일시적으로 혼잡합니다.")
