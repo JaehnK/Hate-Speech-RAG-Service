@@ -4,7 +4,7 @@
 | --- | --- |
 | 기준일 | 2026-07-18 KST |
 | 대상 | `category-rag-v0.3.1`, three-vector RAG |
-| 결론 | 현재 저장소에는 운영 정확도를 주장할 수 있는 실제 YouTube gold test set이 없다. 다만 레거시 작업공간에는 공개 라벨셋 기반 평가 자산이 남아 있다. |
+| 결론 | 공개 benchmark(K-HATERS test·BEEP dev 970건) 평가는 2026-11-08에 완료했다. 결과는 `docs/46_public_benchmark_accuracy_results.md`에 있다. 실제 YouTube gold test set은 아직 없다. |
 
 ## 1. 현재 보유한 평가 자료
 
@@ -117,14 +117,13 @@ gold label 파일:
 
 가능:
 
-- “평가 runner와 evaluator는 준비되어 있다.”
-- “합성 smoke set으로 실행 경로와 validator 회귀를 확인했다.”
+- “공개 혐오표현 benchmark(K-HATERS·BEEP held-out 970건)에서 혐오 여부 F1 0.805, 정확도 0.749.”
+- “같은 benchmark에서 RAG 미적용(`haiku_only`) 대비 F1 +0.20, 정확도 +17.6%p (McNemar p < 0.0001).”
+- “검색 corpus에 없는 BEEP에서도 F1 0.414 → 0.704.”
 - “실제 YouTube gold set 기반 정확도 평가는 아직 수행 전이다.”
 
 불가:
 
-- “RAG 정확도는 1.000이다.”
-- “Three-vector 구조가 실제 정확도를 개선했다.”
+- “YouTube 댓글 분류 정확도는 75%다.” (benchmark 성능이지 YouTube 성능이 아니다)
+- “정의 문서 검색이 정확도를 개선했다.” (`examples_only` 대비 유의하지 않다)
 - “현재 결과가 YouTube 댓글 전체를 대표한다.”
-
-three-vector RAG가 정확도를 개선했는지는 같은 gold set에서 `haiku_only`, `definitions_only`, `examples_only`, `three_vector_rag`를 비교한 뒤에만 말할 수 있다.
