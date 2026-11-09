@@ -8,6 +8,7 @@ from openpyxl import Workbook
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.analysis.citations import describe_citation
 from app.analysis.taxonomy import CATEGORY_CARDS
 from app.db.models import (
     CommentAnalysisResult,
@@ -41,6 +42,7 @@ class HtmlReportRenderer:
             autoescape=select_autoescape(("html", "xml")),
         )
         self.environment.filters["category"] = category_label
+        self.environment.filters["citation"] = describe_citation
         self.environment.filters["rag_context"] = lambda status: RAG_CONTEXT_LABELS.get(status or "", "상태 미기록")
         self.environment.filters["playback"] = _playback_time
         self.environment.filters["number"] = lambda value: f"{value or 0:,}"

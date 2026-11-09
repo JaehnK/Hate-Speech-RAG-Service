@@ -2,14 +2,16 @@
 
 ## 1. 문서 목적과 기준 시점
 
-이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 2026-07-18 현재 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다.
+이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다. 2026-11-09에 worker 기본 prompt가 `category-rag-v0.6.2`로 바뀌었고(3.2a), 5절의 전체 prompt는 이전 운영 버전 `category-rag-v0.3.1`의 계약으로 남겨 둔다.
 
 - 공개 요약 화면: `/rag-methodology`. 이 문서의 운영 설정과 재현 세부는 내부 개발·감사 자료로만 유지한다.
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
-- prompt version: `category-rag-v0.3.1`
-- taxonomy version: `v0.3.0`
-- definition corpus version: `definition-corpus-2026-07-16-v0.3`
+- worker 기본 prompt version: `category-rag-v0.6.2` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.3.1`)
+- 기본 LLM: 분석 방식(tier)이 정한다. 현재 두 방식 모두 `claude-haiku-5-5`, 절약 방식은 Jev 사전 필터를 더한다
+- taxonomy version: `v0.5.1`
+- definition corpus version: `definition-corpus-2026-11-09-v0.5.1`
+- 정확도·비용 근거: `docs/49_v062_benchmark_results.md`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
 
@@ -68,7 +70,18 @@ source_type={source_type}
 | 공식·권위 기준 | `hate_speech_authoritative` | 4 (`definition_k=4`) | `authoritative_context`에 배치 |
 | 분류 예시 | `hate_speech_examples` | 6 | `score = 1 - cosine distance`; `score >= 0.40`만 유지 |
 
-taxonomy collection에는 내부 taxonomy card만 들어간다. authoritative collection에는 라이선스가 허용된 외부 guideline·정책 문서 chunk만 들어간다. 현재 기본 corpus에서는 K-HATERS README chunk 8건이 authoritative collection에 들어가며, 국가인권위원회·YouTube·OHCHR 문서는 후보로만 기록되어 있고 아직 적재하지 않는다.
+taxonomy collection에는 내부 taxonomy card만 들어간다. authoritative collection에는 K-HATERS README chunk 8건과 `data/normative`의 규범·기준 문서 58 chunk(국내 법령·방미심위 심의규정·형법, 국가인권위원회 기준, 국제 기준 요약, YouTube 정책 요약, 데이터셋 라벨 논문)가 들어간다. 위 표는 `category-rag-v0.3.1`의 검색 방식이다.
+
+### 3.2a `category-rag-v0.6.2` 검색 방식
+
+| 변경 | 내용 | 근거 |
+| --- | --- | --- |
+| 판정 규칙 고정 | `taxonomy:hate_threshold:0`, `taxonomy:context_exception:0`을 검색 순위와 무관하게 항상 `taxonomy_context` 앞에 넣고, 나머지 4장은 검색한다 | 판정 기준 card가 상위 4건에 드는 비율이 78%뿐이었다 |
+| 유사 사례 우선 검색 | example을 먼저 검색하고, hate 라벨 사례 2건 이상이 공유하는 category로 규범 문서를 거른다(`app/analysis/normative_guidance.py`) | 댓글과 규범 문서의 어휘 차이로 직접 검색의 category 일치율이 37.8%였고, 이 방식으로 54.9%가 됐다 |
+| 문서 종류별 slot | 공식 기준 2(유도), 인권위 기준 1(유도), 국제 기준 요약 1, 플랫폼 정책 1(유도), 데이터셋 라벨 2 | 한 종류의 문서가 검색 결과를 독점하지 않게 한다 |
+| 문서 우선순위 | 혐오 여부와 category는 판정 규칙과 taxonomy가 정하고, 규범 문서는 근거 인용에 쓰며 판정 기준을 좁히지 않는다 | 데이터셋 README가 "최우선 기준"으로 판정을 좁히던 문제 |
+| category 체계 | taxonomy v0.5의 12개 category(`other`를 `profanity`로 통합). example의 `other` 라벨도 `profanity`로 보여준다 | 개인 모욕을 `other`와 `profanity` 중 어디에 둘지가 흔들렸다 |
+| 생성 옵션 | Claude 5 세대 모델은 temperature 대신 effort `low`, `max_tokens` 4096 이상 | 5 세대는 sampling parameter를 받지 않는다 |
 
 세 collection 검색은 각각 독립적으로 예외를 처리한다.
 
@@ -147,11 +160,11 @@ worker를 정지한 상태에서 두 production collection을 reset하고 동일
 
 ### 4.3 Definition collection
 
-내부 taxonomy는 10개 규칙 card와 13개 category card, 총 23개 문서를 생성한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
+taxonomy v0.5.1은 9개 규칙 card와 12개 category card, 총 21개 문서를 생성한다(이전 v0.3.0은 10개 규칙과 13개 category, 23개 문서). `ALLOWED_CATEGORIES`는 저장된 결과와 `category-rag-v0.3.1` 호환을 위해 `other`를 유지하고, 새 prompt는 `CATEGORY_CODES`만 허용한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
 
 10개 규칙 card는 허용 category, 공통 hate threshold, 비혐오, `other`, 정치적 2축, 인용·풍자 문맥 예외, 복수 선택, `hate_type`, `target_group`, 배타 충돌 규칙을 각각 고정한다. category별 전체 기준은 `docs/12_category_taxonomy.md`를 기준으로 하며 코드의 `CATEGORY_CARDS`와 corpus 문서 생성 테스트로 동기화한다.
 
-외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다.
+외부 정의는 manifest에서 `corpus_target.definitions=true`이고 license tier가 기본 허용값 `commercial_ok`인 source만 읽는다. 규범·기준 문서는 `app/analysis/normative_corpus.py`가 `data/normative/*.md`에서 읽는다. 각 chunk에 출처, 문서 종류, 심각도 수준, 이용 근거(`license_basis`)와 category flag(`cat_<code>`)를 metadata로 남기고, 공공저작물 발췌·인용은 `noncommercial_research` tier로 구분한다.
 
 외부 Markdown은 heading 단위로 나눈 뒤 문단 경계를 유지하며 최대 3,000자로 제한한다. 40자 미만 section은 제외하고, 정규화한 본문의 SHA-256을 `chunk_hash`와 doc ID 일부에 사용한다.
 

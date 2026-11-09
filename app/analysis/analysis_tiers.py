@@ -1,6 +1,6 @@
 """User-selectable analysis tiers: which model classifies, and whether Jev pre-filters.
 
-Accuracy and cost figures come from the public benchmark runs in docs/48; they are
+Accuracy and cost figures come from the public benchmark runs in docs/49; they are
 shown to users as guidance, so update them only from a new measured run.
 """
 
@@ -28,6 +28,9 @@ class AnalysisTier:
         return asdict(self)
 
 
+# Figures from the held-out benchmark (970 items, docs/49). Sonnet 5.5 scored
+# F1 0.830 vs 0.818 at 17x the cost (difference not significant), so larger models are
+# not offered.
 TIERS: dict[str, AnalysisTier] = {
     tier.key: tier
     for tier in (
@@ -35,45 +38,23 @@ TIERS: dict[str, AnalysisTier] = {
             key="economy",
             label="절약",
             summary="문제없는 게 확실한 댓글은 경량 모델이 먼저 걸러내고, 나머지만 AI가 분석합니다.",
-            model="claude-haiku-4-5-20251001",
-            model_label="Jev 1.14 + Claude Haiku 4.5",
+            model="claude-haiku-5-5",
+            model_label="Jev 1.14 + Claude Haiku 5.5",
             jev_prefilter=True,
-            benchmark_accuracy=None,
-            benchmark_f1=None,
-            usd_per_1000_comments=None,
+            benchmark_accuracy=0.767,
+            benchmark_f1=0.818,
+            usd_per_1000_comments=1.25,
         ),
         AnalysisTier(
             key="standard",
             label="기본",
-            summary="모든 댓글을 AI가 정의 문서와 유사 사례를 참고해 분석합니다.",
-            model="claude-haiku-4-5-20251001",
-            model_label="Claude Haiku 4.5",
+            summary="모든 댓글을 AI가 분류 기준, 공식 규범 문서, 유사 사례를 참고해 분석합니다.",
+            model="claude-haiku-5-5",
+            model_label="Claude Haiku 5.5",
             jev_prefilter=False,
-            benchmark_accuracy=None,
-            benchmark_f1=None,
-            usd_per_1000_comments=None,
-        ),
-        AnalysisTier(
-            key="precise",
-            label="정밀",
-            summary="더 큰 AI 모델로 분석합니다.",
-            model="claude-sonnet-5-5",
-            model_label="Claude Sonnet 5.5",
-            jev_prefilter=False,
-            benchmark_accuracy=None,
-            benchmark_f1=None,
-            usd_per_1000_comments=None,
-        ),
-        AnalysisTier(
-            key="max",
-            label="최고 정밀",
-            summary="가장 큰 AI 모델로 분석합니다.",
-            model="claude-opus-5-5",
-            model_label="Claude Opus 5.5",
-            jev_prefilter=False,
-            benchmark_accuracy=None,
-            benchmark_f1=None,
-            usd_per_1000_comments=None,
+            benchmark_accuracy=0.767,
+            benchmark_f1=0.818,
+            usd_per_1000_comments=1.45,
         ),
     )
 }

@@ -36,10 +36,10 @@ def test_missing_tier_defaults_and_unknown_tier_is_rejected() -> None:
 
 
 def test_run_values_record_tier_model() -> None:
-    values = _analysis_run_values(_settings(), TIERS["max"])
+    values = _analysis_run_values(_settings(), TIERS["standard"])
 
-    assert values["llm_model"] == TIERS["max"].model
-    assert values["retriever_config"]["analysis_tier"] == "max"
+    assert values["llm_model"] == "claude-haiku-5-5"
+    assert values["retriever_config"]["analysis_tier"] == "standard"
     assert values["retriever_config"]["jev_prefilter"]["enabled"] is False
 
 
@@ -52,7 +52,7 @@ async def test_job_api_lists_tiers_and_stores_selection(tmp_path) -> None:
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         tiers = await client.get("/api/analysis-jobs/tiers")
         created = await client.post(
-            "/api/analysis-jobs", json={"input_value": "abcdefghijk", "analysis_tier": "precise"}
+            "/api/analysis-jobs", json={"input_value": "abcdefghijk", "analysis_tier": "standard"}
         )
         unavailable = await client.post(
             "/api/analysis-jobs", json={"input_value": "abcdefghijk", "analysis_tier": "economy"}
@@ -63,6 +63,6 @@ async def test_job_api_lists_tiers_and_stores_selection(tmp_path) -> None:
     assert tiers.json()["default"] == DEFAULT_TIER
     assert "economy" not in [item["key"] for item in tiers.json()["items"]]
     assert created.status_code == 202
-    assert status.json()["analysis_tier"] == "precise"
+    assert status.json()["analysis_tier"] == "standard"
     assert unavailable.status_code == 422
     assert unavailable.json()["error"]["code"] == "ANALYSIS_TIER_UNAVAILABLE"

@@ -56,7 +56,7 @@ export function RagMethodologyPage() {
         <div>
           <span className="rag-kicker">METHODOLOGY · RESPONSIBLE AI</span>
           <h1>Three-Vector RAG 분류 파이프라인</h1>
-          <p>댓글, 답글, 스크립트 세그먼트를 분류 체계, 데이터셋 라벨 기준, 유사 사례라는 서로 다른 근거로 검색하고 분류합니다.</p>
+          <p>댓글, 답글, 스크립트 세그먼트를 분류 체계, 규범·기준 문서, 유사 사례라는 서로 다른 근거로 검색하고 분류합니다.</p>
         </div>
         <div className="rag-badges">
           <span>Three Evidence</span>
@@ -82,11 +82,11 @@ export function RagMethodologyPage() {
           </EvidenceCard>
           <EvidenceCard
             icon={<Scale size={22} />}
-            title="데이터셋 라벨 기준"
-            subtitle="라벨 해석 근거"
-            rows={[["역할", "사례 라벨 해석"], ["구성", "K-HATERS 라벨 문서"], ["상태", "외부 기준 적재 예정"]]}
+            title="규범·기준 문서"
+            subtitle="판정 근거"
+            rows={[["국내", "정보통신망법·방미심위 심의규정·형법·인권위"], ["국제", "Rabat·UN·유럽·해외 법제 요약"], ["기타", "YouTube 정책·데이터셋 라벨 기준"]]}
           >
-            유사 사례가 어떤 기준으로 라벨링됐는지 설명하는 공개 데이터셋 문서를 검색합니다. 혐오 여부의 기준은 분류 체계가 정하며, 방심위·국가인권위 등 외부 공식 기준은 아직 적재하지 않았습니다.
+            유사 사례의 라벨을 참고해 관련 category의 기준 문서를 문서 종류별로 골라 검색하고, 판정 근거로 조항을 인용합니다. 혐오 여부의 기준은 분류 체계가 정하며, 법령 기준은 가장 심각한 수준만 표시한다는 점을 함께 고려합니다.
           </EvidenceCard>
           <EvidenceCard
             icon={<Boxes size={22} />}

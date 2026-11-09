@@ -159,6 +159,11 @@ export interface ReportComment {
       doc_id?: string;
       source_id?: string;
       retrieval_tags?: string[];
+      title?: string;
+      section?: string;
+      source_url?: string;
+      source_type?: string;
+      source_label?: string;
     }>;
   };
 }

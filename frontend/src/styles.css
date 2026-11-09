@@ -236,6 +236,8 @@ button:disabled { cursor: wait; opacity: .65; }
 .case-evidence ul { margin: 7px 0 0; padding: 0; display: grid; gap: 6px; list-style: none; }
 .case-evidence li { min-width: 0; padding: 7px 8px; display: grid; gap: 3px; background: var(--surface-low); }
 .case-evidence li code { overflow: hidden; color: var(--primary); text-overflow: ellipsis; white-space: nowrap; }
+.case-evidence li .citation-title { color: var(--primary); font-weight: 700; }
+.case-evidence li a { color: var(--primary-soft); }
 .case-evidence li span { color: var(--muted); font-size: 9px; }
 .case-evidence aside { margin-top: 14px; padding: 9px 10px; color: #6b5415; background: #fff8db; font-size: 9px; line-height: 1.55; }
 .clean-state { min-height: 330px; display: grid; place-items: center; align-content: center; gap: 8px; color: var(--success); text-align: center; }

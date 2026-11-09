@@ -9,7 +9,7 @@ describe("RAG methodology page", () => {
 
     expect(html).toContain("Three-Vector RAG 분류 파이프라인");
     expect(html).toContain("분류 체계");
-    expect(html).toContain("데이터셋 라벨 기준");
+    expect(html).toContain("규범·기준 문서");
     expect(html).toContain("정치적 공격: 두 가지 질문");
     expect(html).toContain("정부·공직자 공격");
     expect(html).not.toContain(">공식 기준<");

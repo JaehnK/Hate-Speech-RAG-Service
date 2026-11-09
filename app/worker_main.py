@@ -15,7 +15,6 @@ from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.jev_client import JEV_QUESTION_VERSION, JevClient
 from app.analysis.jev_gate import JevGatedClassifier
 from app.analysis.observability import LangfuseConfig, build_observability_client
-from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
 from app.analysis.result_store import AnalysisResultStore
 from app.analysis.retry import RetryPolicy
@@ -247,7 +246,7 @@ def _analysis_run_values(settings: Settings, tier: AnalysisTier | None = None) -
                 "question_version": JEV_QUESTION_VERSION,
             },
         },
-        "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
+        "prompt_versions": {"comment": settings.rag_prompt_version, "script": settings.rag_prompt_version},
     }
 
 
@@ -296,6 +295,7 @@ def _build_classifier(
             )
         ),
         should_stop=stop_event.is_set,
+        prompt_version=settings.rag_prompt_version,
     )
 
 

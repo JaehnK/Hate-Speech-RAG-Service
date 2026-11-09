@@ -114,7 +114,7 @@ function AppShell() {
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
-          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·라벨 기준·사례 기반<br />three-vector RAG</span></div>
+          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·규범 기준·사례 기반<br />three-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
       </div>
@@ -219,10 +219,10 @@ export function TierPicker({ tiers, value, onChange, disabled }: { tiers: Analys
         <summary>분석은 어떻게 처리되나요?</summary>
         <ol>
           <li>영상의 댓글·대댓글과 공개 자막을 수집합니다.</li>
-          <li>댓글마다 혐오표현 유형 정의, 데이터셋 라벨 기준, 비슷한 과거 사례를 검색합니다.</li>
+          <li>댓글마다 혐오표현 유형 정의, 방미심위 심의규정·인권위 기준 등 규범 문서, 비슷한 과거 사례를 검색합니다.</li>
           <li>선택한 AI 모델이 검색 근거를 참고해 혐오 여부와 유형을 판정합니다. 절약 방식에서는 경량 모델(Jev)이 확실히 문제없다고 본 댓글을 먼저 정상으로 처리하고, 나머지만 AI가 판정합니다.</li>
         </ol>
-        <p>비용은 등록한 Anthropic 키로 청구되며, 댓글 길이에 따라 달라지는 추정치입니다. 정확도는 공개 혐오표현 데이터 970건 기준이며 실제 YouTube 댓글 정확도와 다를 수 있습니다.</p>
+        <p>비용은 등록한 Anthropic 키로 청구되며, 댓글 길이에 따라 달라지는 추정치입니다. 정확도는 공개 혐오표현 데이터 970건(K-HATERS·BEEP, 학습·튜닝에 쓰지 않은 데이터) 기준이며 실제 YouTube 댓글 정확도와 다를 수 있습니다.</p>
       </details>
     </fieldset>
   );
@@ -598,8 +598,19 @@ export function HateCommentCard({ comment }: { comment: ReportComment }) {
             {similarCases.length > 0 ? <ul>{similarCases.map((item, index) => <li key={`${item.doc_id ?? "case"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_dataset ?? "출처 미기록"}{item.mapped_categories?.length ? ` · ${item.mapped_categories.map(categoryLabel).join(", ")}` : ""}</span></li>)}</ul> : <p>인용된 유사 사례가 없습니다.</p>}
           </section>
           <section>
-            <strong>기록된 정의 문서 인용</strong>
-            {definitionDocs.length > 0 ? <ul>{definitionDocs.map((item, index) => <li key={`${item.doc_id ?? "definition"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_id === "internal_taxonomy" ? "HateScope 내부 분류 기준" : item.source_id ?? "출처 미기록"}</span></li>)}</ul> : <p>인용된 정의 문서가 없습니다.</p>}
+            <strong>판정 근거 기준</strong>
+            {definitionDocs.length > 0 ? <ul>{definitionDocs.map((item, index) => (
+              <li key={`${item.doc_id ?? "definition"}-${index}`}>
+                {item.title ? (
+                  <>
+                    <span className="citation-title">{item.title}</span>
+                    <span>{item.section}{item.source_label ? ` · ${item.source_label}` : ""}{item.source_url ? <> · <a href={item.source_url} target="_blank" rel="noopener noreferrer">원문</a></> : null}</span>
+                  </>
+                ) : (
+                  <><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_label ?? item.source_id ?? "출처 미기록"}</span></>
+                )}
+              </li>
+            ))}</ul> : <p>인용된 기준 문서가 없습니다.</p>}
           </section>
           <aside>문서 ID는 분류 결과에 기록된 참고 항목입니다. 현재 결과에서는 검색 후보와의 완전한 대조를 보증하지 않으며, 유사 사례는 최종 판단이나 법적 근거가 아닌 비교 자료입니다.</aside>
         </div>
