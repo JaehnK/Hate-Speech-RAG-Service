@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.analysis.analysis_tiers import DEFAULT_TIER, available_tiers, resolve_tier
 from app.auth.http import AuthResolver, require_csrf
 from app.auth.services import require_valid_api_keys
 from app.core.config import Settings
@@ -16,6 +17,7 @@ from app.jobs.service import AnalysisJobService
 
 class CreateJobRequest(BaseModel):
     input_value: str = Field(min_length=1, max_length=2048)
+    analysis_tier: str = Field(default=DEFAULT_TIER, max_length=32)
 
 
 def build_jobs_router(get_session: Callable[[], Iterator[Session]], settings: Settings) -> APIRouter:
@@ -23,19 +25,29 @@ def build_jobs_router(get_session: Callable[[], Iterator[Session]], settings: Se
     SessionDependency = Annotated[Session, Depends(get_session)]
     resolver = AuthResolver(settings)
 
+    @router.get("/tiers")
+    def list_tiers() -> dict[str, Any]:
+        return {"default": DEFAULT_TIER, "items": [tier.public() for tier in available_tiers(settings)]}
+
     @router.post("", status_code=status.HTTP_202_ACCEPTED)
     def create_job(body: CreateJobRequest, request: Request, response: Response, session: SessionDependency) -> dict[str, Any]:
+        tier = resolve_tier(body.analysis_tier, settings)
         user = None
         if settings.auth_configured:
             require_csrf(request, settings)
             user = resolver.required(request, response, session)
             require_valid_api_keys(session, user.id)
-        job = AnalysisJobService(session).create_job(body.input_value, user_id=user.id if user else None)
+        job = AnalysisJobService(session).create_job(
+            body.input_value,
+            user_id=user.id if user else None,
+            request_options={"analysis_tier": tier.key},
+        )
         return {
             "job_id": str(job.id),
             "user_id": str(job.user_id) if job.user_id else None,
             "youtube_video_id": job.youtube_video_id,
             "status": job.status,
+            "analysis_tier": tier.key,
             "status_url": f"/api/analysis-jobs/{job.id}",
             "created_at": job.created_at,
         }
@@ -88,6 +100,7 @@ def _job_payload(job: AnalysisJob, steps: list[JobStep], report_id: str | None) 
         "job_id": str(job.id),
         "youtube_video_id": job.youtube_video_id,
         "status": job.status,
+        "analysis_tier": (job.request_options or {}).get("analysis_tier", DEFAULT_TIER),
         "progress": {"percent": round(completed / len(steps) * 100), "current_step": current},
         "steps": [_step_payload(step) for step in steps],
         "summary": summary,

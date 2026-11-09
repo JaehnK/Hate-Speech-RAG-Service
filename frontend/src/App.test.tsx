@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import App, { HateCommentCard } from "./App";
+import App, { HateCommentCard, TierPicker } from "./App";
 
 describe("public navigation", () => {
   it("uses the analysis workspace as the main page", () => {
@@ -66,5 +66,27 @@ describe("hate comment evidence", () => {
     expect(html).toContain("k-haters:train:42");
     expect(html).toContain("category:age:0");
     expect(html).toContain("정의·유사 사례 사용");
+  });
+});
+
+describe("analysis tier picker", () => {
+  it("shows plain labels with the model name and measured figures", () => {
+    const html = renderToStaticMarkup(
+      <TierPicker
+        value="standard"
+        onChange={() => undefined}
+        disabled={false}
+        tiers={[
+          { key: "standard", label: "기본", summary: "모든 댓글을 AI가 분석합니다.", model: "m", model_label: "Claude Haiku 4.5", jev_prefilter: false, benchmark_accuracy: 0.748, benchmark_f1: 0.804, usd_per_1000_comments: 6.2 },
+          { key: "max", label: "최고 정밀", summary: "가장 큰 AI 모델로 분석합니다.", model: "m2", model_label: "Claude Opus 5.5", jev_prefilter: false, benchmark_accuracy: null, benchmark_f1: null, usd_per_1000_comments: null },
+        ]}
+      />,
+    );
+
+    expect(html).toContain("기본");
+    expect(html).toContain("Claude Haiku 4.5");
+    expect(html).toContain("정확도 75%");
+    expect(html).toContain("댓글 1,000개당 약 $6.20");
+    expect(html).toContain("분석은 어떻게 처리되나요?");
   });
 });

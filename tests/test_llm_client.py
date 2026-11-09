@@ -146,3 +146,25 @@ def test_anthropic_client_maps_low_credit_400_to_billing_error() -> None:
     with pytest.raises(LlmRequestError) as error:
         client.complete("prompt")
     assert error.value.code == "LLM_BILLING_ERROR"
+
+
+def test_adaptive_models_send_effort_instead_of_temperature() -> None:
+    fake_client = FakeAnthropicClient()
+    client = AnthropicLlmClient(api_key=None, model="claude-haiku-5-5", max_tokens=1200, client=fake_client)
+
+    client.complete("prompt")
+
+    kwargs = fake_client.messages.kwargs
+    assert "temperature" not in kwargs
+    assert kwargs["output_config"] == {"effort": "low"}
+    assert kwargs["max_tokens"] == 4096
+
+
+def test_haiku_4_5_keeps_temperature_and_no_effort() -> None:
+    fake_client = FakeAnthropicClient()
+    client = AnthropicLlmClient(api_key=None, model="claude-haiku-4-5-20251001", client=fake_client)
+
+    client.complete("prompt")
+
+    assert fake_client.messages.kwargs["temperature"] == 0.0
+    assert "output_config" not in fake_client.messages.kwargs

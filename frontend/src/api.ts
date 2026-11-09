@@ -1,4 +1,4 @@
-import type { ApiKeySummary, AuthSession, CommentNetwork, CreatedJob, ExportStatus, Job, Page, PublicReportSummary, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
+import type { AnalysisTierList, ApiKeySummary, AuthSession, CommentNetwork, CreatedJob, ExportStatus, Job, Page, PublicReportSummary, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -61,10 +61,15 @@ export function getMyJobs(): Promise<Page<Job>> {
   return request("/api/me/jobs?limit=200");
 }
 
-export function createJob(inputValue: string): Promise<CreatedJob> {
+export function getAnalysisTiers(): Promise<AnalysisTierList> {
+  return request("/api/analysis-jobs/tiers");
+}
+
+export function createJob(inputValue: string, analysisTier?: string): Promise<CreatedJob> {
+  const body = analysisTier ? { input_value: inputValue, analysis_tier: analysisTier } : { input_value: inputValue };
   return request("/api/analysis-jobs", {
     method: "POST",
-    body: JSON.stringify({ input_value: inputValue }),
+    body: JSON.stringify(body),
   });
 }
 
