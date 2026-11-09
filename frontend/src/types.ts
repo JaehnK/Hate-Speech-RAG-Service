@@ -30,6 +30,23 @@ export interface Job {
   finished_at: string | null;
 }
 
+export interface AnalysisTier {
+  key: string;
+  label: string;
+  summary: string;
+  model: string;
+  model_label: string;
+  jev_prefilter: boolean;
+  benchmark_accuracy: number | null;
+  benchmark_f1: number | null;
+  usd_per_1000_comments: number | null;
+}
+
+export interface AnalysisTierList {
+  default: string;
+  items: AnalysisTier[];
+}
+
 export interface CreatedJob {
   job_id: string;
   youtube_video_id: string;
@@ -142,6 +159,11 @@ export interface ReportComment {
       doc_id?: string;
       source_id?: string;
       retrieval_tags?: string[];
+      title?: string;
+      section?: string;
+      source_url?: string;
+      source_type?: string;
+      source_label?: string;
     }>;
   };
 }

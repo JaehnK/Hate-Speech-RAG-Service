@@ -12,6 +12,11 @@ from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
 DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+# Claude 5-generation models always think, reject sampling parameters, and take an
+# effort level instead. Classification does not need deep thinking, so they run at
+# low effort with room in max_tokens for the thinking that still happens.
+ADAPTIVE_MODEL_PREFIXES = ("claude-haiku-5", "claude-sonnet-5", "claude-opus-5", "claude-fable-5")
+ADAPTIVE_MIN_MAX_TOKENS = 4096
 DEFAULT_SYSTEM_PROMPT = (
     "You are a Korean hate speech classification engine. "
     "Return only valid JSON that matches the requested schema."
@@ -45,6 +50,7 @@ class AnthropicLlmClient:
         retry_policy: RetryPolicy | None = None,
         on_retry=None,
         should_stop=None,
+        effort: str = "low",
     ) -> None:
         if client is None and not api_key:
             raise ValueError("Anthropic API key is required for LLM classification.")
@@ -52,6 +58,7 @@ class AnthropicLlmClient:
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
+        self.effort = effort
         self.client = client or anthropic.Anthropic(api_key=api_key, timeout=timeout, max_retries=0)
         self.gate = gate
         self.retry_policy = retry_policy or RetryPolicy(max_attempts=1)
@@ -82,10 +89,9 @@ class AnthropicLlmClient:
             with (self.gate if self.gate is not None else nullcontext()):
                 message = self.client.messages.create(
                     model=self.model,
-                    max_tokens=self.max_tokens,
-                    temperature=self.temperature,
                     system=DEFAULT_SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": prompt}],
+                    **self._generation_options(),
                 )
         except anthropic.AuthenticationError as exc:
             raise ApiKeyInvalidError("anthropic") from exc
@@ -95,8 +101,20 @@ class AnthropicLlmClient:
             usage=_message_usage(message),
         )
 
+    def _generation_options(self) -> dict:
+        if is_adaptive_model(self.model):
+            return {
+                "max_tokens": max(self.max_tokens, ADAPTIVE_MIN_MAX_TOKENS),
+                "output_config": {"effort": self.effort},
+            }
+        return {"max_tokens": self.max_tokens, "temperature": self.temperature}
+
     def close(self) -> None:
         self.client.close()
+
+
+def is_adaptive_model(model: str) -> bool:
+    return model.startswith(ADAPTIVE_MODEL_PREFIXES)
 
 
 def _message_text(message) -> str:
@@ -148,7 +166,7 @@ def _map_anthropic_error(exc: Exception) -> LlmRequestError | None:
     if isinstance(exc, anthropic.APIConnectionError):
         return LlmRequestError("LLM_CONNECTION_ERROR", "Anthropic 서비스에 연결할 수 없습니다.")
     # Anthropic reports an exhausted credit balance as 400 invalid_request_error, not 402.
-    if status_code == 402 or (status_code == 400 and "credit balance" in str(exc).lower()):
+    if status_code == 402 or (status_code == 400 and _is_billing_message(str(exc))):
         return LlmRequestError("LLM_BILLING_ERROR", "Anthropic 결제 또는 크레딧 상태를 확인해주세요.")
     if status_code == 529:
         return LlmRequestError("LLM_OVERLOADED", "Anthropic 서비스가 일시적으로 혼잡합니다.")
@@ -159,3 +177,9 @@ def _map_anthropic_error(exc: Exception) -> LlmRequestError | None:
     if isinstance(exc, anthropic.APIStatusError):
         return LlmRequestError("LLM_PROVIDER_REJECTED", "Anthropic 요청이 처리되지 않았습니다.")
     return None
+
+
+def _is_billing_message(message: str) -> bool:
+    # Low credit and an account's own monthly spend limit both come back as HTTP 400.
+    lowered = message.lower()
+    return "credit balance" in lowered or "api usage limits" in lowered

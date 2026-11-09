@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     llm_model: str = "claude-haiku-4-5-20251001"
     llm_api_key: str | None = Field(default=None, repr=False)
     llm_max_tokens: int = 1200
+    # Prompt used by the worker. v0.6.2 needs taxonomy v0.5.1 and the normative corpus in
+    # the vector store (docs/49); set category-rag-v0.3.1 to run against an older store.
+    rag_prompt_version: str = "category-rag-v0.6.2"
     llm_temperature: float = 0.0
     jev_prefilter_enabled: bool = False
     typesafe_api_key: str | None = Field(default=None, repr=False)
@@ -88,6 +91,10 @@ class Settings(BaseSettings):
             raise ValueError("RAG_EMBEDDING_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
         if self.rag_llm_concurrency > self.rag_item_concurrency:
             raise ValueError("RAG_LLM_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
+        from app.analysis.prompt_template import DECISION_RULES
+
+        if self.rag_prompt_version not in DECISION_RULES:
+            raise ValueError(f"unknown RAG_PROMPT_VERSION: {self.rag_prompt_version}")
         if self.jev_prefilter_enabled and not self.typesafe_api_key:
             raise ValueError("TYPESAFE_API_KEY is required when JEV_PREFILTER_ENABLED=true")
         if self.app_env == "production":

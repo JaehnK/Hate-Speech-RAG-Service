@@ -16,7 +16,8 @@ import random
 from pathlib import Path
 from typing import Any
 
-from experiments.evaluate_results import BOOTSTRAP_SEED, _categories, _metrics_for_multiset, evaluate
+from app.analysis.taxonomy import MERGED_CATEGORIES
+from experiments.evaluate_results import BOOTSTRAP_SEED, _categories, _merge, _metrics_for_multiset, evaluate
 from experiments.io import read_jsonl
 
 REFERENCE_VARIANT = "three_vector_rag"
@@ -116,6 +117,7 @@ def main() -> None:
     parser.add_argument("--threshold", type=float, default=None, help="Override the tuned threshold.")
     parser.add_argument("--bootstrap-samples", type=int, default=1000)
     parser.add_argument("--json-output-path")
+    parser.add_argument("--merge-other", action="store_true", help="Score `other` as `profanity`.")
     args = parser.parse_args()
 
     tuning_gold = _load_gold([gold for _, gold in args.tuning])
@@ -125,6 +127,14 @@ def main() -> None:
     scores = _load_scores([jev for jev, _, _ in args.test])
     gold = _load_gold([g for _, g, _ in args.test])
     reference = [row for _, _, path in args.test for row in read_jsonl(path) if row["variant"] == REFERENCE_VARIANT]
+    if args.merge_other:
+        gold = {key: {**row, "categories": _merge(row["categories"], MERGED_CATEGORIES)} for key, row in gold.items()}
+        reference = [
+            {**row, "payload": {**row["payload"], "categories": _merge(row["payload"].get("categories", []), MERGED_CATEGORIES)}}
+            if row.get("status") == "succeeded"
+            else row
+            for row in reference
+        ]
     candidate = cascade_rows(reference, scores, threshold)
 
     summaries = evaluate(reference + candidate, list(gold.values()), REFERENCE_VARIANT, args.bootstrap_samples)

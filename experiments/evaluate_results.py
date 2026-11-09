@@ -8,7 +8,7 @@ from math import comb
 from pathlib import Path
 from typing import Any
 
-from app.analysis.taxonomy import POLITICAL_CATEGORIES
+from app.analysis.taxonomy import MERGED_CATEGORIES, POLITICAL_CATEGORIES
 from experiments.io import read_jsonl
 
 # Benchmarks such as K-HATERS or BEEP only label gender/age/identity/profanity/other,
@@ -25,7 +25,18 @@ def evaluate(
     gold_rows: list[dict[str, Any]],
     reference_variant: str = "three_vector_rag",
     bootstrap_samples: int = BOOTSTRAP_SAMPLES,
+    merge_categories: dict[str, str] | None = None,
 ) -> list[dict[str, Any]]:
+    if merge_categories:
+        # Score under a merged category scheme (e.g. taxonomy v0.5.0 folds `other` into
+        # `profanity`): rewrite gold and predictions the same way before scoring.
+        gold_rows = [{**row, "categories": _merge(row.get("categories", []), merge_categories)} for row in gold_rows]
+        rows = [
+            {**row, "payload": {**row["payload"], "categories": _merge(row["payload"].get("categories", []), merge_categories)}}
+            if row.get("status") == "succeeded"
+            else row
+            for row in rows
+        ]
     gold = {str(row["item_id"]): row for row in gold_rows}
     label_space = sorted({c for row in gold_rows for c in row.get("categories", [])} - {"unclassified"})
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -80,6 +91,10 @@ def evaluate(
         if reference is not None and summary["variant"] != reference_variant:
             summary["mcnemar_vs_reference"] = _mcnemar(reference, primaries[summary["variant"]], gold)
     return summaries
+
+
+def _merge(categories: list[str], mapping: dict[str, str]) -> list[str]:
+    return list(dict.fromkeys(mapping.get(category, category) for category in categories))
 
 
 def _categories(raw: list[str], label_space: list[str]) -> frozenset[str]:
@@ -212,12 +227,16 @@ def main() -> None:
     parser.add_argument("--reference-variant", default="three_vector_rag")
     parser.add_argument("--bootstrap-samples", type=int, default=BOOTSTRAP_SAMPLES)
     parser.add_argument("--json-output-path", default=None)
+    parser.add_argument(
+        "--merge-other", action="store_true", help="Score `other` as `profanity` (taxonomy v0.5.0 scheme)."
+    )
     args = parser.parse_args()
     summaries = evaluate(
         read_jsonl(Path(args.results_path)),
         read_jsonl(Path(args.gold_path)),
         reference_variant=args.reference_variant,
         bootstrap_samples=args.bootstrap_samples,
+        merge_categories=MERGED_CATEGORIES if args.merge_other else None,
     )
     if args.json_output_path:
         Path(args.json_output_path).write_text(json.dumps(summaries, ensure_ascii=False, indent=2), encoding="utf-8")

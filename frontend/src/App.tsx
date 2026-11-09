@@ -27,11 +27,11 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getAuthSession, getExport, getHateComments, getJob, getMyJobs, getReport, getReportNetwork, getScriptSegments, logout } from "./api";
+import { ApiError, createExport, createJob, getAnalysisTiers, getAuthSession, getExport, getHateComments, getJob, getMyJobs, getReport, getReportNetwork, getScriptSegments, logout } from "./api";
 import { ApiKeySettingsPage } from "./ApiKeySettingsPage";
 import { PublicHomePage } from "./PublicHomePage";
 import { RagMethodologyPage } from "./RagMethodologyPage";
-import type { AuthSession, CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage } from "./types";
+import type { AnalysisTier, AuthSession, CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage } from "./types";
 import { categoryLabel, formatDate, formatNumber, formatPlaybackTime, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
@@ -114,7 +114,7 @@ function AppShell() {
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
-          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·공식 기준·사례 기반<br />three-vector RAG</span></div>
+          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·규범 기준·사례 기반<br />three-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
       </div>
@@ -128,8 +128,15 @@ function AnalysisRequestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
+  const [tiers, setTiers] = useState<AnalysisTier[]>([]);
+  const [tier, setTier] = useState<string | undefined>(undefined);
 
   useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
+  useEffect(() => {
+    void getAnalysisTiers()
+      .then((list) => { setTiers(list.items); setTier(list.default); })
+      .catch(() => setTiers([]));
+  }, []);
 
   if (session === undefined) return <LoadingState label="로그인 상태를 확인하는 중입니다" />;
   if (session && (!session.api_keys_registered.anthropic || !session.api_keys_registered.upstage)) return <ApiKeysRequired session={session} />;
@@ -147,7 +154,7 @@ function AnalysisRequestPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const job = await createJob(input.trim());
+      const job = await createJob(input.trim(), tier);
       navigate(`/jobs/${job.job_id}`);
     } catch (cause) {
       setError(errorMessage(cause));
@@ -181,6 +188,7 @@ function AnalysisRequestPage() {
             </button>
           </form>
           {error && <div className="inline-error" role="alert">{error}</div>}
+          {tiers.length > 0 && <TierPicker tiers={tiers} value={tier} onChange={setTier} disabled={submitting} />}
           <div className="process-grid">
             <ProcessCard icon={<CloudDownload />} number="01" title="데이터 수집">영상 정보, 댓글·대댓글과 공개 자막을 안전하게 수집합니다.</ProcessCard>
             <ProcessCard icon={<Sparkles />} number="02" title="RAG 분석">정의 문서와 유사 사례를 함께 검색해 맥락을 분류합니다.</ProcessCard>
@@ -190,6 +198,41 @@ function AnalysisRequestPage() {
       </main>
     </div>
   );
+}
+
+export function TierPicker({ tiers, value, onChange, disabled }: { tiers: AnalysisTier[]; value?: string; onChange: (key: string) => void; disabled: boolean }) {
+  return (
+    <fieldset className="tier-picker" disabled={disabled}>
+      <legend>분석 방식</legend>
+      <div className="tier-options">
+        {tiers.map((item) => (
+          <label key={item.key} className={item.key === value ? "tier-option selected" : "tier-option"}>
+            <input type="radio" name="analysis-tier" value={item.key} checked={item.key === value} onChange={() => onChange(item.key)} />
+            <strong>{item.label}</strong>
+            <span>{item.summary}</span>
+            <small className="tier-meta">{tierMeta(item)}</small>
+            <small className="tier-model">{item.model_label}</small>
+          </label>
+        ))}
+      </div>
+      <details className="tier-details">
+        <summary>분석은 어떻게 처리되나요?</summary>
+        <ol>
+          <li>영상의 댓글·대댓글과 공개 자막을 수집합니다.</li>
+          <li>댓글마다 혐오표현 유형 정의, 방미심위 심의규정·인권위 기준 등 규범 문서, 비슷한 과거 사례를 검색합니다.</li>
+          <li>선택한 AI 모델이 검색 근거를 참고해 혐오 여부와 유형을 판정합니다. 절약 방식에서는 경량 모델(Jev)이 확실히 문제없다고 본 댓글을 먼저 정상으로 처리하고, 나머지만 AI가 판정합니다.</li>
+        </ol>
+        <p>비용은 등록한 Anthropic 키로 청구되며, 댓글 길이에 따라 달라지는 추정치입니다. 정확도는 공개 혐오표현 데이터 970건(K-HATERS·BEEP, 학습·튜닝에 쓰지 않은 데이터) 기준이며 실제 YouTube 댓글 정확도와 다를 수 있습니다.</p>
+      </details>
+    </fieldset>
+  );
+}
+
+function tierMeta(tier: AnalysisTier): string {
+  const parts: string[] = [];
+  if (tier.benchmark_accuracy !== null) parts.push("정확도 " + Math.round(tier.benchmark_accuracy * 100) + "%");
+  if (tier.usd_per_1000_comments !== null) parts.push("댓글 1,000개당 약 $" + tier.usd_per_1000_comments.toFixed(2));
+  return parts.join(" · ");
 }
 
 function ProcessCard({ icon, number, title, children }: { icon: ReactNode; number: string; title: string; children: ReactNode }) {
@@ -555,8 +598,19 @@ export function HateCommentCard({ comment }: { comment: ReportComment }) {
             {similarCases.length > 0 ? <ul>{similarCases.map((item, index) => <li key={`${item.doc_id ?? "case"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_dataset ?? "출처 미기록"}{item.mapped_categories?.length ? ` · ${item.mapped_categories.map(categoryLabel).join(", ")}` : ""}</span></li>)}</ul> : <p>인용된 유사 사례가 없습니다.</p>}
           </section>
           <section>
-            <strong>기록된 정의 문서 인용</strong>
-            {definitionDocs.length > 0 ? <ul>{definitionDocs.map((item, index) => <li key={`${item.doc_id ?? "definition"}-${index}`}><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_id === "internal_taxonomy" ? "HateScope 내부 분류 기준" : item.source_id ?? "출처 미기록"}</span></li>)}</ul> : <p>인용된 정의 문서가 없습니다.</p>}
+            <strong>판정 근거 기준</strong>
+            {definitionDocs.length > 0 ? <ul>{definitionDocs.map((item, index) => (
+              <li key={`${item.doc_id ?? "definition"}-${index}`}>
+                {item.title ? (
+                  <>
+                    <span className="citation-title">{item.title}</span>
+                    <span>{item.section}{item.source_label ? ` · ${item.source_label}` : ""}{item.source_url ? <> · <a href={item.source_url} target="_blank" rel="noopener noreferrer">원문</a></> : null}</span>
+                  </>
+                ) : (
+                  <><code>{item.doc_id ?? "문서 ID 없음"}</code><span>{item.source_label ?? item.source_id ?? "출처 미기록"}</span></>
+                )}
+              </li>
+            ))}</ul> : <p>인용된 기준 문서가 없습니다.</p>}
           </section>
           <aside>문서 ID는 분류 결과에 기록된 참고 항목입니다. 현재 결과에서는 검색 후보와의 완전한 대조를 보증하지 않으며, 유사 사례는 최종 판단이나 법적 근거가 아닌 비교 자료입니다.</aside>
         </div>

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import App, { HateCommentCard } from "./App";
+import App, { HateCommentCard, TierPicker } from "./App";
 
 describe("public navigation", () => {
   it("uses the analysis workspace as the main page", () => {
@@ -54,7 +54,10 @@ describe("hate comment evidence", () => {
           reasoning: "연령을 이유로 집단 전체를 비하합니다.",
           rag_context_status: "complete",
           similar_cases_used: [{ doc_id: "k-haters:train:42", source_dataset: "k-haters", mapped_categories: ["age"], score: 0.8 }],
-          definition_docs_used: [{ doc_id: "category:age:0", source_id: "internal_taxonomy", retrieval_tags: ["age"] }],
+          definition_docs_used: [
+            { doc_id: "category:age:0", source_id: "internal_taxonomy", retrieval_tags: ["age"], source_label: "HateScope 분류 기준" },
+            { doc_id: "normative:kr-kcsc-info-review-rule:1:abc", title: "정보통신에 관한 심의규정", section: "제8조 제3호 바목: 차별·편견 조장", source_url: "https://www.law.go.kr/x", source_label: "국내 법령·심의규정" },
+          ],
         },
       }} />,
     );
@@ -65,6 +68,31 @@ describe("hate comment evidence", () => {
     expect(html).toContain("연령을 이유로 집단 전체를 비하합니다.");
     expect(html).toContain("k-haters:train:42");
     expect(html).toContain("category:age:0");
+    expect(html).toContain("정보통신에 관한 심의규정");
+    expect(html).toContain("제8조 제3호 바목");
+    expect(html).toContain("판정 근거 기준");
     expect(html).toContain("정의·유사 사례 사용");
+  });
+});
+
+describe("analysis tier picker", () => {
+  it("shows plain labels with the model name and measured figures", () => {
+    const html = renderToStaticMarkup(
+      <TierPicker
+        value="standard"
+        onChange={() => undefined}
+        disabled={false}
+        tiers={[
+          { key: "standard", label: "기본", summary: "모든 댓글을 AI가 분석합니다.", model: "m", model_label: "Claude Haiku 4.5", jev_prefilter: false, benchmark_accuracy: 0.748, benchmark_f1: 0.804, usd_per_1000_comments: 6.2 },
+          { key: "max", label: "최고 정밀", summary: "가장 큰 AI 모델로 분석합니다.", model: "m2", model_label: "Claude Opus 5.5", jev_prefilter: false, benchmark_accuracy: null, benchmark_f1: null, usd_per_1000_comments: null },
+        ]}
+      />,
+    );
+
+    expect(html).toContain("기본");
+    expect(html).toContain("Claude Haiku 4.5");
+    expect(html).toContain("정확도 75%");
+    expect(html).toContain("댓글 1,000개당 약 $6.20");
+    expect(html).toContain("분석은 어떻게 처리되나요?");
   });
 });

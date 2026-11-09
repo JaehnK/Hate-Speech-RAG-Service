@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.analysis.citations import describe_citations
 from app.auth.http import AuthResolver, require_csrf
 from app.core.config import Settings
 from app.core.errors import DomainError
@@ -262,7 +263,7 @@ def _analysis_payload(result) -> dict[str, Any]:
         "reasoning": result.reasoning,
         "rag_context_status": result.rag_context_status,
         "similar_cases_used": result.similar_cases_used,
-        "definition_docs_used": result.definition_docs_used,
+        "definition_docs_used": describe_citations(result.definition_docs_used),
     }
 
 

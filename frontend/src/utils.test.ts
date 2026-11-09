@@ -26,10 +26,10 @@ describe("report helpers", () => {
   });
 
   it("translates canonical category codes for display", () => {
-    expect(categoryLabel("identity")).toBe("정체성");
-    expect(categoryLabel("state_authority")).toBe("국가 권위체");
-    expect(categoryLabel("non_state_community")).toBe("비국가 공동체");
-    expect(categoryLabel("unclassified")).toBe("미분류");
+    expect(categoryLabel("identity")).toBe("출신·인종·종교·장애 등 비하");
+    expect(categoryLabel("state_authority")).toBe("정부·공직자 공격");
+    expect(categoryLabel("non_state_community")).toBe("지지층·진영 비하");
+    expect(categoryLabel("unclassified")).toBe("혐오 아님");
   });
 
   it("preserves an unknown category code in the fallback label", () => {

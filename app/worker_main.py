@@ -8,13 +8,13 @@ from uuid import UUID
 from sqlalchemy import update
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.analysis.analysis_tiers import AnalysisTier, resolve_tier
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.executor import RagRuntime, RuntimeMetrics
 from app.analysis.llm_client import AnthropicLlmClient
 from app.analysis.jev_client import JEV_QUESTION_VERSION, JevClient
 from app.analysis.jev_gate import JevGatedClassifier
 from app.analysis.observability import LangfuseConfig, build_observability_client
-from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
 from app.analysis.result_store import AnalysisResultStore
 from app.analysis.retry import RetryPolicy
@@ -84,7 +84,8 @@ def _build_production_handler_factory(
     def factory(job_id: UUID) -> Iterator[dict[str, StepHandler]]:
         try:
             api_keys, user_id = _api_keys_for_job(settings, session_factory, job_id)
-            runtime = _build_runtime(settings, stop_event, api_keys)
+            tier = _tier_for_job(settings, session_factory, job_id)
+            runtime = _build_runtime(settings, stop_event, api_keys, tier)
         except DomainError as exc:
             yield _setup_failure_handlers(base_handlers, exc)
             return
@@ -103,7 +104,7 @@ def _build_production_handler_factory(
                 TranscriptCollector(PublicTranscriptProvider()),
                 CommentAnalyzer(runtime, result_store),
                 ScriptAnalyzer(runtime, result_store),
-                _analysis_run_values(settings),
+                _analysis_run_values(settings, tier),
             )
         )
         try:
@@ -172,13 +173,26 @@ def _invalidate_rejected_keys(
         )
 
 
-def _build_runtime(settings: Settings, stop_event: Event, api_keys: dict[str, str]) -> RagRuntime:
+def _tier_for_job(settings: Settings, session_factory: sessionmaker[Session], job_id: UUID) -> AnalysisTier:
+    with session_factory() as session:
+        job = session.get(AnalysisJob, job_id)
+        options = (job.request_options or {}) if job is not None else {}
+    return resolve_tier(options.get("analysis_tier"), settings)
+
+
+def _build_runtime(
+    settings: Settings,
+    stop_event: Event,
+    api_keys: dict[str, str],
+    tier: AnalysisTier | None = None,
+) -> RagRuntime:
+    tier = tier or resolve_tier(None, settings)
     slot_count = settings.rag_item_concurrency if settings.rag_execution_mode == "parallel" else 1
     metrics = RuntimeMetrics()
     embedding_gate = BoundedSemaphore(settings.rag_embedding_concurrency)
     llm_gate = BoundedSemaphore(settings.rag_llm_concurrency)
     retry_policy = RetryPolicy(max_attempts=settings.rag_item_max_attempts)
-    jev_client = _build_jev_client(settings)
+    jev_client = _build_jev_client(settings) if tier.jev_prefilter else None
     return RagRuntime(
         [
             _maybe_gate(jev_client, settings, _build_classifier(
@@ -190,6 +204,7 @@ def _build_runtime(settings: Settings, stop_event: Event, api_keys: dict[str, st
                 metrics,
                 api_keys["anthropic"],
                 api_keys["upstage"],
+                tier.model,
             ))
             for _index in range(slot_count)
         ],
@@ -202,10 +217,11 @@ def _build_runtime(settings: Settings, stop_event: Event, api_keys: dict[str, st
     )
 
 
-def _analysis_run_values(settings: Settings) -> dict:
+def _analysis_run_values(settings: Settings, tier: AnalysisTier | None = None) -> dict:
+    tier = tier or resolve_tier(None, settings)
     return {
         "llm_provider": settings.llm_provider,
-        "llm_model": settings.llm_model,
+        "llm_model": tier.model,
         "embedding_provider": settings.embedding_provider,
         "embedding_model": settings.embedding_model,
         "example_vector_collection": EXAMPLE_COLLECTION_NAME,
@@ -222,14 +238,15 @@ def _analysis_run_values(settings: Settings) -> dict:
             "taxonomy_version": TAXONOMY_VERSION,
             "execution_mode": settings.rag_execution_mode,
             "item_concurrency": settings.rag_item_concurrency,
+            "analysis_tier": tier.key,
             "jev_prefilter": {
-                "enabled": settings.jev_prefilter_enabled,
+                "enabled": tier.jev_prefilter,
                 "model": settings.jev_model,
                 "threshold": settings.jev_threshold,
                 "question_version": JEV_QUESTION_VERSION,
             },
         },
-        "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
+        "prompt_versions": {"comment": settings.rag_prompt_version, "script": settings.rag_prompt_version},
     }
 
 
@@ -242,12 +259,13 @@ def _build_classifier(
     metrics: RuntimeMetrics,
     llm_api_key: str,
     embedding_api_key: str,
+    llm_model: str | None = None,
 ) -> RagClassifier:
     return RagClassifier(
         settings.chroma_persist_directory,
         AnthropicLlmClient(
             llm_api_key,
-            model=settings.llm_model,
+            model=llm_model or settings.llm_model,
             max_tokens=settings.llm_max_tokens,
             temperature=settings.llm_temperature,
             timeout=settings.rag_request_timeout_seconds,
@@ -277,6 +295,7 @@ def _build_classifier(
             )
         ),
         should_stop=stop_event.is_set,
+        prompt_version=settings.rag_prompt_version,
     )
 
 

@@ -12,7 +12,8 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult, SourceType
 from app.analysis.models import ValidationResult
 from app.analysis.observability import NoopObservabilityClient, ObservabilityClient
-from app.analysis.prompt_template import PROMPT_VERSION, build_category_prompt
+from app.analysis.prompt_template import AUTHORITATIVE_SLOTS, PINNED_TAXONOMY_IDS, PROMPT_VERSION
+from app.analysis.prompt_template import build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.retriever import DualVectorRetriever
 from app.analysis.retry import RetryCancelled
@@ -60,7 +61,9 @@ class RagClassifier:
         definition_corpus_version: str = DEFAULT_DEFINITION_CORPUS_VERSION,
         retriever: DualVectorRetriever | None = None,
         should_stop=None,
+        prompt_version: str = PROMPT_VERSION,
     ) -> None:
+        self.prompt_version = prompt_version
         self.llm_client = llm_client
         self.retriever = retriever or DualVectorRetriever(persist_directory, embedding_function)
         self.observability = observability or NoopObservabilityClient()
@@ -87,6 +90,8 @@ class RagClassifier:
                     taxonomy_n=self.taxonomy_k,
                     authoritative_n=self.definition_k,
                     example_n=self.example_k,
+                    pinned_taxonomy_ids=PINNED_TAXONOMY_IDS.get(self.prompt_version, ()),
+                    authoritative_slots=AUTHORITATIVE_SLOTS.get(self.prompt_version, ()),
                 )
             except RetryCancelled as exc:
                 raise WorkerShutdownRequested from exc
@@ -119,6 +124,7 @@ class RagClassifier:
             taxonomy_context=[_definition_document(result) for result in taxonomy],
             authoritative_context=[_definition_document(result) for result in authoritative],
             example_context=[_example_document(result) for result in examples],
+            prompt_version=self.prompt_version,
         )
 
         last_validation = ValidationResult(valid=False, errors=("not_attempted",))
@@ -130,7 +136,7 @@ class RagClassifier:
                 "rag.classification",
                 as_type="generation",
                 input_value=prompt,
-                metadata={"prompt_version": PROMPT_VERSION, "attempt": attempt},
+                metadata={"prompt_version": self.prompt_version, "attempt": attempt},
                 model=self.llm_client.model,
             ):
                 try:
@@ -150,7 +156,7 @@ class RagClassifier:
             if validation.valid and payload is not None:
                 return ClassificationResult(
                     payload=payload,
-                    prompt_version=PROMPT_VERSION,
+                    prompt_version=self.prompt_version,
                     model=response.model,
                     usage=response.usage,
                     validation=validation,

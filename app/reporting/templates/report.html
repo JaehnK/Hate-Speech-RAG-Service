@@ -95,7 +95,7 @@
           <strong>기록된 유사 사례 인용</strong>
           {% if result.similar_cases_used %}<ul>{% for item in result.similar_cases_used %}<li><code>{{ item.doc_id or "문서 ID 없음" }}</code> {{ item.source_dataset or "출처 미기록" }}{% if item.mapped_categories %} · {{ item.mapped_categories|map("category")|join(", ") }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="muted">인용된 유사 사례가 없습니다.</p>{% endif %}
           <strong>기록된 정의 문서 인용</strong>
-          {% if result.definition_docs_used %}<ul>{% for item in result.definition_docs_used %}<li><code>{{ item.doc_id or "문서 ID 없음" }}</code> {{ "HateScope 내부 분류 기준" if item.source_id == "internal_taxonomy" else (item.source_id or "출처 미기록") }}</li>{% endfor %}</ul>{% else %}<p class="muted">인용된 정의 문서가 없습니다.</p>{% endif %}
+          {% if result.definition_docs_used %}<ul>{% for raw in result.definition_docs_used %}{% set item = raw|citation %}<li>{% if item.title %}<strong>{{ item.title }}</strong> · {{ item.section }}{% if item.source_label %} <span class="muted">({{ item.source_label }})</span>{% endif %}{% if item.source_url %} <a href="{{ item.source_url }}" rel="noopener noreferrer">원문</a>{% endif %}{% else %}<code>{{ item.doc_id or "문서 ID 없음" }}</code> {{ item.source_label or item.source_id or "출처 미기록" }}{% endif %}</li>{% endfor %}</ul>{% else %}<p class="muted">인용된 정의 문서가 없습니다.</p>{% endif %}
           <aside>문서 ID는 분류 결과에 기록된 참고 항목입니다. 현재 결과에서는 검색 후보와의 완전한 대조를 보증하지 않으며, 유사 사례는 최종 판단이나 법적 근거가 아닌 비교 자료입니다.</aside>
         </div>
       </details>

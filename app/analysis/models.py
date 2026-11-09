@@ -72,6 +72,7 @@ class ExampleSearchResult:
     mapped_categories: tuple[str, ...]
     is_hate_speech: bool
     distance: float | None
+    target_labels: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

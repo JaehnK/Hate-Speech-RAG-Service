@@ -146,6 +146,7 @@ def parse_example_query_result(result: dict[str, Any]) -> list[ExampleSearchResu
                 mapped_categories=tuple(json.loads(str(metadata["mapped_categories"]))),
                 is_hate_speech=_metadata_bool(metadata["is_hate_speech"]),
                 distance=distances[index] if distances else None,
+                target_labels=tuple(json.loads(str(metadata.get("target_labels") or "[]"))),
             )
         )
     return search_results
@@ -173,8 +174,11 @@ def _collection_names(client: Any) -> set[str]:
     return {str(getattr(collection, "name", collection)) for collection in client.list_collections()}
 
 
-def _definition_metadata(document: DefinitionDocument) -> dict[str, str]:
+def _definition_metadata(document: DefinitionDocument) -> dict[str, str | bool]:
+    # One boolean per related category so retrieval can filter by category.
+    category_flags = {f"cat_{category}": True for category in document.related_categories}
     return {
+        **category_flags,
         "doc_id": document.doc_id,
         "source_id": document.source_id,
         "source_title": document.source_title,

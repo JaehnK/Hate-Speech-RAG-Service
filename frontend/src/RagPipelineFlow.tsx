@@ -18,7 +18,7 @@ const NODES: FlowNode[] = [
   { id: "embed", type: "process", x: 50, y: 320, width: 150, height: 62, title: "의미 벡터 변환", detail: "검색 질의 구성" },
   { id: "examples", type: "store", x: 240, y: 220, width: 160, height: 68, title: "유사 사례", detail: "경험적 근거" },
   { id: "taxonomy", type: "store", x: 240, y: 335, width: 160, height: 68, title: "분류 체계", detail: "범주 경계" },
-  { id: "authoritative", type: "store", x: 240, y: 450, width: 160, height: 68, title: "공식 기준", detail: "권위 근거" },
+  { id: "authoritative", type: "store", x: 240, y: 450, width: 160, height: 68, title: "규범 기준", detail: "법령·인권위·정책" },
   { id: "similarity", type: "decision", x: 430, y: 210, width: 150, height: 96, title: "관련성 확인", detail: "사례 선별" },
   { id: "evidence", type: "merge", x: 610, y: 310, width: 90, height: 90, title: "근거", detail: "결합" },
   { id: "prompt", type: "process", x: 735, y: 326, width: 140, height: 60, title: "판정 문맥 구성", detail: "입력 + 검색 근거" },
@@ -54,7 +54,7 @@ export function RagPipelineFlow() {
       <div className="rag-flow-scroll" tabIndex={0} aria-label="RAG 호출 흐름도, 좁은 화면에서는 좌우로 이동할 수 있습니다">
         <svg className="rag-flowchart" viewBox="0 0 1200 835" role="img" aria-labelledby="rag-flow-title rag-flow-desc">
           <title id="rag-flow-title">YouTube 혐오표현 Three-Vector RAG 호출 흐름</title>
-          <desc id="rag-flow-desc">비동기 분석 작업 접수부터 병렬 item 처리, 분류 체계·공식 기준·유사 사례 검색, 유사도 분기, JSON 검증과 교정 재시도, 결과 집계와 보고서 생성까지의 흐름</desc>
+          <desc id="rag-flow-desc">비동기 분석 작업 접수부터 병렬 item 처리, 분류 체계·규범 기준 문서·유사 사례 검색, 유사도 분기, JSON 검증과 교정 재시도, 결과 집계와 보고서 생성까지의 흐름</desc>
           <defs>
             <marker id="rag-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" />

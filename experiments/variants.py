@@ -30,6 +30,13 @@ VARIANTS: dict[str, ExperimentVariant] = {
         definition_k=0,
         example_k=6,
     ),
+    # Ablation: drop the authoritative (dataset documentation) store.
+    "taxonomy_examples": ExperimentVariant(
+        name="taxonomy_examples",
+        taxonomy_k=4,
+        definition_k=0,
+        example_k=6,
+    ),
     "three_vector_rag": ExperimentVariant(
         name="three_vector_rag",
         taxonomy_k=4,
