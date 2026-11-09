@@ -32,18 +32,18 @@ Level B는 공격적 댓글의 표적 유형을 네 가지로 나눈다. 첫째,
 
 KOLD 통계에서 공격적 댓글 20,130개 가운데 UNT는 2,596개이고, 표적이 있는 공격 중에서는 GRP가 70.1%로 가장 많고 IND가 22.0%로 뒤를 잇는다.
 
-서비스 category와 맞춰 보면 UNT는 `no_target`(욕설이면 `profanity` 병기)에, IND는 대상 개인의 지위와 공격 방식에 따라 `profanity` 또는 정치 표적 category에, OTH의 조직·기업 표적은 정당·언론·기업을 포함하는 `non_state_authority` 등에 대응할 수 있다.
+서비스 category와 맞춰 보면 UNT는 `no_target`(욕설이면 `profanity` 병기)에, IND는 대상 개인이 정치인이면 정치 표적 category에, 그렇지 않으면 `profanity`에, OTH의 조직·기업 표적은 정당·언론·기업을 포함하는 `non_state_authority` 등에 대응할 수 있다.
 
 분류 시 시사점: 표적 유형이 무엇이든 공격성이 있으면 혐오로 판정하고, UNT는 `no_target`, GRP는 Level C 속성에 맞는 category로 옮기며 개인·조직 표적은 실제 공격받는 단위에 따라 category를 고른다.
 
 ## Level C: 표적 집단 속성과 세부 집단
 tags: target_group, protected_attribute, korean_context, multi_group
-categories: gender, identity, age, non_state_community, other
+categories: gender, identity, age, non_state_community, profanity
 level: label_scheme
 
 Level C는 GRP로 분류된 댓글의 구체적 표적을 두 단계로 정한다. 상위는 표적 집단 속성, 하위는 표적 집단이다. 논문 부록 표에 실린 구성은 다음과 같다. 성별 및 성적 지향(LGBTQ+, 남성, 여성), 인종·민족·국적(아시아인, 흑인, 중국인, 인도인, 조선족, 동남아시아인, 백인), 정치 성향(보수, 진보), 종교(불교, 천주교, 기독교, 이슬람), 기타(연령차별, 장애인, 질병, 페미니스트, 외모, 사회경제적 지위)다. 중국인·조선족·인도인은 초기 1,000개 표본 분석에서 비중이 커서 한국 맥락에 맞게 추가했다. 한 댓글이 여러 집단을 겨냥하면 복수 집단을 붙일 수 있는데, 논문은 페미니스트 여성을 비하하는 멸칭이 여성과 페미니스트 두 집단을 동시에 겨냥하는 예를 든다. 페미니스트는 성별의 하위가 아니라 이념을 공유하는 집단으로 보아 기타에 넣었다.
 
-서비스 category로 옮기면 남성·여성은 `gender`, LGBTQ+는 `identity`, 인종·민족·국적과 종교, 장애인은 `identity`, 연령차별은 `age`, 보수·진보 지지 집단은 이념 집단이므로 `non_state_community`에 대응한다. 외모·사회경제적 지위·질병은 서비스 taxonomy에 정의되지 않은 속성이므로 `other` 후보다.
+서비스 category로 옮기면 남성·여성은 `gender`, LGBTQ+는 `identity`, 인종·민족·국적과 종교, 장애인은 `identity`, 연령차별은 `age`, 보수·진보 지지 집단은 이념 집단이므로 `non_state_community`에 대응한다. 외모·사회경제적 지위·질병은 서비스 taxonomy에 정의되지 않은 속성이므로 `profanity` 후보다.
 
 분류 시 시사점: 한 댓글이 성별과 이념을 함께 겨냥하면 복수 category를 허용하는 KOLD 방식처럼 `gender`와 `non_state_community`를 각각의 근거가 있을 때 함께 선택한다.
 

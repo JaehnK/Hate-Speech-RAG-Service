@@ -24,7 +24,7 @@ level: incitement
 
 ## 제44조의7 제1항 제2호: 명예훼손 정보의 범위
 tags: defamation, individual_target, illegal_information
-categories: other
+categories: profanity
 level: context_rule
 
 사람을 비방할 목적으로 공공연하게 거짓의 사실을 드러내어 타인의 명예를 훼손하는 내용의 정보는 불법정보다(제1항 제2호). 2026년 1월 개정으로 사실을 드러낸 명예훼손은 불법정보에서 빠지고, 거짓 사실 적시만 남았다. 같은 개정에서 제2항은 허위조작정보 유통을 금지하면서 풍자와 패러디는 제외한다고 정했다.

@@ -25,14 +25,14 @@ level: context_rule
 
 ## 제8조 제3호 바목: 차별·편견 조장
 tags: protected_attribute, discrimination, prejudice
-categories: gender, age, identity, other
+categories: gender, age, identity, profanity
 level: group_hate
 
 제8조(선량한 풍속 기타 사회질서 위반 등) 선량한 풍속 기타 사회질서를 현저히 해할 우려가 있는 내용의 다음 각 호의 정보를 유통하여서는 아니 된다.
 3. 사회통합 및 사회질서를 저해하는 다음 각목의 정보
 바. 합리적 이유없이 성별, 종교, 장애, 나이, 사회적 신분, 출신, 인종, 지역, 직업 등을 차별하거나 이에 대한 편견을 조장하는 내용
 
-분류 시 시사점: 방송미디어통신심의위원회 심의에서 혐오표현의 주된 근거 조항이다. 성별·종교·장애·나이·출신·인종·지역·직업을 이유로 차별하거나 편견을 조장하면 집단 혐오로 본다. 직업 집단에 대한 공격은 이 서비스에서 `other`로 분류한다.
+분류 시 시사점: 방송미디어통신심의위원회 심의에서 혐오표현의 주된 근거 조항이다. 성별·종교·장애·나이·출신·인종·지역·직업을 이유로 차별하거나 편견을 조장하면 집단 혐오로 본다. 직업 집단에 대한 공격은 이 서비스에서 `profanity`로 분류한다.
 
 ## 제8조 제3호 다목·라목: 종교 조롱, 소외계층 비하
 tags: religion, disability, elderly, mockery, demeaning
@@ -57,13 +57,13 @@ level: offensive
 
 ## 제8조 제4호 다목: 모욕·명예훼손
 tags: insult, defamation, individual_target
-categories: profanity, other
+categories: profanity
 level: offensive
 
 제8조 제4호(타인의 권리를 침해하는 정보)
 다. 사람을 비방할 목적으로 공공연하게 타인을 모욕하거나 사실 또는 거짓의 사실을 드러내어 타인의 명예를 훼손하는 내용의 정보
 
-분류 시 시사점: 특정 개인을 공개적으로 모욕하는 표현도 심의 대상이다. 이 서비스는 집단 혐오와 함께 개인을 향한 모욕·조롱도 혐오·공격 표현으로 본다. 정치인이 아닌 개인(연예인·일반인)에 대한 모욕은 `other`, 욕설이 있으면 `profanity`를 함께 쓴다.
+분류 시 시사점: 특정 개인을 공개적으로 모욕하는 표현도 심의 대상이다. 이 서비스는 집단 혐오와 함께 개인을 향한 모욕·조롱도 혐오·공격 표현으로 본다. 정치인이 아닌 개인(연예인·일반인)에 대한 모욕은 욕설 여부와 상관없이 `profanity`로 분류한다.
 
 ## 제8조 제2호 가목: 사회적 약자에 대한 폭력 묘사
 tags: violence, vulnerable_group, threat

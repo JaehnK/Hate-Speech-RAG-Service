@@ -20,7 +20,7 @@ import yaml
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.license_policy import COMMERCIAL_OK, NONCOMMERCIAL_RESEARCH
 from app.analysis.models import DefinitionDocument
-from app.analysis.taxonomy import ALLOWED_CATEGORIES, DEFAULT_DEFINITION_CORPUS_VERSION
+from app.analysis.taxonomy import CATEGORY_CODES, DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, ingest_definition_documents
 
 DEFAULT_CORPUS_DIR = "data/normative"
@@ -139,7 +139,7 @@ def _parse_chunk(path: Path, heading: str, rest: str) -> NormativeChunk:
     if level not in LEVELS:
         raise NormativeCorpusError(f"{path} [{heading}]: unknown level {level!r}")
     categories = tuple(item.strip() for item in fields.get("categories", "").split(",") if item.strip())
-    unknown = [category for category in categories if category not in ALLOWED_CATEGORIES]
+    unknown = [category for category in categories if category not in CATEGORY_CODES]
     if unknown:
         raise NormativeCorpusError(f"{path} [{heading}]: unknown categories {unknown}")
     if len(body) < 80:

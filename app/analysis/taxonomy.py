@@ -6,8 +6,8 @@ from hashlib import sha256
 from app.analysis.models import DefinitionDocument
 
 
-TAXONOMY_VERSION = "v0.4.0"
-DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-09-v0.4"
+TAXONOMY_VERSION = "v0.5.0"
+DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-09-v0.5"
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "gender",
@@ -24,6 +24,12 @@ ALLOWED_CATEGORIES: tuple[str, ...] = (
     "other",
     "unclassified",
 )
+
+# taxonomy v0.5.0 folds `other` into `profanity` ("욕설·모욕·기타 공격"). New prompt
+# versions offer only these codes; ALLOWED_CATEGORIES keeps `other` so stored results and
+# the production prompt (v0.3.1) stay valid.
+CATEGORY_CODES: tuple[str, ...] = tuple(code for code in ALLOWED_CATEGORIES if code != "other")
+MERGED_CATEGORIES: dict[str, str] = {"other": "profanity"}
 
 POLITICAL_CATEGORIES: tuple[str, ...] = (
     "state_authority",
@@ -75,11 +81,20 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
         retrieval_tags=("protected_attribute", "race", "nationality", "religion", "disability", "sexual_identity"),
     ),
     "profanity": CategoryCard(
-        name="욕설·모욕적 호칭",
-        definition="대상에게 직접 향하는 욕설, 비속어, 외설적 모욕 또는 모욕적 호칭이라는 표현 방식.",
-        include=("사람·집단을 직접 부르는 욕설·멸칭", "다른 category 공격을 강화하는 노골적 비속어", "대상 없는 강한 욕설 자체가 분석 대상인 경우"),
-        exclude=("보도·교육·비판 목적으로 욕설을 인용하고 동조하지 않는 경우", "대상을 공격하지 않는 단순 감탄·강조", "불쾌하지만 욕설·비속어에 해당하지 않는 의견"),
-        boundary="표적 category와 함께 복수 선택할 수 있고, 식별 가능한 표적이 전혀 없으면 no_target을 함께 사용한다.",
+        name="욕설·모욕·기타 공격",
+        definition=(
+            "사람이나 집단을 향한 욕설, 비속어, 모욕, 조롱, 비꼼, 모욕적 별명. 다른 category에 맞지 않는 대상"
+            "(연예인·일반인 같은 특정 개인, 직업·외모·경제적 지위 집단)에 대한 공격도 여기에 포함한다."
+        ),
+        include=(
+            "사람·집단을 직접 부르는 욕설·멸칭",
+            "욕설이 없어도 특정 개인을 깎아내리는 조롱·비꼼·모욕",
+            "직업·외모·경제적 지위 등 다른 category에 없는 집단에 대한 공격",
+            "다른 category 공격을 강화하는 노골적 비속어",
+            "대상 없는 강한 욕설(no_target과 함께)",
+        ),
+        exclude=("보도·교육·비판 목적으로 욕설을 인용하고 동조하지 않는 경우", "누구도 겨냥하지 않은 가벼운 감탄·강조", "모욕 없는 행동·결정 비판"),
+        boundary="표적 category와 함께 복수 선택할 수 있다. 표적이 성별·연령·출신·정치 등 다른 category로 설명되면 그 category를 먼저 고르고, 욕설·모욕이 있으면 profanity를 함께 쓴다. 식별 가능한 표적이 전혀 없으면 no_target을 함께 사용한다.",
         cues=("직접 욕설, 외설적 비유, 모욕적 별칭", "2인칭·집단명과 욕설의 결합"),
         retrieval_tags=("expression_form", "insult"),
     ),
@@ -147,7 +162,7 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
         retrieval_tags=("fallback", "target_rule"),
     ),
     "other": CategoryCard(
-        name="기타 대상 공격",
+        name="기타 대상 공격 (이전 분류)",
         definition="판정 기준은 충족하지만 다른 category에 맞지 않는 대상을 공격하는 경우. 직업·외모·경제적 지위 집단이나, 정치인이 아닌 특정 개인(연예인·일반인 등)에 대한 모욕·조롱이 여기에 해당한다.",
         include=("직업·외모·경제적 지위·취향 등 미정의 속성 집단에 대한 공격", "정치인이 아닌 특정 개인에 대한 모욕·조롱·비꼼", "분명한 표적과 공격이 있으나 정치 2축이나 보호 속성에 해당하지 않음", "새로운 유형이라 taxonomy 확장 검토가 필요한 사례"),
         exclude=("기존 category로 설명 가능한 사례", "표적이 없는 경우", "비혐오·단순 비판·판단 불확실 사례"),
@@ -178,10 +193,10 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:allowed_categories:0",
             tags=("taxonomy", "allowed_categories"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "MVP categories are: "
-                + ", ".join(ALLOWED_CATEGORIES)
+                + ", ".join(CATEGORY_CODES)
                 + ". Choose only these category codes."
             ),
             corpus_version=corpus_version,
@@ -189,7 +204,7 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:hate_threshold:0",
             tags=("taxonomy", "hate_threshold", "decision_rule"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "혐오·공격 판정 기준: 이 서비스는 집단에 대한 혐오와 사람을 향한 공격적 표현을 모두 "
                 "is_hate_speech=true로 본다. (1) 집단 혐오: 성별·연령·출신·인종·종교·장애·정치 성향 등을 이유로 "
@@ -212,16 +227,6 @@ def build_internal_taxonomy_documents(
             corpus_version=corpus_version,
         ),
         _doc(
-            doc_id="taxonomy:other_rule:0",
-            tags=("taxonomy", "other_rule"),
-            related_categories=("other",),
-            chunk_text=(
-                "other는 혐오표현으로 판단되지만 구체 카테고리에 넣을 수 없을 때만 "
-                "사용하며, 다른 category와 함께 사용할 수 없다."
-            ),
-            corpus_version=corpus_version,
-        ),
-        _doc(
             doc_id="taxonomy:political_axis:0",
             tags=("taxonomy", "political_axis", "political_category"),
             related_categories=POLITICAL_CATEGORIES,
@@ -237,7 +242,7 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:context_exception:0",
             tags=("taxonomy", "context_rule", "quotation", "satire"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "문맥 예외: 뉴스 보도, 연구·교육, 반박·비판 목적으로 혐오표현을 인용하고 화자가 동조하지 않으면 "
                 "인용된 욕설만으로 혐오로 판정하지 않는다. 풍자·반어는 문자 그대로만 읽지 말고 실제 공격 대상과 "
@@ -248,18 +253,18 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:multi_label_rule:0",
             tags=("taxonomy", "multi_label", "conflict_rule"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "복수 category는 서로 다른 근거가 각각 명시될 때만 선택한다. profanity는 공격 방식이므로 target category와 "
                 "함께 사용할 수 있다. 보호 속성이 둘 이상이면 해당 category를 함께 선택할 수 있다. 같은 정치 표적을 "
-                "authority와 community로 중복 선택하지 말고 실제 표적 단위를 우선한다. other와 unclassified는 항상 단독이다."
+                "authority와 community로 중복 선택하지 말고 실제 표적 단위를 우선한다. unclassified는 항상 단독이다."
             ),
             corpus_version=corpus_version,
         ),
         _doc(
             doc_id="taxonomy:hate_type:0",
             tags=("taxonomy", "hate_type", "output_rule"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "hate_type은 표현 방식을 한국어로 요약한다. 권장 유형은 모욕·비하, 집단 일반화, 비인간화, "
                 "배제·차별, 위협·폭력, 제거·억압 선동, 욕설이다. 여러 방식이 함께 있으면 핵심 1~2개를 "
@@ -270,7 +275,7 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:target_group:0",
             tags=("taxonomy", "target_group", "output_rule"),
-            related_categories=ALLOWED_CATEGORIES,
+            related_categories=CATEGORY_CODES,
             chunk_text=(
                 "target_group은 원문에서 공격받는 사람·집단·기관·제도명을 간결한 한국어 명사구로 기록한다. "
                 "욕설을 제거하고 원문보다 넓은 집단으로 일반화하지 않는다. 대명사는 item 문맥에서 선행 대상이 "
@@ -281,17 +286,17 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="conflict:exclusive_categories:0",
             tags=("taxonomy", "conflict_rule"),
-            related_categories=("other", "unclassified"),
+            related_categories=("profanity", "no_target", "unclassified"),
             chunk_text=(
-                "unclassified는 비혐오에만 단독 사용한다. other는 혐오표현이지만 구체 category로 분류할 수 없을 때 "
-                "단독 사용한다. no_target은 표적이 없을 때만 사용하고 profanity 외 target category와 함께 사용할 수 없으며 "
-                "target_group은 null이어야 한다."
+                "unclassified는 비혐오에만 단독 사용한다. 다른 category로 설명되지 않는 대상(특정 개인, 직업·외모 집단 등)에 "
+                "대한 공격은 profanity로 기록한다. no_target은 표적이 없을 때만 사용하고 profanity 외 target category와 함께 "
+                "사용할 수 없으며 target_group은 null이어야 한다."
             ),
             corpus_version=corpus_version,
         ),
     ]
 
-    for category in ALLOWED_CATEGORIES:
+    for category in CATEGORY_CODES:
         card = CATEGORY_CARDS[category]
         documents.append(
             _doc(

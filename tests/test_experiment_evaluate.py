@@ -103,3 +103,23 @@ def test_evaluate_scores_political_family_against_coarse_gold() -> None:
 
     assert summary["per_category"]["political"]["f1"] == 1
     assert summary["per_category"]["other"]["f1"] == 1
+
+
+def test_merge_categories_scores_other_as_profanity() -> None:
+    from experiments.evaluate_results import evaluate
+
+    gold = [{"item_id": "a", "is_hate_speech": True, "categories": ["other"]},
+            {"item_id": "b", "is_hate_speech": True, "categories": ["gender"]}]
+    rows = [
+        {"item_id": "a", "variant": "v", "status": "succeeded", "repeat_index": 0,
+         "payload": {"is_hate_speech": True, "categories": ["profanity"]}},
+        {"item_id": "b", "variant": "v", "status": "succeeded", "repeat_index": 0,
+         "payload": {"is_hate_speech": True, "categories": ["gender"]}},
+    ]
+
+    [plain] = evaluate(rows, gold, reference_variant="v", bootstrap_samples=0)
+    [merged] = evaluate(rows, gold, reference_variant="v", bootstrap_samples=0, merge_categories={"other": "profanity"})
+
+    assert plain["category_micro_f1"] < 1.0
+    assert merged["category_micro_f1"] == 1.0
+    assert "other" not in merged["per_category"]

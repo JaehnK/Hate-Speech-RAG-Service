@@ -13,7 +13,7 @@ from collections import Counter
 from collections.abc import Iterable
 
 from app.analysis.models import ExampleSearchResult
-from app.analysis.taxonomy import POLITICAL_CATEGORIES
+from app.analysis.taxonomy import MERGED_CATEGORIES, POLITICAL_CATEGORIES
 
 MIN_VOTES = 2
 
@@ -24,7 +24,7 @@ def guided_categories(examples: Iterable[ExampleSearchResult], min_votes: int = 
     for example in examples:
         if not example.is_hate_speech:
             continue
-        categories = set(example.mapped_categories) - {"unclassified"}
+        categories = {MERGED_CATEGORIES.get(c, c) for c in example.mapped_categories} - {"unclassified"}
         if "political" in example.target_labels:
             # The corpus cannot tell which of the six political categories applies.
             categories |= set(POLITICAL_CATEGORIES)

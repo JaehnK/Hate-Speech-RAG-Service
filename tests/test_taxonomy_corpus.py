@@ -1,15 +1,17 @@
-from app.analysis.taxonomy import ALLOWED_CATEGORIES, CATEGORY_CARDS, build_internal_taxonomy_documents
+from app.analysis.taxonomy import ALLOWED_CATEGORIES, CATEGORY_CARDS, CATEGORY_CODES, build_internal_taxonomy_documents
 
 
 def test_internal_taxonomy_has_required_cards() -> None:
     documents = build_internal_taxonomy_documents()
     doc_ids = {doc.doc_id for doc in documents}
 
-    assert len(documents) == 10 + len(ALLOWED_CATEGORIES)
+    # taxonomy v0.5.0: 9 rule documents + one card per current category (`other` folded into profanity)
+    assert len(documents) == 9 + len(CATEGORY_CODES)
     assert "taxonomy:allowed_categories:0" in doc_ids
     assert "taxonomy:hate_threshold:0" in doc_ids
     assert "taxonomy:non_hate_rule:0" in doc_ids
-    assert "taxonomy:other_rule:0" in doc_ids
+    assert "taxonomy:other_rule:0" not in doc_ids
+    assert "category:other:0" not in doc_ids
     assert "taxonomy:political_axis:0" in doc_ids
     assert "taxonomy:context_exception:0" in doc_ids
     assert "taxonomy:multi_label_rule:0" in doc_ids
@@ -22,15 +24,16 @@ def test_internal_taxonomy_has_category_card_for_each_allowed_category() -> None
     documents = build_internal_taxonomy_documents()
     doc_ids = {doc.doc_id for doc in documents}
 
-    for category in ALLOWED_CATEGORIES:
+    for category in CATEGORY_CODES:
         assert f"category:{category}:0" in doc_ids
 
 
 def test_category_cards_publish_inclusion_exclusion_and_boundaries() -> None:
     documents = build_internal_taxonomy_documents()
 
+    # The legacy `other` card stays for display of stored results only.
     assert set(CATEGORY_CARDS) == set(ALLOWED_CATEGORIES)
-    for category in ALLOWED_CATEGORIES:
+    for category in CATEGORY_CODES:
         definition = CATEGORY_CARDS[category]
         card = next(doc for doc in documents if doc.doc_id == f"category:{category}:0")
         assert definition.include

@@ -4,7 +4,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   gender: "성별 비하",
   age: "연령 비하",
   identity: "출신·인종·종교·장애 등 비하",
-  profanity: "욕설·모욕적 호칭",
+  profanity: "욕설·모욕·기타 공격",
   state_authority: "정부·공직자 공격",
   non_state_authority: "정당·정치인·언론 공격",
   state_regime: "법·제도 공격",
@@ -12,7 +12,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   state_community: "국민 전체 비하",
   non_state_community: "지지층·진영 비하",
   no_target: "대상 없는 욕설",
-  other: "기타 대상 공격",
+  other: "기타 대상 공격 (이전 분류)",
   unclassified: "혐오 아님",
 };
 

@@ -38,16 +38,16 @@ level: label_scheme
 
 ## 세부 라벨 정의 2: 외모·연령·성별
 tags: physical, appearance, disability, age, gender, sexual_orientation
-categories: gender, age, identity, other
+categories: gender, age, identity, profanity
 level: label_scheme
 
 Physical은 신체나 얼굴 같은 외모, 또는 장애를 근거로 한 혐오 표현이다. Age는 연령을 근거로 한 혐오 표현이다. Gender는 성별이나 성적 지향을 근거로 한 혐오 표현으로, 지침은 여성과 동성애자를 예로 든다. 지침은 경계 판단의 예도 제시한다. "여성"이라는 단어를 쓰는 것만으로는 혐오가 아니지만, 여성을 비난하거나 집단을 공격하는 언어를 쓰면 Gender로 분류한다.
 
-이 정의들은 서비스 category와 일대일로 맞지 않는 부분이 있다. K-MHaS의 Gender는 성별과 성적 지향을 함께 묶지만, 서비스는 성별 집단 공격은 `gender`, 성적 지향·성소수자 공격은 `identity`로 나눈다. Physical도 외모와 장애를 함께 묶는데, 서비스에서는 장애가 `identity`에 속하고 외모는 정의된 속성이 아니라 `other` 후보다. Age는 `age`와 그대로 대응한다.
+이 정의들은 서비스 category와 일대일로 맞지 않는 부분이 있다. K-MHaS의 Gender는 성별과 성적 지향을 함께 묶지만, 서비스는 성별 집단 공격은 `gender`, 성적 지향·성소수자 공격은 `identity`로 나눈다. Physical도 외모와 장애를 함께 묶는데, 서비스에서는 장애가 `identity`에 속하고 외모는 정의된 속성이 아니라 `profanity` 후보다. Age는 `age`와 그대로 대응한다.
 
 논문은 Gender 범주 댓글이 상대적으로 길다는 분석도 제시하며, 성별 기반 혐오가 폭넓게 쓰인다고 해석한다.
 
-분류 시 시사점: 단어 언급만으로 판정하지 않고 집단을 비난·공격할 때만 해당 category를 붙이며, K-MHaS의 Gender·Physical 사례를 참고할 때는 성적 지향·장애를 `identity`로, 외모를 `other`로 분리한다.
+분류 시 시사점: 단어 언급만으로 판정하지 않고 집단을 비난·공격할 때만 해당 category를 붙이며, K-MHaS의 Gender·Physical 사례를 참고할 때는 성적 지향·장애를 `identity`로, 외모를 `profanity`로 분리한다.
 
 ## 세부 라벨 정의 3: Profanity(혐오욕설)
 tags: profanity, swearing, residual_category, multi_label
@@ -58,6 +58,6 @@ Profanity는 욕하기, 저주, 음란한 말, 비속어 형태의 혐오 표현
 
 라벨 분포에서 Profanity는 단일 라벨과 다중 라벨 모두에서 가장 많은 범주이며, 저자들은 이를 욕설이 혐오 표현 탐지에 핵심적이라는 신호로 해석한다. 상위 라벨 조합에도 Profanity와 Politics, Profanity와 Physical, Profanity와 Origin 등이 올라 있다.
 
-이 구조는 서비스의 `profanity`가 공격 방식 category로서 표적 category와 함께 쓰인다는 설계와 같다. 다만 K-MHaS는 "다른 범주로 특정할 수 없는 혐오"까지 Profanity에 넣으므로, 서비스에서는 욕설이 없는 미분류 공격이라면 `profanity`가 아니라 `other`를 검토해야 한다.
+이 구조는 서비스의 `profanity`가 공격 방식 category로서 표적 category와 함께 쓰인다는 설계와 같다. K-MHaS는 "다른 범주로 특정할 수 없는 혐오"까지 Profanity에 넣는데, 서비스의 `profanity`도 다른 category에 맞지 않는 공격을 함께 포함하므로 같은 방식이다.
 
-분류 시 시사점: 욕설·비속어가 표적 공격을 강화하면 표적 category와 `profanity`를 함께 붙이고, 표적 없는 단독 욕설은 `profanity`와 `no_target`을 함께 쓰며, 욕설 없는 잔여 공격은 `other`로 보낸다.
+분류 시 시사점: 욕설·비속어가 표적 공격을 강화하면 표적 category와 `profanity`를 함께 붙이고, 표적 없는 단독 욕설은 `profanity`와 `no_target`을 함께 쓰며, 다른 category에 맞지 않는 잔여 공격도 `profanity`로 보낸다.

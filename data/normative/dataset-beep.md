@@ -34,7 +34,7 @@ level: label_scheme
 
 즉 BEEP!의 hate는 보호 속성 기반 증오와 속성과 무관한 심한 개인 모욕을 함께 포함한다. 이는 집단 혐오와 개인 대상 모욕을 모두 혐오로 보는 이 서비스와 같은 방향이다.
 
-분류 시 시사점: 속성 기반 증오는 해당 속성 category(성별 `gender`, 연령 `age`, 종교·장애·민족·국적·성적 지향 `identity`)로, 속성과 무관한 심한 모욕은 `profanity` 또는 `other`로 분류하되 욕설 단어 존재만으로 판정하지 않는다.
+분류 시 시사점: 속성 기반 증오는 해당 속성 category(성별 `gender`, 연령 `age`, 종교·장애·민족·국적·성적 지향 `identity`)로, 속성과 무관한 모욕은 `profanity`로 분류하되 욕설 단어 존재만으로 판정하지 않는다.
 
 ## 혐오 표현 축: offensive와 none의 경계
 tags: offensive_definition, sarcasm, rudeness, borderline
@@ -60,4 +60,4 @@ level: label_scheme
 
 편견 라벨은 혐오 정도와 별개의 축이다. 편견이 있어도 표현이 정중하면 none일 수 있고, 편견 없이 욕설만 있는 hate도 있다. 서비스에서는 편견이 드러나는 속성이 category 선택의 근거가 된다.
 
-분류 시 시사점: 성역할 고정관념은 `gender`, 성적 지향·성 정체성은 `identity`로 나누고, others 계열은 속성에 따라 `identity`·`age`·정치 category·`other`로 옮기되 편견 표현만으로는 혐오 여부를 확정하지 않고 판정 문턱을 따로 확인한다.
+분류 시 시사점: 성역할 고정관념은 `gender`, 성적 지향·성 정체성은 `identity`로 나누고, others 계열은 속성에 따라 `identity`·`age`·정치 category·`profanity`로 옮기되 편견 표현만으로는 혐오 여부를 확정하지 않고 판정 문턱을 따로 확인한다.

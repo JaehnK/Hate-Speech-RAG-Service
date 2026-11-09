@@ -38,14 +38,14 @@ HuggingFace 공개본의 라벨 문자열은 `normal`, `offensive`, `L1_hate`, `
 
 ## 표적 라벨 목록과 서비스 category 대응
 tags: target_label, protected_attribute, multi_label, label_naming
-categories: gender, age, identity, other
+categories: gender, age, identity, profanity
 level: label_scheme
 
 표적 라벨은 해당 표적 평정이 0보다 크면 붙는 다중 라벨이며, 한 댓글에 최대 9개까지 가능하다. 논문이 제시하는 9개 표적은 성별, 연령, 인종(출신), 종교, 정치, 직업, 장애, 개인, 기타(불특정 대상)다. 부록 지침은 인종 항목을 인종/지역(Race/Region)으로, 정치를 정치 성향으로 적는다. 세부 평정 4개(모욕·욕설·외설·위협)는 표적 라벨에 들어가지 않는다.
 
 라벨 이름은 문서마다 조금씩 다르다. 저장소 README는 gender, age, race, religion, politics, job, disability, individuals, others로 적지만, 로컬에 받은 HuggingFace 공개본의 실제 값은 `gender`, `age`, `region`, `religion`, `political`, `job`, `disabled`, `individual`, `others`다. 즉 공개 데이터에는 race 대신 region이 쓰인다. 공개본에서 가장 많은 표적은 individual, political, region 순이며, 논문도 이 말뭉치의 혐오가 주로 정치와 지역 관련 집단을 겨냥한다고 보고한다.
 
-서비스 category로는 gender는 `gender`, age는 `age`, region(인종·출신 지역)·religion·disabled는 `identity`에 대응한다. job은 서비스가 정의하지 않은 속성이므로 `other` 후보다. political은 서비스의 정치 category가 더 세분되어 있어 지지층, 정당·정치인, 제도 중 실제 표적을 보고 정해야 하고, individual과 others는 표적의 지위에 따라 판단한다.
+서비스 category로는 gender는 `gender`, age는 `age`, region(인종·출신 지역)·religion·disabled는 `identity`에 대응한다. job은 서비스가 정의하지 않은 속성이므로 `profanity` 후보다. political은 서비스의 정치 category가 더 세분되어 있어 지지층, 정당·정치인, 제도 중 실제 표적을 보고 정해야 하고, individual과 others는 표적의 지위에 따라 판단한다.
 
 분류 시 시사점: K-HATERS의 political 사례는 하나의 category로 일괄 매핑하지 말고 공격받는 단위에 따라 `non_state_community`·`non_state_authority` 등으로 나누며, region은 `identity`로 처리한다.
 
