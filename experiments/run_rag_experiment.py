@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import threading
 from threading import BoundedSemaphore
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,10 +31,19 @@ class CachingEmbedding:
     function's name and configuration.
     """
 
-    def __init__(self, inner: Any) -> None:
+    def __init__(self, inner: Any, cache_path: Path | str | None = None) -> None:
         self._inner = inner
+        self._cache_path = Path(cache_path) if cache_path else None
         self._cache: dict[str, list[float]] = {}
+        if self._cache_path and self._cache_path.exists():
+            self._cache = json.loads(self._cache_path.read_text())
         self._lock = threading.Lock()
+
+    def save(self) -> None:
+        """Persist query vectors so reruns over the same inputs skip the embedding API."""
+        if self._cache_path is not None:
+            with self._lock:
+                self._cache_path.write_text(json.dumps(self._cache))
 
     def embed_query(self, input: list[str]) -> list[list[float]]:
         missing = [text for text in input if text not in self._cache]
@@ -76,6 +86,7 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--concurrency", type=int, default=1, help="Parallel classifier slots.")
+    parser.add_argument("--embedding-cache", default=None, help="JSON file of query vectors reused across runs.")
     parser.add_argument("--prompt-version", default=PROMPT_VERSION, choices=list(DECISION_RULES))
     parser.add_argument(
         "--resume",
@@ -102,7 +113,7 @@ def main() -> None:
         gate=BoundedSemaphore(min(settings.rag_embedding_concurrency, args.concurrency)),
         retry_policy=retry_policy,
     )
-    embedding_function = CachingEmbedding(embedding_function)
+    embedding_function = CachingEmbedding(embedding_function, args.embedding_cache)
     llm_client = DryRunLlmClient() if args.dry_run else _build_llm_client(settings, retry_policy)
     observability = build_observability_client(
         LangfuseConfig(
@@ -164,6 +175,7 @@ def main() -> None:
             if count % 50 == 0 or count == len(futures):
                 print(f"{count}/{len(futures)} done, {failed} failed", flush=True)
     observability.flush()
+    embedding_function.save()
     print(f"wrote {len(tasks)} rows to {args.output_path}")
 
 
