@@ -180,3 +180,86 @@ def test_pinned_taxonomy_cards_come_first_without_duplicates() -> None:
     assert [result.doc_id for result in bundle.taxonomy] == ["rule:a", "rule:b", "card:x", "card:y"]
     assert taxonomy.calls[0]["n_results"] == 4
     assert taxonomy.get_calls == 1
+
+
+class SlotCollection(FakeCollection):
+    def query(self, **kwargs):
+        self.calls.append(kwargs)
+        kind = kwargs["where"]["document_type"]
+        return _definition_rows([f"{kind}:{i}" for i in range(kwargs["n_results"])])
+
+
+def test_authoritative_slots_query_each_source_type() -> None:
+    authoritative = SlotCollection()
+    retriever = DualVectorRetriever(
+        "unused",
+        embedding_function=FakeEmbedding(),
+        client=FakeClient(FakeCollection(_definition_result()), authoritative, FakeCollection(_example_result())),
+    )
+
+    bundle = retriever.retrieve(
+        "q",
+        taxonomy_n=0,
+        authoritative_n=4,
+        example_n=0,
+        authoritative_slots=(("official_standard", 2), ("platform_summary", 1), ("dataset_guideline", 0)),
+    )
+
+    assert [result.doc_id for result in bundle.authoritative] == [
+        "official_standard:0",
+        "official_standard:1",
+        "platform_summary:0",
+    ]
+    assert [call["where"] for call in authoritative.calls] == [
+        {"document_type": "official_standard"},
+        {"document_type": "platform_summary"},
+    ]
+
+
+class GuidedSlotCollection(FakeCollection):
+    def __init__(self, guided_hits) -> None:
+        super().__init__()
+        self.guided_hits = guided_hits
+
+    def query(self, **kwargs):
+        self.calls.append(kwargs)
+        where = kwargs["where"]
+        if "$and" in where:
+            ids = self.guided_hits[: kwargs["n_results"]]
+        else:
+            ids = [f"{where['document_type']}:{i}" for i in range(kwargs["n_results"])]
+        return _definition_rows(ids)
+
+
+def test_guided_slot_filters_by_example_categories_and_tops_up() -> None:
+    authoritative = GuidedSlotCollection(guided_hits=["guided:0"])
+    examples = FakeCollection({
+        "ids": [["e1", "e2"]],
+        "documents": [["a", "b"]],
+        "metadatas": [[
+            {"source_dataset": "k", "source_split": "train", "license_tier": "x",
+             "mapped_categories": '["identity"]', "is_hate_speech": True, "target_labels": "[]"},
+            {"source_dataset": "k", "source_split": "train", "license_tier": "x",
+             "mapped_categories": '["identity"]', "is_hate_speech": True, "target_labels": "[]"},
+        ]],
+        "distances": [[0.1, 0.2]],
+    })
+    retriever = DualVectorRetriever(
+        "unused",
+        embedding_function=FakeEmbedding(),
+        client=FakeClient(FakeCollection(_definition_result()), authoritative, examples),
+    )
+
+    bundle = retriever.retrieve(
+        "q", taxonomy_n=0, authoritative_n=3, example_n=2,
+        authoritative_slots=(("official_standard", 2, True), ("international_summary", 1, False)),
+    )
+
+    assert [result.doc_id for result in bundle.authoritative] == [
+        "guided:0",
+        "official_standard:0",
+        "international_summary:0",
+    ]
+    assert authoritative.calls[0]["where"] == {
+        "$and": [{"document_type": "official_standard"}, {"cat_identity": True}]
+    }

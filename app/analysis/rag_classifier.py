@@ -12,7 +12,8 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult, SourceType
 from app.analysis.models import ValidationResult
 from app.analysis.observability import NoopObservabilityClient, ObservabilityClient
-from app.analysis.prompt_template import PINNED_TAXONOMY_IDS, PROMPT_VERSION, build_category_prompt
+from app.analysis.prompt_template import AUTHORITATIVE_SLOTS, PINNED_TAXONOMY_IDS, PROMPT_VERSION
+from app.analysis.prompt_template import build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.retriever import DualVectorRetriever
 from app.analysis.retry import RetryCancelled
@@ -90,6 +91,7 @@ class RagClassifier:
                     authoritative_n=self.definition_k,
                     example_n=self.example_k,
                     pinned_taxonomy_ids=PINNED_TAXONOMY_IDS.get(self.prompt_version, ()),
+                    authoritative_slots=AUTHORITATIVE_SLOTS.get(self.prompt_version, ()),
                 )
             except RetryCancelled as exc:
                 raise WorkerShutdownRequested from exc

@@ -11,6 +11,8 @@ PROMPT_VERSION = "category-rag-v0.3.1"
 PROMPT_V040 = "category-rag-v0.4.0"
 PROMPT_V041 = "category-rag-v0.4.1"
 PROMPT_V050 = "category-rag-v0.5.0"
+PROMPT_V060 = "category-rag-v0.6.0"
+PROMPT_V061 = "category-rag-v0.6.1"
 
 _RULES_V031: tuple[str, ...] = (
     "Do not assume the input is hate speech. Decide hate/non-hate first.",
@@ -50,11 +52,37 @@ DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_V040: _RULES_V040,
     PROMPT_V041: _RULES_V040,
     PROMPT_V050: _RULES_V050,
+    PROMPT_V060: _RULES_V050,
+    PROMPT_V061: _RULES_V050,
 }
 
 # Taxonomy cards included in every prompt for a version, regardless of retrieval rank.
 PINNED_TAXONOMY_IDS: dict[str, tuple[str, ...]] = {
     PROMPT_V050: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+    PROMPT_V060: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+    PROMPT_V061: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+}
+
+# v0.6.0 searches the curated normative corpus (data/normative) one slot per source
+# type instead of taking the top-k of the whole authoritative store.
+AUTHORITATIVE_SLOTS: dict[str, tuple[tuple[str, int], ...]] = {
+    PROMPT_V060: (
+        ("official_standard", 2),
+        ("official_guideline", 1),
+        ("international_summary", 1),
+        ("platform_summary", 1),
+        ("dataset_guideline", 1),
+    ),
+    # v0.6.1: slots marked True are filtered by the categories the similar cases share.
+    # International summaries stay unfiltered (mostly thresholds and assessment factors),
+    # and two dataset slots keep the label documentation that helped profanity.
+    PROMPT_V061: (
+        ("official_standard", 2, True),
+        ("official_guideline", 1, True),
+        ("international_summary", 1, False),
+        ("platform_summary", 1, True),
+        ("dataset_guideline", 2, False),
+    ),
 }
 
 _CONTEXT_RULES_V031: tuple[str, ...] = (
@@ -81,7 +109,22 @@ CONTEXT_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_V040: _CONTEXT_RULES_V031,
     PROMPT_V041: _CONTEXT_RULES_V041,
     PROMPT_V050: _CONTEXT_RULES_V041,
+    PROMPT_V060: (
+        "The decision rule above and taxonomy_context decide whether the text is hate speech and "
+        "which categories apply.",
+        "authoritative_context holds external standards. Each entry's tags start with its source "
+        "type (official_standard: Korean statutes and the KCSC review rules; official_guideline: "
+        "National Human Rights Commission guidance; international_summary; platform_summary; "
+        "dataset_guideline) and its level (incitement, group_hate, offensive, context_rule, "
+        "label_scheme).",
+        "Use authoritative_context to ground the decision and the categories, and list the entries "
+        "that actually support your decision in definition_docs_used. Legal standards usually mark "
+        "only the most severe level; they never narrow the decision rule above.",
+        "Retrieved examples show how comparable texts were labelled; use them as calibration, "
+        "not as a substitute for judging this input.",
+    ),
 }
+CONTEXT_RULES[PROMPT_V061] = CONTEXT_RULES[PROMPT_V060]
 SOURCE_TYPES: tuple[str, ...] = ("comment", "reply", "script_segment")
 
 

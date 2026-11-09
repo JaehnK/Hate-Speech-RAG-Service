@@ -8,6 +8,8 @@ SHAREALIKE_REVIEW = "sharealike_review"
 LICENSE_REVIEW_REQUIRED = "license_review_required"
 PERMISSION_REQUIRED = "permission_required"
 INTERNAL_EVAL_ONLY = "internal_eval_only"
+# Usable in this non-commercial research project; filter out for commercial deployments.
+NONCOMMERCIAL_RESEARCH = "noncommercial_research"
 
 DEFAULT_EXAMPLE_LICENSE_TIERS: tuple[str, ...] = (COMMERCIAL_OK,)
 DEFAULT_DEFINITION_LICENSE_TIERS: tuple[str, ...] = (COMMERCIAL_OK,)
