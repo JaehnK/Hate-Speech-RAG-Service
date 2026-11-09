@@ -1,8 +1,13 @@
 import httpx
 import pytest
 
-from app.analysis.jev_client import JEV_ENDPOINT, JevClient, JevError
+from app.analysis.executor import _classify
+from app.analysis.jev_client import JEV_ENDPOINT, JevClient, JevError, JevScore
+from app.analysis.jev_gate import JEV_FILTERED_STATUS, JevGatedClassifier
+from app.analysis.models import AnalysisItem
 from app.analysis.retry import RetryPolicy
+from app.core.config import Settings
+from app.worker_main import _build_jev_client, _maybe_gate
 from experiments.simulate_jev_cascade import cascade_rows, choose_threshold, paired_differences
 
 
@@ -102,3 +107,103 @@ def test_paired_differences_measures_lost_true_positive() -> None:
 
     assert diff["binary_recall"]["diff"] == pytest.approx(-0.5)
     assert diff["binary_precision"]["diff"] == 0.0
+
+
+# --- service gate -------------------------------------------------------------
+
+
+class FakeJev:
+    def __init__(self, p_hate=None, error=None):
+        self.p_hate, self.error, self.calls, self.closed = p_hate, error, 0, False
+
+    def score(self, _text):
+        self.calls += 1
+        if self.error:
+            raise self.error
+        return JevScore(p_hate=self.p_hate, model="jev-1.14.0", input_tokens=300, output_tokens=20)
+
+    def close(self):
+        self.closed = True
+
+
+class FakeRag:
+    invalid_provider = "anthropic"
+
+    def __init__(self):
+        self.calls, self.closed = 0, False
+
+    def classify_text(self, _text, _source_type):
+        self.calls += 1
+        return "rag-result"
+
+    def close(self):
+        self.closed = True
+
+
+def test_gate_skips_rag_below_threshold_and_marks_result() -> None:
+    rag = FakeRag()
+    gate = JevGatedClassifier(rag, FakeJev(p_hate=0.03), threshold=0.07)
+
+    result = gate.classify_text("영상 잘 봤어요", "comment")
+
+    assert rag.calls == 0
+    assert result.payload["is_hate_speech"] is False
+    assert result.payload["jev_p_hate"] == 0.03
+    assert result.rag_context_status == JEV_FILTERED_STATUS
+    assert result.model == "jev-1.14.0"
+    assert result.usage == {}
+
+
+def test_gate_sends_threshold_and_above_to_rag() -> None:
+    rag = FakeRag()
+    gate = JevGatedClassifier(rag, FakeJev(p_hate=0.07), threshold=0.07)
+
+    assert gate.classify_text("text", "comment") == "rag-result"
+    assert rag.calls == 1
+
+
+def test_gate_falls_back_to_rag_when_jev_fails() -> None:
+    rag = FakeRag()
+    gate = JevGatedClassifier(rag, FakeJev(error=JevError("down", status_code=503)))
+
+    assert gate.classify_text("text", "comment") == "rag-result"
+
+
+def test_gate_forwards_worker_attributes_and_closes_both() -> None:
+    rag, jev = FakeRag(), FakeJev(p_hate=0.5)
+    gate = JevGatedClassifier(rag, jev)
+
+    assert gate.invalid_provider == "anthropic"
+    gate.close()
+    assert rag.closed and jev.closed
+
+
+def test_filtered_result_flows_through_executor() -> None:
+    gate = JevGatedClassifier(FakeRag(), FakeJev(p_hate=0.01))
+    item = AnalysisItem(source_id="c1", text="좋은 영상", source_type="comment")
+
+    outcome = _classify(gate, item)
+
+    assert outcome.status == "succeeded"
+    assert outcome.result_values["rag_context_status"] == JEV_FILTERED_STATUS
+    assert outcome.result_values["is_hate_speech"] is False
+    assert "Jev" in outcome.result_values["reasoning"]
+
+
+def test_settings_require_key_when_prefilter_enabled() -> None:
+    with pytest.raises(ValueError, match="TYPESAFE_API_KEY"):
+        Settings(_env_file=None, jev_prefilter_enabled=True, typesafe_api_key=None)
+    assert Settings(_env_file=None).jev_prefilter_enabled is False
+
+
+def test_worker_wraps_classifier_only_when_enabled() -> None:
+    off = Settings(_env_file=None)
+    assert _build_jev_client(off) is None
+    assert _maybe_gate(None, off, "classifier") == "classifier"
+
+    on = Settings(_env_file=None, jev_prefilter_enabled=True, typesafe_api_key="k", jev_threshold=0.05)
+    client = _build_jev_client(on)
+    gated = _maybe_gate(client, on, FakeRag())
+    assert isinstance(gated, JevGatedClassifier)
+    assert gated.threshold == 0.05
+    assert client.model == "jev-1.14.0"
