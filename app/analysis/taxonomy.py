@@ -6,8 +6,8 @@ from hashlib import sha256
 from app.analysis.models import DefinitionDocument
 
 
-TAXONOMY_VERSION = "v0.5.0"
-DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-09-v0.5"
+TAXONOMY_VERSION = "v0.5.1"
+DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-09-v0.5.1"
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "gender",
@@ -83,17 +83,17 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
     "profanity": CategoryCard(
         name="욕설·모욕·기타 공격",
         definition=(
-            "사람이나 집단을 향한 욕설, 비속어, 모욕, 조롱, 비꼼, 모욕적 별명. 다른 category에 맞지 않는 대상"
+            "사람이나 집단을 깎아내리려는 욕설, 비속어, 모욕, 조롱, 모욕적 별명. 다른 category에 맞지 않는 대상"
             "(연예인·일반인 같은 특정 개인, 직업·외모·경제적 지위 집단)에 대한 공격도 여기에 포함한다."
         ),
         include=(
             "사람·집단을 직접 부르는 욕설·멸칭",
-            "욕설이 없어도 특정 개인을 깎아내리는 조롱·비꼼·모욕",
+            "욕설이 없어도 인격·외모·능력을 깎아내리는 의도가 분명한 조롱·모욕",
             "직업·외모·경제적 지위 등 다른 category에 없는 집단에 대한 공격",
             "다른 category 공격을 강화하는 노골적 비속어",
             "대상 없는 강한 욕설(no_target과 함께)",
         ),
-        exclude=("보도·교육·비판 목적으로 욕설을 인용하고 동조하지 않는 경우", "누구도 겨냥하지 않은 가벼운 감탄·강조", "모욕 없는 행동·결정 비판"),
+        exclude=("보도·교육·비판 목적으로 욕설을 인용하고 동조하지 않는 경우", "누구도 겨냥하지 않은 가벼운 감탄·강조", "모욕 없는 행동·결정 비판", "아쉬움·실망 표현(얼굴 아깝다, 연기가 아쉽다)", "인물에 대한 사실 확인·질문·가벼운 감상"),
         boundary="표적 category와 함께 복수 선택할 수 있다. 표적이 성별·연령·출신·정치 등 다른 category로 설명되면 그 category를 먼저 고르고, 욕설·모욕이 있으면 profanity를 함께 쓴다. 식별 가능한 표적이 전혀 없으면 no_target을 함께 사용한다.",
         cues=("직접 욕설, 외설적 비유, 모욕적 별칭", "2인칭·집단명과 욕설의 결합"),
         retrieval_tags=("expression_form", "insult"),
@@ -209,10 +209,10 @@ def build_internal_taxonomy_documents(
                 "혐오·공격 판정 기준: 이 서비스는 집단에 대한 혐오와 사람을 향한 공격적 표현을 모두 "
                 "is_hate_speech=true로 본다. (1) 집단 혐오: 성별·연령·출신·인종·종교·장애·정치 성향 등을 이유로 "
                 "열등성이나 무가치를 일반화하거나, 비인간화, 배제·차별, 위협·폭력, 제거 선동, 멸칭을 사용한다. "
-                "(2) 공격적 표현: 특정 개인이나 집단을 향한 모욕, 조롱, 비꼼, 욕설, 모욕적 별명이 있다. 대상이 없어도 "
+                "(2) 공격적 표현: 특정 개인이나 집단을 깎아내리거나 망신 주려는 모욕, 조롱, 욕설, 모욕적 별명이 있다. 대상이 없어도 "
                 "강한 욕설이면 해당한다. 어조가 공손하거나 질문 형태여도 멸칭·모욕이 있으면 해당한다. "
                 "행동·결정·정책에 대한 모욕 없는 비판, 동조하지 않는 인용·보도, 누구도 겨냥하지 않은 가벼운 감탄, "
-                "집단에 대한 중립적 언급은 해당하지 않는다."
+                "집단에 대한 중립적 언급, 인물에 대한 가벼운 평가·감상·농담, 비하 없는 외모·실력 언급은 해당하지 않는다."
             ),
             corpus_version=corpus_version,
         ),
