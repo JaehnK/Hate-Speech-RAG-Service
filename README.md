@@ -20,6 +20,18 @@
 
 평가셋 구성, 구성요소별 검정, K-HATERS category 매핑 수정의 전후 효과와 재현 명령은 `docs/46_public_benchmark_accuracy_results.md`에 있다.
 
+### Jev 사전 필터 (선택)
+
+경량 결정 모델 TypeSafe Jev(`jev-1.14.0`)가 혐오 확률이 낮다고 본 댓글은 LLM 없이 "혐오 아님"으로 판정하고, 나머지만 three-vector RAG로 보낸다. 목표는 정확도를 유지하면서 LLM 호출을 줄이는 것이다. 그래서 비열등성 기준(F1 차이 95% 구간 하한 > −0.01)을 미리 정했고, threshold(0.07)는 test가 아닌 튜닝셋(K-HATERS val·BEEP train 1,000건)에서 골랐다.
+
+| 평가 | 결과 |
+| --- | --- |
+| benchmark 970건 | LLM 생략 13.9%, binary F1 0.804 → 0.803 (차이 −0.001, 95% 구간 [−0.003, 0.000]), 기준 충족 |
+| 실제 YouTube 댓글 표본 1,000건 | 17.4%를 걸러 분석 비용 약 17% 절감 |
+| 걸러진 YouTube 댓글 174건 재분류 | RAG가 혐오로 보는 것 1건(0.6%, 공손한 어조 속 민족 멸칭) |
+
+남은 누락은 사전 기준 안이라 사후 규칙으로 막지 않고 알려진 위험으로 기록했다. 기본은 꺼져 있고 `JEV_PREFILTER_ENABLED=true`와 서버 공용 `TYPESAFE_API_KEY`로 켠다. 걸러진 항목은 보고서에 "Jev 사전 필터로 혐오 아님 판정"으로 표시된다. Jev 비용은 댓글 1,000건당 약 $0.02다. 상세 내용은 `docs/47_jev_cascade_experiment.md`에 있다.
+
 ## 로컬 실행
 
 ```bash
