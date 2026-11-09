@@ -589,3 +589,44 @@ button:disabled { cursor: wait; opacity: .65; }
   .public-section-title { align-items: flex-start; flex-direction: column; }
   .sample-grid, .public-principles, .key-grid { grid-template-columns: 1fr; }
 }
+
+/* Account controls and in-shell public samples */
+.header-login { width: auto !important; padding: 0 12px; color: #fff !important; background: var(--primary) !important; border: 0 !important; font-weight: 700; cursor: pointer; }
+.session-pending { width: 32px; height: 32px; display: inline-grid; place-items: center; color: var(--muted); }
+.sidebar-login { margin-top: 18px; padding: 14px; display: grid; gap: 10px; background: #fff; border: 1px solid var(--outline); border-radius: 6px; }
+.sidebar-login p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.sidebar-login button { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #fff; background: var(--primary); border: 0; border-radius: 5px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.sidebar nav[aria-label="내 작업"] { margin-top: 16px; }
+.mobile-nav nav button { padding: 10px 11px; color: var(--muted); background: transparent; border: 0; border-radius: 4px; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
+.mobile-nav nav button:hover { color: #fff; background: var(--primary); }
+.public-home.page-wrap { min-height: 0; background: transparent; }
+.public-home .public-hero { min-height: 0; padding: 8px 0 40px; gap: 48px; background: none; }
+.public-home .public-hero h1 { font-size: clamp(32px, 3.4vw, 46px); }
+.public-home .sample-section { margin: 0 -40px; padding: 48px 40px; }
+.public-home .public-principles { padding: 48px 0 8px; }
+@media (max-width: 980px) { .public-home .sample-section { margin: 0 -24px; padding: 40px 24px; } }
+@media (max-width: 720px) {
+  .public-home .public-hero { padding: 0 0 32px; }
+  .public-home .sample-section { margin: 0 -16px; padding: 36px 16px; }
+  .public-home .public-principles { padding: 36px 0 0; }
+}
+
+/* Methodology: retrieval order, models and prompt */
+.retrieval-order { margin: 20px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; list-style: none; }
+.retrieval-order li { padding: 14px; display: grid; gap: 6px; background: var(--surface-low); border: 1px solid var(--outline); border-radius: 6px; }
+.retrieval-order strong { color: var(--primary); font-size: 13px; }
+.retrieval-order span { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.model-table code, .prompt-block code { font: 600 11px "JetBrains Mono", monospace; }
+.model-tiers { margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.model-tiers article { padding: 16px; border: 1px solid var(--outline); border-radius: 6px; background: #fff; }
+.model-tiers strong { display: block; color: var(--primary); font-size: 14px; }
+.model-tiers small { color: var(--muted); font: 600 10px "JetBrains Mono", monospace; }
+.model-tiers p { margin: 8px 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.model-tiers dl { margin: 0; display: flex; flex-wrap: wrap; gap: 14px; }
+.model-tiers dt { color: var(--muted); font-size: 10px; }
+.model-tiers dd { margin: 2px 0 0; color: var(--primary); font-size: 13px; font-weight: 700; }
+.prompt-block { margin-top: 14px; border: 1px solid var(--outline); border-radius: 6px; background: var(--surface-low); }
+.prompt-block summary { padding: 12px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--primary); font-size: 13px; font-weight: 700; cursor: pointer; }
+.prompt-block pre { max-height: 520px; margin: 0; padding: 14px; overflow: auto; color: #24324d; background: #fff; border-top: 1px solid var(--outline); font: 12px/1.65 "JetBrains Mono", monospace; white-space: pre-wrap; word-break: break-word; }
+@media (max-width: 980px) { .retrieval-order { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .retrieval-order { grid-template-columns: 1fr; } }

@@ -21,7 +21,7 @@ from app.analysis.embeddings import create_embedding_function
 from app.analysis.license_policy import COMMERCIAL_OK, NONCOMMERCIAL_RESEARCH
 from app.analysis.models import DefinitionDocument
 from app.analysis.taxonomy import CATEGORY_CODES, DEFAULT_DEFINITION_CORPUS_VERSION
-from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, ingest_definition_documents
+from app.analysis.collections import AUTHORITATIVE_COLLECTION_NAME
 
 DEFAULT_CORPUS_DIR = "data/normative"
 
@@ -168,6 +168,8 @@ def main() -> None:
         "by_source_type": {kind: sum(d.document_type == kind for d in documents) for kind in SOURCE_TYPES},
     }
     if not args.dry_run:
+        from app.analysis.vector_store import ingest_definition_documents
+
         embedding_function = create_embedding_function(
             provider=args.embedding_provider,
             model=args.embedding_model,

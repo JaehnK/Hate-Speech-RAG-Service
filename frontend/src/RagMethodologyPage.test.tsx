@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { RagMethodologyPage } from "./RagMethodologyPage";
 
 describe("RAG methodology page", () => {
-  it("explains the portfolio methodology without operational details", () => {
+  it("explains the methodology without infrastructure internals", () => {
     const html = renderToStaticMarkup(<RagMethodologyPage />);
 
     expect(html).toContain("Three-Vector RAG 분류 파이프라인");
@@ -16,6 +16,9 @@ describe("RAG methodology page", () => {
     expect(html).toContain("유사 분석 사례");
     expect(html).toContain("판정 원칙");
     expect(html).toContain("결과 검증");
+    expect(html).toContain("모델과 프롬프트");
+    expect(html).toContain("유사 사례 먼저");
+    expect(html).not.toContain("공개하지 않습니다");
     expect(html).toContain("사회과학적 해석 단위");
     expect(html).toContain("구성타당도");
     expect(html).toContain("선택 편향");
@@ -42,7 +45,6 @@ describe("RAG methodology page", () => {
       "hate_speech_authoritative",
       "embedding-passage",
       "4096",
-      "172,157",
       "0.40",
       "definition_docs_used",
       "figma.com/board/",

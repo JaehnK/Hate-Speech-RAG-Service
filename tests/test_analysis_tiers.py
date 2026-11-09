@@ -66,3 +66,23 @@ async def test_job_api_lists_tiers_and_stores_selection(tmp_path) -> None:
     assert status.json()["analysis_tier"] == "standard"
     assert unavailable.status_code == 422
     assert unavailable.json()["error"]["code"] == "ANALYSIS_TIER_UNAVAILABLE"
+
+
+@pytest.mark.asyncio
+async def test_methodology_publishes_running_prompt_and_models() -> None:
+    from app.analysis.prompt_template import build_category_prompt
+
+    settings = _settings(jev_prefilter_enabled=True, typesafe_api_key="k")
+    transport = httpx.ASGITransport(app=create_app(settings))
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        body = (await client.get("/api/methodology")).json()
+
+    assert body["prompt_version"] == settings.rag_prompt_version
+    real = build_category_prompt("x", "comment", (), (), (), prompt_version=settings.rag_prompt_version)
+    rule_lines = [line for line in real.splitlines() if line and "(empty)" not in line and "\"x\"" not in line]
+    assert all(line in body["prompt"] for line in rule_lines)
+    assert "(empty)" not in body["prompt"]
+    assert body["models"]["classifier"] == ["claude-haiku-5-5"]
+    assert body["models"]["prefilter"]["model"] == "jev-1.14.0"
+    assert [card["doc_id"] for card in body["pinned_cards"]] == ["taxonomy:hate_threshold:0", "taxonomy:context_exception:0"]
+    assert sum(slot["count"] for slot in body["retrieval"]["authoritative_slots"]) == 7

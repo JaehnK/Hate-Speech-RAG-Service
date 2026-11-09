@@ -20,7 +20,10 @@ from app.core.errors import DomainError
 from app.db.models import User, UserApiKey, UserSession, utcnow
 
 
-SUPPORTED_KEY_PROVIDERS = {"anthropic", "upstage"}
+# Users bring only their Anthropic key. Embeddings use the server's Upstage key
+# (decided 2026-11-09); older "upstage" rows may remain and can still be deleted.
+SUPPORTED_KEY_PROVIDERS = {"anthropic"}
+LEGACY_KEY_PROVIDERS = {"upstage"}
 
 
 def token_hash(token: str) -> str:
@@ -195,7 +198,7 @@ class UserApiKeyService:
         return row
 
     def delete(self, user_id: UUID, provider: str) -> None:
-        _validate_provider(provider)
+        _validate_provider(provider, SUPPORTED_KEY_PROVIDERS | LEGACY_KEY_PROVIDERS)
         row = self.session.scalar(
             select(UserApiKey).where(UserApiKey.user_id == user_id, UserApiKey.provider == provider)
         )
@@ -204,8 +207,8 @@ class UserApiKeyService:
             self.session.flush()
 
 
-def _validate_provider(provider: str) -> None:
-    if provider not in SUPPORTED_KEY_PROVIDERS:
+def _validate_provider(provider: str, allowed: set[str] = SUPPORTED_KEY_PROVIDERS) -> None:
+    if provider not in allowed:
         raise DomainError("API_KEY_PROVIDER_UNSUPPORTED", "지원하지 않는 API 키 제공자입니다.", status_code=400)
 
 
@@ -216,7 +219,7 @@ def require_valid_api_keys(session: Session, user_id: UUID) -> None:
     }
     missing = [provider for provider in sorted(SUPPORTED_KEY_PROVIDERS) if provider not in rows]
     if missing:
-        raise DomainError("API_KEY_NOT_CONFIGURED", "Anthropic과 Upstage API 키를 모두 등록해주세요.", status_code=422)
+        raise DomainError("API_KEY_NOT_CONFIGURED", "Anthropic API 키를 등록해주세요.", status_code=422)
     if any(not rows[provider].is_valid for provider in SUPPORTED_KEY_PROVIDERS):
         raise DomainError("API_KEY_INVALID", "등록된 API 키를 다시 확인해주세요.", status_code=422)
 
@@ -227,7 +230,9 @@ def decrypt_api_keys_for_job(
     encryption: KeyEncryptionService,
 ) -> dict[str, str]:
     require_valid_api_keys(session, user_id)
-    rows = session.scalars(select(UserApiKey).where(UserApiKey.user_id == user_id))
+    rows = session.scalars(
+        select(UserApiKey).where(UserApiKey.user_id == user_id, UserApiKey.provider.in_(SUPPORTED_KEY_PROVIDERS))
+    )
     return {row.provider: encryption.decrypt(row.encrypted_key) for row in rows}
 
 

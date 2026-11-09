@@ -1,4 +1,4 @@
-import type { AnalysisTierList, ApiKeySummary, AuthSession, CommentNetwork, CreatedJob, ExportStatus, Job, Page, PublicReportSummary, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
+import type { AnalysisTierList, ApiKeySummary, Methodology, AuthSession, CommentNetwork, CreatedJob, ExportStatus, Job, Page, PublicReportSummary, Report, ReportCommentPage, ReportScriptSegmentPage } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -45,11 +45,11 @@ export function getApiKeys(): Promise<{ items: ApiKeySummary[] }> {
   return request("/api/me/api-keys");
 }
 
-export function putApiKey(provider: "anthropic" | "upstage", apiKey: string): Promise<ApiKeySummary> {
+export function putApiKey(provider: "anthropic", apiKey: string): Promise<ApiKeySummary> {
   return request(`/api/me/api-keys/${provider}`, { method: "PUT", body: JSON.stringify({ api_key: apiKey }) });
 }
 
-export function deleteApiKey(provider: "anthropic" | "upstage"): Promise<void> {
+export function deleteApiKey(provider: "anthropic"): Promise<void> {
   return request<void>(`/api/me/api-keys/${provider}`, { method: "DELETE" });
 }
 
@@ -63,6 +63,10 @@ export function getMyJobs(): Promise<Page<Job>> {
 
 export function getAnalysisTiers(): Promise<AnalysisTierList> {
   return request("/api/analysis-jobs/tiers");
+}
+
+export function getMethodology(): Promise<Methodology> {
+  return request("/api/methodology");
 }
 
 export function createJob(inputValue: string, analysisTier?: string): Promise<CreatedJob> {

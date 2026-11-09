@@ -22,7 +22,7 @@ from app.analysis.services import CommentAnalyzer, ScriptAnalyzer
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, TAXONOMY_VERSION
 from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.auth.crypto import KeyEncryptionService
-from app.auth.services import decrypt_api_keys_for_job
+from app.auth.services import SUPPORTED_KEY_PROVIDERS, decrypt_api_keys_for_job
 from app.collectors.comments import CommentCollector
 from app.collectors.metadata import VideoMetadataCollector
 from app.collectors.transcript import PublicTranscriptProvider, TranscriptCollector
@@ -143,14 +143,13 @@ def _api_keys_for_job(
         if job.user_id is not None:
             if not settings.api_key_encryption_key:
                 raise ValueError("API_KEY_ENCRYPTION_KEY is required for user-owned jobs")
-            return (
-                decrypt_api_keys_for_job(
-                    session,
-                    job.user_id,
-                    KeyEncryptionService(settings.api_key_encryption_key),
-                ),
+            user_keys = decrypt_api_keys_for_job(
+                session,
                 job.user_id,
+                KeyEncryptionService(settings.api_key_encryption_key),
             )
+            # Embeddings always use the server Upstage key; users bring only Anthropic.
+            return ({"anthropic": user_keys.get("anthropic", ""), "upstage": settings.embedding_api_key or ""}, job.user_id)
     return ({"anthropic": settings.llm_api_key or "", "upstage": settings.embedding_api_key or ""}, None)
 
 
@@ -162,7 +161,7 @@ def _invalidate_rejected_keys(
     providers = {
         getattr(classifier, "invalid_provider", None)
         for classifier in runtime.pool.classifiers
-    } - {None}
+    } & SUPPORTED_KEY_PROVIDERS
     if not providers:
         return
     with session_factory.begin() as session:

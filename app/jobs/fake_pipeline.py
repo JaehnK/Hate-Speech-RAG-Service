@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION, TAXONOMY_VERSION
-from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
+from app.analysis.collections import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.db.models import AnalysisJob, AnalysisRun, ReportSnapshot, VideoMetadataSnapshot
 from app.jobs.orchestrator import StepResult
 

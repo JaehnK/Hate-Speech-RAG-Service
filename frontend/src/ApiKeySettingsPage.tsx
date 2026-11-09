@@ -17,37 +17,25 @@ const PROVIDERS = [
     ],
     note: "Claude 구독과 API 사용 크레딧은 별도입니다. Console에서 크레딧도 확인해주세요.",
   },
-  {
-    id: "upstage" as const,
-    title: "Upstage",
-    description: "정의와 유사 사례 검색용 임베딩에 사용합니다.",
-    issueUrl: "https://console.upstage.ai/api-keys",
-    steps: [
-      "Upstage Console에 가입하거나 로그인합니다.",
-      "API Keys 화면에서 새 키를 발급합니다.",
-      "발급된 키를 복사해 아래 입력란에 붙여넣습니다.",
-    ],
-    note: "Embed 2 사용량과 잔여 크레딧은 Console의 Billing과 Usage에서 확인할 수 있습니다.",
-  },
 ];
 
 export function ApiKeySettingsPage() {
   const [keys, setKeys] = useState<ApiKeySummary[]>([]);
-  const [values, setValues] = useState({ anthropic: "", upstage: "" });
+  const [values, setValues] = useState({ anthropic: "" });
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const reload = () => getApiKeys().then((payload) => setKeys(payload.items));
   useEffect(() => { void reload().catch(() => setMessage("API 키 정보를 불러오지 못했습니다.")); }, []);
 
-  async function save(event: FormEvent, provider: "anthropic" | "upstage") {
+  async function save(event: FormEvent, provider: "anthropic") {
     event.preventDefault(); setBusy(provider); setMessage(null);
     try { await putApiKey(provider, values[provider]); setValues((current) => ({ ...current, [provider]: "" })); await reload(); setMessage("검증과 암호화 저장을 완료했습니다."); }
     catch (cause) { setMessage(cause instanceof Error ? cause.message : "API 키를 저장하지 못했습니다."); }
     finally { setBusy(null); }
   }
 
-  async function remove(provider: "anthropic" | "upstage") {
+  async function remove(provider: "anthropic") {
     setBusy(provider); setMessage(null);
     try { await deleteApiKey(provider); await reload(); setMessage("등록된 키를 삭제했습니다."); }
     catch (cause) { setMessage(cause instanceof Error ? cause.message : "API 키를 삭제하지 못했습니다."); }
@@ -57,7 +45,7 @@ export function ApiKeySettingsPage() {
   return (
     <div className="page-wrap key-settings">
       <div className="page-title"><div><small>BYOK SETTINGS</small><h1>분석 API 키</h1></div></div>
-      <p className="page-description">키는 유효성을 확인한 뒤 암호화해 저장하며, 분석 작업 중에만 복호화합니다.</p>
+      <p className="page-description">키는 유효성을 확인한 뒤 암호화해 저장하며, 분석 작업 중에만 복호화합니다. 검색용 임베딩(Upstage)은 서비스 키로 처리하므로 Anthropic 키만 등록하면 됩니다.</p>
       <aside className="key-security-note"><ShieldCheck size={18} /><p><strong>API 키를 안전하게 보관하세요.</strong> 이 페이지에만 입력하고 Git, 메신저, 스크린샷에는 남기지 마세요.</p></aside>
       {message && <div className="settings-message" role="status">{message}</div>}
       <div className="key-grid">{PROVIDERS.map((provider) => {

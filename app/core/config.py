@@ -129,7 +129,7 @@ class Settings(BaseSettings):
                 missing.append("YOUTUBE_API_KEY")
             if not self.auth_configured and not self.llm_api_key:
                 missing.append("LLM_API_KEY or ANTHROPIC_API_KEY")
-            if not self.auth_configured and self.embedding_provider != "hash" and not self.embedding_api_key:
+            if self.embedding_provider != "hash" and not self.embedding_api_key:
                 missing.append("EMBEDDING_API_KEY or UPSTAGE_API_KEY")
             if missing:
                 raise ValueError(f"Missing production pipeline settings: {', '.join(missing)}")
