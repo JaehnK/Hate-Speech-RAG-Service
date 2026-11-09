@@ -57,7 +57,22 @@
   - 가능하면 라벨러 2명으로 일치도(Cohen's kappa)를 보고한다.
 - 결과: "실제 YouTube 댓글 기준 정확도"와 Jev 필터의 실제 누락률을 측정할 수 있다.
 
-## 4. 보류한 기능 아이디어
+## 4. 인프라 자동화 (IaC·CI/CD)
+
+현재는 `gcloud`로 수동 배포하고, CI(`ci.yml`)는 테스트만 실행한다.
+
+- Terraform:
+  - GCS 버킷에 state 저장(잠금 포함)
+  - 운영 중인 리소스를 `terraform import`로 편입: Cloud Run 2개, VM, 방화벽, Artifact Registry, Secret Manager secret, 도메인 매핑
+  - 모듈: network, compute, run, registry, secrets(secret 값은 코드에 넣지 않음)
+  - PR마다 `terraform plan`, main에서만 `apply`
+- GitHub Actions 배포:
+  - Workload Identity Federation으로 서비스 계정 키 파일 없이 인증
+  - main 병합 시: 이미지 빌드(git SHA 태그) → Artifact Registry 푸시 → Alembic 마이그레이션 → Cloud Run 새 revision → VM worker 갱신(IAP) → `/health` 확인, 실패 시 이전 revision으로 롤백
+  - 운영 배포 전 GitHub Environment 수동 승인
+- 검토: worker를 Cloud Run Jobs·서비스로 옮겨 VM에는 DB만 남기는 구조
+
+## 5. 보류한 기능 아이디어
 
 범위를 고정하기로 해서 당분간 진행하지 않는다.
 
