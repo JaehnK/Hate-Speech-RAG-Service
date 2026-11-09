@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.analysis.embeddings import create_embedding_function
 from app.analysis.executor import RagRuntime, RuntimeMetrics
 from app.analysis.llm_client import AnthropicLlmClient
+from app.analysis.jev_client import JEV_QUESTION_VERSION, JevClient
+from app.analysis.jev_gate import JevGatedClassifier
 from app.analysis.observability import LangfuseConfig, build_observability_client
 from app.analysis.prompt_template import PROMPT_VERSION
 from app.analysis.rag_classifier import DEFAULT_EXAMPLE_MIN_SIMILARITY, RagClassifier
@@ -176,9 +178,10 @@ def _build_runtime(settings: Settings, stop_event: Event, api_keys: dict[str, st
     embedding_gate = BoundedSemaphore(settings.rag_embedding_concurrency)
     llm_gate = BoundedSemaphore(settings.rag_llm_concurrency)
     retry_policy = RetryPolicy(max_attempts=settings.rag_item_max_attempts)
+    jev_client = _build_jev_client(settings)
     return RagRuntime(
         [
-            _build_classifier(
+            _maybe_gate(jev_client, settings, _build_classifier(
                 settings,
                 stop_event,
                 embedding_gate,
@@ -187,7 +190,7 @@ def _build_runtime(settings: Settings, stop_event: Event, api_keys: dict[str, st
                 metrics,
                 api_keys["anthropic"],
                 api_keys["upstage"],
-            )
+            ))
             for _index in range(slot_count)
         ],
         mode=settings.rag_execution_mode,
@@ -219,6 +222,12 @@ def _analysis_run_values(settings: Settings) -> dict:
             "taxonomy_version": TAXONOMY_VERSION,
             "execution_mode": settings.rag_execution_mode,
             "item_concurrency": settings.rag_item_concurrency,
+            "jev_prefilter": {
+                "enabled": settings.jev_prefilter_enabled,
+                "model": settings.jev_model,
+                "threshold": settings.jev_threshold,
+                "question_version": JEV_QUESTION_VERSION,
+            },
         },
         "prompt_versions": {"comment": PROMPT_VERSION, "script": PROMPT_VERSION},
     }
@@ -269,6 +278,24 @@ def _build_classifier(
         ),
         should_stop=stop_event.is_set,
     )
+
+
+def _build_jev_client(settings: Settings) -> JevClient | None:
+    if not settings.jev_prefilter_enabled:
+        return None
+    return JevClient(
+        settings.typesafe_api_key or "",
+        # Fail over to RAG quickly instead of waiting out long backoffs.
+        retry_policy=RetryPolicy(max_attempts=2, max_delay_seconds=2.0),
+        timeout_seconds=settings.rag_request_timeout_seconds,
+        model=settings.jev_model,
+    )
+
+
+def _maybe_gate(jev_client: JevClient | None, settings: Settings, classifier: RagClassifier):
+    if jev_client is None:
+        return classifier
+    return JevGatedClassifier(classifier, jev_client, threshold=settings.jev_threshold)
 
 
 if __name__ == "__main__":

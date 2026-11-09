@@ -54,7 +54,7 @@ threshold 0.07에서 걸러진 174건을 three-vector RAG로 다시 분류했다
 
 - 결과: **174건 중 1건(0.6%)**, 기준 충족. 나머지 173건은 RAG도 정상(`unclassified`)으로 판정했다.
 - 그 1건은 실제 혐오다. 정중한 질문 형식 안에 민족 멸칭(`짱께`)이 들어 있고 Jev 점수는 0.05였다. legacy 파이프라인도 혐오로 판정했다.
-- 함의: Jev는 공손한 어조 속 멸칭을 놓칠 수 있다. 서비스에 넣는다면 멸칭 사전에 걸리는 댓글은 Jev 점수와 무관하게 RAG로 보내는 규칙을 함께 두는 것이 안전하다.
+- 판단: 사전 기준 안의 결과이므로 이 1건을 막는 추가 규칙(멸칭 사전, 실패 사례에 맞춘 Jev 질문)은 넣지 않았다. 1건을 보고 만든 규칙은 검증되지 않은 사후 조정이고, 기준을 통과한 뒤 규칙을 덧대면 사전 검증의 의미가 없어진다. 대신 잔여 누락률(약 0.6%)과 유형(공손한 어조 속 멸칭)을 알려진 위험으로 기록한다.
 
 ## 4. 비용
 
@@ -70,7 +70,25 @@ YouTube 필터율 17.4%를 적용하면 댓글 1,000건당 약 $1을 아끼고 J
 - 정확도는 공개 benchmark 기준이다. YouTube 표본은 필터율만 측정했고 걸러진 댓글의 정답은 확인하지 않았다.
 - threshold 규칙을 정하기 전에 test의 threshold별 leakage 표를 한 번 출력했다. threshold 자체는 튜닝셋 규칙으로만 정했다.
 - Jev 모델 버전(`jev-latest`)이 바뀌면 점수 분포가 달라질 수 있으므로 서비스에 넣으려면 버전 고정과 재검증이 필요하다.
-- 절감 폭(약 17%)은 정확도 손실 없이 얻을 수 있는 확실한 이득이지만 크지 않다. 서비스 적용은 feature flag(기본 off)로 넣고, 걸러진 item은 보고서에 "Jev 필터로 정상 판정"으로 표시하는 방식을 권장한다.
+- 절감 폭(약 17%)은 정확도 손실 없이 얻을 수 있는 확실한 이득이지만 크지 않다.
+- BYOK 구조상 절감액은 사용자 Anthropic·Upstage 비용에서 생기고, Jev 비용(1,000건당 약 $0.02)과 외부 의존성은 운영자가 진다. 댓글 원문이 TypeSafe로 추가 전송되므로 활성화 전 처리방침에 반영해야 한다.
+- 후속 과제(v2): Jev 질문을 실패 사례가 아니라 서비스 taxonomy 정의에서 만든다. taxonomy category와 "해당 없음"을 choice 질문 선택지로 주고 "해당 없음" 확률로 거르면, RAG와 같은 정의를 기준으로 삼게 된다. 별도 실험으로 같은 절차(튜닝셋 threshold, benchmark 비열등성, YouTube 재확인)를 거친다.
+
+## 5-1. 서비스 적용
+
+`JEV_PREFILTER_ENABLED=true`일 때 worker가 각 RAG classifier를 `JevGatedClassifier`(`app/analysis/jev_gate.py`)로 감싼다. 기본값은 off다.
+
+| 설정 | 기본값 | 의미 |
+| --- | --- | --- |
+| `JEV_PREFILTER_ENABLED` | `false` | gate 사용 여부 |
+| `TYPESAFE_API_KEY` | 없음 | 서버 공용 키. 활성화 시 필수 (없으면 설정 검증 실패) |
+| `JEV_MODEL` | `jev-1.14.0` | 이 문서에서 검증한 버전으로 고정. `jev-latest`는 쓰지 않는다 |
+| `JEV_THRESHOLD` | `0.07` | 이 값 미만이면 LLM 생략 |
+
+- Jev 점수가 threshold 미만이면 retrieval과 LLM 없이 "혐오 아님"으로 저장한다. `rag_context_status=jev_filtered`, `model_name=jev-1.14.0`, `prompt_version=jev-gate-v1`, reasoning에 Jev 점수를 남긴다.
+- 웹 보고서와 프론트는 이 항목의 근거를 "Jev 사전 필터로 혐오 아님 판정 (LLM 미사용)"으로 표시한다.
+- Jev 호출이 실패하면(재시도 1회 후) 그 item은 그대로 RAG로 보낸다. gate 때문에 item이 실패하는 경우는 없다.
+- `analysis_runs.retriever_config.jev_prefilter`에 활성 여부, 모델, threshold, 질문 버전을 기록한다.
 
 ## 6. 재현
 

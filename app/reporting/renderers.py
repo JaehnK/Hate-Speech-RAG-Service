@@ -42,6 +42,7 @@ RAG_CONTEXT_LABELS = {
     "definition_only": "정의 문서만 사용",
     "example_only": "유사 사례만 사용",
     "unavailable": "검색 근거 없음",
+    "jev_filtered": "Jev 사전 필터로 혐오 아님 판정 (LLM 미사용)",
 }
 
 

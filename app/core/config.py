@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     llm_api_key: str | None = Field(default=None, repr=False)
     llm_max_tokens: int = 1200
     llm_temperature: float = 0.0
+    jev_prefilter_enabled: bool = False
+    typesafe_api_key: str | None = Field(default=None, repr=False)
+    jev_model: str = "jev-1.14.0"
+    jev_threshold: float = Field(default=0.07, gt=0.0, lt=0.5)
     langfuse_enabled: bool = False
     langfuse_host: str = "http://localhost:3000"
     langfuse_public_key: str | None = None
@@ -84,6 +88,8 @@ class Settings(BaseSettings):
             raise ValueError("RAG_EMBEDDING_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
         if self.rag_llm_concurrency > self.rag_item_concurrency:
             raise ValueError("RAG_LLM_CONCURRENCY cannot exceed RAG_ITEM_CONCURRENCY")
+        if self.jev_prefilter_enabled and not self.typesafe_api_key:
+            raise ValueError("TYPESAFE_API_KEY is required when JEV_PREFILTER_ENABLED=true")
         if self.app_env == "production":
             if self.admin_token == "change-me":
                 raise ValueError("ADMIN_TOKEN must be changed in production")

@@ -15,6 +15,8 @@ from app.analysis.retry import RetryPolicy, parse_retry_after
 
 JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 JEV_MODEL = "jev-latest"
+# The service pins the version the threshold was validated on (docs/47).
+JEV_PINNED_MODEL = "jev-1.14.0"
 JEV_QUESTION_VERSION = "jev-gate-v1"
 # Deliberately broad: profanity and insults count as "yes" so that the filter only
 # drops comments that are clearly benign.
@@ -47,10 +49,12 @@ class JevClient:
         retry_policy: RetryPolicy | None = None,
         timeout_seconds: float = 30.0,
         client: httpx.Client | None = None,
+        model: str = JEV_MODEL,
     ):
         if not api_key:
             raise ValueError("TypeSafe API key is required")
         self._api_key = api_key
+        self.model = model
         self._retry = retry_policy or RetryPolicy(max_attempts=5, max_delay_seconds=30.0)
         self._client = client or httpx.Client(timeout=timeout_seconds)
 
@@ -67,7 +71,7 @@ class JevClient:
             JEV_ENDPOINT,
             headers={"Authorization": f"Bearer {self._api_key}"},
             json={
-                "model": JEV_MODEL,
+                "model": self.model,
                 "state": text,
                 "questions": {"is_hate": {"type": "noul", "instructions": JEV_QUESTION}},
             },
@@ -82,7 +86,10 @@ class JevClient:
         usage = body.get("usage") or {}
         return JevScore(
             p_hate=float(body["answers"]["is_hate"]["noul"]),
-            model=str(body.get("model", JEV_MODEL)),
+            model=str(body.get("model", self.model)),
             input_tokens=int(usage.get("input_tokens", 0)),
             output_tokens=int(usage.get("output_tokens", 0)),
         )
+
+    def close(self) -> None:
+        self._client.close()
