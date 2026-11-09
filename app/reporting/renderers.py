@@ -8,6 +8,7 @@ from openpyxl import Workbook
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.analysis.taxonomy import CATEGORY_CARDS
 from app.db.models import (
     CommentAnalysisResult,
     CommentNetwork,
@@ -20,22 +21,8 @@ from app.db.models import (
 )
 
 
-# Mirrors CATEGORY_LABELS in frontend/src/utils.ts so the export reads like the web report.
-CATEGORY_LABELS = {
-    "gender": "성별",
-    "age": "연령",
-    "identity": "정체성",
-    "profanity": "욕설",
-    "state_authority": "국가 권위체",
-    "non_state_authority": "비국가 권위체",
-    "state_regime": "국가 제도",
-    "non_state_regime": "비국가 제도",
-    "state_community": "국가 공동체",
-    "non_state_community": "비국가 공동체",
-    "no_target": "대상 없음",
-    "other": "기타",
-    "unclassified": "미분류",
-}
+# Same names as frontend/src/utils.ts; both come from the taxonomy cards.
+CATEGORY_LABELS = {code: card.name for code, card in CATEGORY_CARDS.items()}
 
 RAG_CONTEXT_LABELS = {
     "complete": "정의·유사 사례 사용",

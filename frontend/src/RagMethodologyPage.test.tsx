@@ -9,7 +9,10 @@ describe("RAG methodology page", () => {
 
     expect(html).toContain("Three-Vector RAG 분류 파이프라인");
     expect(html).toContain("분류 체계");
-    expect(html).toContain("공식 기준");
+    expect(html).toContain("데이터셋 라벨 기준");
+    expect(html).toContain("정치적 공격: 두 가지 질문");
+    expect(html).toContain("정부·공직자 공격");
+    expect(html).not.toContain(">공식 기준<");
     expect(html).toContain("유사 분석 사례");
     expect(html).toContain("판정 원칙");
     expect(html).toContain("결과 검증");
@@ -26,8 +29,8 @@ describe("RAG methodology page", () => {
     expect(html).toContain("공통 판정 기준");
     expect(html).toContain("포함 기준");
     expect(html).toContain("제외·경계");
-    expect(html).toContain("국적·민족 공격은 정체성 범주");
-    expect(html).toContain("정치적 반대나 정책 비판만으로는 혐오가 아닙니다");
+    expect(html).toContain("국적·민족 공격은 출신·인종 비하");
+    expect(html).toContain("정책 비판이나 강한 반대만으로는 혐오가 아닙니다");
 
     for (const internalDetail of [
       "Embed 2",

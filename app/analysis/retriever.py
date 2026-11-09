@@ -52,6 +52,7 @@ class DualVectorRetriever:
         taxonomy_n: int,
         authoritative_n: int,
         example_n: int,
+        pinned_taxonomy_ids: tuple[str, ...] = (),
     ) -> RetrievalBundle:
         if max(taxonomy_n, authoritative_n, example_n) <= 0:
             # LLM-only baseline: nothing to retrieve, so skip the embedding call too.
@@ -68,7 +69,13 @@ class DualVectorRetriever:
                 failures.append(name)
                 return []
 
-        taxonomy = query("taxonomy", self.taxonomy_collection, taxonomy_n, parse_definition_query_result)
+        pinned = self._pinned_taxonomy(pinned_taxonomy_ids) if taxonomy_n > 0 else []
+        pinned_ids = {result.doc_id for result in pinned}
+        # Fetch extra so pinned cards that also rank highly do not shrink the searched slots.
+        searched = query(
+            "taxonomy", self.taxonomy_collection, taxonomy_n + len(pinned), parse_definition_query_result
+        )
+        taxonomy = pinned + [result for result in searched if result.doc_id not in pinned_ids][:taxonomy_n]
         authoritative = query(
             "authoritative", self.authoritative_collection, authoritative_n, parse_definition_query_result
         )
@@ -80,6 +87,31 @@ class DualVectorRetriever:
             examples=tuple(examples),
             failures=tuple(failures),
         )
+
+    def _pinned_taxonomy(self, doc_ids: tuple[str, ...]) -> list:
+        """Rule cards that every prompt needs regardless of similarity (cached per id set)."""
+        if not doc_ids:
+            return []
+        cache = self.__dict__.setdefault("_pinned_cache", {})
+        if doc_ids not in cache:
+            try:
+                got = self.taxonomy_collection.get(ids=list(doc_ids), include=["documents", "metadatas"])
+            except Exception:
+                return []
+            by_id = {
+                doc_id: (document, metadata)
+                for doc_id, document, metadata in zip(got["ids"], got["documents"], got["metadatas"], strict=True)
+            }
+            ordered = [doc_id for doc_id in doc_ids if doc_id in by_id]
+            cache[doc_ids] = parse_definition_query_result(
+                {
+                    "ids": [ordered],
+                    "documents": [[by_id[doc_id][0] for doc_id in ordered]],
+                    "metadatas": [[by_id[doc_id][1] for doc_id in ordered]],
+                    "distances": [[]],
+                }
+            )
+        return list(cache[doc_ids])
 
     def close(self) -> None:
         close = getattr(self.embedding_function, "close", None)

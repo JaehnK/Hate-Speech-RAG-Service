@@ -141,3 +141,42 @@ def test_retriever_llm_only_baseline_skips_embedding() -> None:
 
     assert bundle.failures == ()
     assert embedding.calls == []
+
+
+def _definition_rows(ids):
+    meta = {"source_id": "source", "source_title": "title", "retrieval_tags": "[]", "related_categories": "[]"}
+    return {
+        "ids": [list(ids)],
+        "documents": [[f"text {doc_id}" for doc_id in ids]],
+        "metadatas": [[dict(meta) for _ in ids]],
+        "distances": [[0.1 * (i + 1) for i in range(len(ids))]],
+    }
+
+
+class PinnableCollection(FakeCollection):
+    def __init__(self, ranked) -> None:
+        super().__init__(_definition_rows(ranked))
+        self.get_calls = 0
+
+    def get(self, ids, include):
+        self.get_calls += 1
+        rows = _definition_rows(ids)
+        return {"ids": rows["ids"][0], "documents": rows["documents"][0], "metadatas": rows["metadatas"][0]}
+
+
+def test_pinned_taxonomy_cards_come_first_without_duplicates() -> None:
+    taxonomy = PinnableCollection(["rule:a", "card:x", "card:y", "card:z"])
+    retriever = DualVectorRetriever(
+        "unused",
+        embedding_function=FakeEmbedding(),
+        client=FakeClient(taxonomy, FakeCollection(_definition_result()), FakeCollection(_example_result())),
+    )
+
+    bundle = retriever.retrieve(
+        "q", taxonomy_n=2, authoritative_n=0, example_n=0, pinned_taxonomy_ids=("rule:a", "rule:b")
+    )
+    retriever.retrieve("q", taxonomy_n=2, authoritative_n=0, example_n=0, pinned_taxonomy_ids=("rule:a", "rule:b"))
+
+    assert [result.doc_id for result in bundle.taxonomy] == ["rule:a", "rule:b", "card:x", "card:y"]
+    assert taxonomy.calls[0]["n_results"] == 4
+    assert taxonomy.get_calls == 1

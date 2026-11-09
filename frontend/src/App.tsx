@@ -114,7 +114,7 @@ function AppShell() {
             <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
           </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
-          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·공식 기준·사례 기반<br />three-vector RAG</span></div>
+          <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·라벨 기준·사례 기반<br />three-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
       </div>
@@ -219,7 +219,7 @@ export function TierPicker({ tiers, value, onChange, disabled }: { tiers: Analys
         <summary>분석은 어떻게 처리되나요?</summary>
         <ol>
           <li>영상의 댓글·대댓글과 공개 자막을 수집합니다.</li>
-          <li>댓글마다 혐오표현 유형 정의, 공식 기준 문서, 비슷한 과거 사례를 검색합니다.</li>
+          <li>댓글마다 혐오표현 유형 정의, 데이터셋 라벨 기준, 비슷한 과거 사례를 검색합니다.</li>
           <li>선택한 AI 모델이 검색 근거를 참고해 혐오 여부와 유형을 판정합니다. 절약 방식에서는 경량 모델(Jev)이 확실히 문제없다고 본 댓글을 먼저 정상으로 처리하고, 나머지만 AI가 판정합니다.</li>
         </ol>
         <p>비용은 등록한 Anthropic 키로 청구되며, 댓글 길이에 따라 달라지는 추정치입니다. 정확도는 공개 혐오표현 데이터 970건 기준이며 실제 YouTube 댓글 정확도와 다를 수 있습니다.</p>

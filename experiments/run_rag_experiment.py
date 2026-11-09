@@ -11,6 +11,7 @@ from app.analysis.embeddings import create_embedding_function
 from app.analysis.llm_client import AnthropicLlmClient, LlmResponse
 from app.analysis.observability import LangfuseConfig, build_observability_client
 from app.analysis.retry import RetryPolicy
+from app.analysis.prompt_template import DECISION_RULES, PROMPT_VERSION
 from app.analysis.rag_classifier import ClassificationError, RagClassifier
 from app.core.config import load_settings
 from experiments.io import ExperimentInput, append_jsonl, read_inputs, read_jsonl
@@ -75,6 +76,7 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--concurrency", type=int, default=1, help="Parallel classifier slots.")
+    parser.add_argument("--prompt-version", default=PROMPT_VERSION, choices=list(DECISION_RULES))
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -138,6 +140,7 @@ def main() -> None:
                     taxonomy_k=variant.taxonomy_k,
                     definition_k=variant.definition_k,
                     example_k=variant.example_k,
+                    prompt_version=args.prompt_version,
                 )
             )
     write_lock = threading.Lock()
