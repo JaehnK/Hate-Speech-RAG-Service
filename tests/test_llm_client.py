@@ -168,3 +168,19 @@ def test_haiku_4_5_keeps_temperature_and_no_effort() -> None:
 
     assert fake_client.messages.kwargs["temperature"] == 0.0
     assert "output_config" not in fake_client.messages.kwargs
+
+
+def test_anthropic_client_maps_usage_limit_400_to_billing_error() -> None:
+    class LimitMessages(FakeMessages):
+        def create(self, **kwargs):
+            response = httpx.Response(400, request=httpx.Request("POST", "https://api.anthropic.com/v1/messages"))
+            raise anthropic.BadRequestError(
+                "You have reached your specified API usage limits.", response=response, body=None
+            )
+
+    client = AnthropicLlmClient(api_key=None, client=SimpleNamespace(messages=LimitMessages()))
+
+    with pytest.raises(LlmRequestError) as error:
+        client.complete("prompt")
+
+    assert error.value.code == "LLM_BILLING_ERROR"

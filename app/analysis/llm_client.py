@@ -166,7 +166,7 @@ def _map_anthropic_error(exc: Exception) -> LlmRequestError | None:
     if isinstance(exc, anthropic.APIConnectionError):
         return LlmRequestError("LLM_CONNECTION_ERROR", "Anthropic 서비스에 연결할 수 없습니다.")
     # Anthropic reports an exhausted credit balance as 400 invalid_request_error, not 402.
-    if status_code == 402 or (status_code == 400 and "credit balance" in str(exc).lower()):
+    if status_code == 402 or (status_code == 400 and _is_billing_message(str(exc))):
         return LlmRequestError("LLM_BILLING_ERROR", "Anthropic 결제 또는 크레딧 상태를 확인해주세요.")
     if status_code == 529:
         return LlmRequestError("LLM_OVERLOADED", "Anthropic 서비스가 일시적으로 혼잡합니다.")
@@ -177,3 +177,9 @@ def _map_anthropic_error(exc: Exception) -> LlmRequestError | None:
     if isinstance(exc, anthropic.APIStatusError):
         return LlmRequestError("LLM_PROVIDER_REJECTED", "Anthropic 요청이 처리되지 않았습니다.")
     return None
+
+
+def _is_billing_message(message: str) -> bool:
+    # Low credit and an account's own monthly spend limit both come back as HTTP 400.
+    lowered = message.lower()
+    return "credit balance" in lowered or "api usage limits" in lowered
