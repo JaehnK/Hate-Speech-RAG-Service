@@ -1,7 +1,7 @@
 .git
 .venv
 .env
-.chroma
+.chroma*
 .pytest_cache
 __pycache__
 *.pyc
