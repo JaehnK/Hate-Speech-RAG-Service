@@ -139,10 +139,26 @@ gcloud run deploy frontend --region $REGION --project $PROJECT --image $REG/fron
 
 `web`의 `JEV_PREFILTER_ENABLED`는 분석 화면에 절약 방식을 보여줄지 정하고, 실제 Jev 호출은 worker가 한다. 두 곳 모두 켜야 한다.
 
+## 5-1. 도메인 확인 (hatescope.jaehunk.com)
+
+운영 도메인이 `haterag.jaehunk.com`에서 `hatescope.jaehunk.com`으로 바뀌었다. 코드에 도메인을 하드코딩한 곳은 없고 아래 값만 맞으면 된다.
+
+```bash
+gcloud run services describe web --region $REGION --project $PROJECT \
+  --format='value(spec.template.spec.containers[0].env)' | tr ';' '\n' | grep -E "FRONTEND_ORIGIN|GOOGLE_OAUTH_REDIRECT_URI"
+# 다르면
+gcloud run services update web --region $REGION --project $PROJECT \
+  --update-env-vars FRONTEND_ORIGIN=https://hatescope.jaehunk.com,GOOGLE_OAUTH_REDIRECT_URI=https://hatescope.jaehunk.com/api/auth/google/callback
+```
+
+- Google Cloud Console → OAuth 클라이언트의 승인된 리디렉션 URI에 `https://hatescope.jaehunk.com/api/auth/google/callback`가 있어야 한다. 승인된 JavaScript 원본도 같은 도메인으로 맞춘다.
+- `FRONTEND_ORIGIN`이 다르면 로그인 후 분석 요청 같은 상태 변경 API가 Origin 검증에서 403으로 막힌다.
+- 옛 도메인을 잠시 유지하려면 리디렉션 URI에 두 도메인을 모두 등록해 두고, `FRONTEND_ORIGIN`은 새 도메인 하나로 둔다.
+
 ## 6. 확인
 
 ```bash
-curl -s https://haterag.jaehunk.com/api/analysis-jobs/tiers | python3 -m json.tool   # economy, standard
+curl -s https://hatescope.jaehunk.com/api/analysis-jobs/tiers | python3 -m json.tool   # economy, standard
 ```
 
 - 분석 화면에 절약·기본 두 카드와 정확도·비용이 보인다.
