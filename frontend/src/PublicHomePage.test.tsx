@@ -1,37 +1,62 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { PublicAccount } from "./PublicHomePage";
+import { AppRoutes } from "./App";
+import { StaticSessionProvider } from "./session";
+import type { AuthSession } from "./types";
 
-describe("public sample account control", () => {
-  it("shows the signed-in account name instead of Google login", () => {
-    const html = renderToStaticMarkup(
-      <MemoryRouter>
-        <PublicAccount
-          session={{
-            user_id: "user-id",
-            email: "lecielgris1@gmail.com",
-            display_name: "Le Ciel Gris",
-            avatar_url: null,
-            api_keys_registered: { anthropic: true, upstage: true },
-          }}
-          onSignOut={vi.fn()}
-        />
-      </MemoryRouter>,
-    );
+const SIGNED_IN: AuthSession = {
+  user_id: "user-id",
+  email: "tester@example.com",
+  display_name: "Tester",
+  avatar_url: null,
+  api_keys_registered: { anthropic: true },
+};
 
-    expect(html).toContain("Le Ciel Gris");
-    expect(html).not.toContain("Google로 로그인");
-    expect(html).toContain('aria-label="로그아웃"');
+function render(path: string, session: AuthSession | null) {
+  return renderToStaticMarkup(
+    <StaticSessionProvider session={session}>
+      <MemoryRouter initialEntries={[path]}><AppRoutes /></MemoryRouter>
+    </StaticSessionProvider>,
+  );
+}
+
+function count(html: string, needle: string) {
+  return html.split(needle).length - 1;
+}
+
+describe("app shell navigation", () => {
+  it("renders public samples inside the shared shell with the sidebar", () => {
+    const html = render("/samples", null);
+
+    expect(html).toContain('class="sidebar"');
+    expect(html).toContain("공개 샘플 보고서");
+    expect(html).not.toContain("public-header");
   });
 
-  it("keeps Google login for visitors", () => {
-    const html = renderToStaticMarkup(
-      <MemoryRouter><PublicAccount session={null} onSignOut={vi.fn()} /></MemoryRouter>,
-    );
+  it("hides personal links from visitors and offers popup login", () => {
+    const html = render("/samples", null);
 
-    expect(html).toContain("Google로 로그인");
-    expect(html).toContain("return_to=/samples");
+    expect(html).not.toContain('href="/history"');
+    expect(html).not.toContain('href="/settings"');
+    expect(html).toContain("Google 로그인");
+    expect(html).not.toContain("/api/auth/google/login");
+  });
+
+  it("shows history and settings in the sidebar once signed in", () => {
+    const html = render("/samples", SIGNED_IN);
+
+    expect(html).toContain('href="/history"');
+    expect(html).toContain("API 키 설정");
+    expect(html).toContain("Tester");
+  });
+
+  it("links the methodology page from the top bar only", () => {
+    const html = render("/samples", SIGNED_IN);
+    const sidebar = html.slice(html.indexOf('class="sidebar"'));
+
+    expect(count(html, 'href="/rag-methodology"')).toBe(2); // desktop + mobile menu
+    expect(sidebar).not.toContain('href="/rag-methodology"');
   });
 });

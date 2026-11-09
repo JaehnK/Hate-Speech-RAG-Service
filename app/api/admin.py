@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
-from app.analysis.vector_store import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
+from app.analysis.collections import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.core.config import Settings
 from app.core.errors import DomainError
 from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog, ReportSnapshot

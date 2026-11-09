@@ -11,9 +11,11 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult
 
 
-TAXONOMY_COLLECTION_NAME = "hate_speech_taxonomy"
-AUTHORITATIVE_COLLECTION_NAME = "hate_speech_authoritative"
-EXAMPLE_COLLECTION_NAME = "hate_speech_examples"
+from app.analysis.collections import (  # noqa: E402  re-exported for existing callers
+    AUTHORITATIVE_COLLECTION_NAME,
+    EXAMPLE_COLLECTION_NAME,
+    TAXONOMY_COLLECTION_NAME,
+)
 UPSERT_BATCH_SIZE = 100
 
 

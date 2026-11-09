@@ -69,18 +69,21 @@ async def test_google_session_and_encrypted_byok_lifecycle(tmp_path) -> None:
         current = await client.get("/api/auth/session")
         assert current.status_code == 200
         assert current.json()["email"] == "tester@example.com"
-        assert current.json()["api_keys_registered"] == {"anthropic": False, "upstage": False}
+        assert current.json()["api_keys_registered"] == {"anthropic": False}
 
         rejected = await client.put("/api/me/api-keys/anthropic", json={"api_key": "anthropic-secret"})
         assert rejected.status_code == 403
 
         headers = {"Origin": "http://test", "X-Requested-With": "hatespeechraw"}
-        for provider, key in (("anthropic", "anthropic-secret"), ("upstage", "upstage-secret")):
-            saved = await client.put(f"/api/me/api-keys/{provider}", json={"api_key": key}, headers=headers)
-            assert saved.status_code == 200
-            assert key not in saved.text
+        saved = await client.put("/api/me/api-keys/anthropic", json={"api_key": "anthropic-secret"}, headers=headers)
+        assert saved.status_code == 200
+        assert "anthropic-secret" not in saved.text
+        # Upstage runs on the server key; users can no longer register one.
+        upstage = await client.put("/api/me/api-keys/upstage", json={"api_key": "upstage-secret"}, headers=headers)
+        assert upstage.status_code == 400
         listed = await client.get("/api/me/api-keys")
-        assert {item["provider"] for item in listed.json()["items"]} == {"anthropic", "upstage"}
+        assert {item["provider"] for item in listed.json()["items"]} == {"anthropic"}
+        assert (await client.get("/api/auth/session")).json()["api_keys_registered"] == {"anthropic": True}
 
         created = await client.post(
             "/api/analysis-jobs",
@@ -99,10 +102,10 @@ async def test_google_session_and_encrypted_byok_lifecycle(tmp_path) -> None:
         assert stored_session.session_token_hash == token_hash(session_token)
         assert session_token not in stored_session.session_token_hash
         rows = list(session.scalars(select(UserApiKey)))
-        assert len(rows) == 2
-        assert all(row.encrypted_key not in {b"anthropic-secret", b"upstage-secret"} for row in rows)
+        assert len(rows) == 1
+        assert rows[0].encrypted_key != b"anthropic-secret"
         assert stored_session.revoked_at is not None
-    assert validator.calls == [("anthropic", "anthropic-secret"), ("upstage", "upstage-secret")]
+    assert validator.calls == [("anthropic", "anthropic-secret")]
 
 
 @pytest.mark.asyncio
@@ -124,8 +127,7 @@ async def test_private_report_is_owner_only_until_admin_publishes_sample(tmp_pat
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as owner:
         await _login(owner)
-        for provider in ("anthropic", "upstage"):
-            await owner.put(f"/api/me/api-keys/{provider}", json={"api_key": f"{provider}-secret"}, headers=headers)
+        await owner.put("/api/me/api-keys/anthropic", json={"api_key": "anthropic-secret"}, headers=headers)
         created = await owner.post("/api/analysis-jobs", json={"input_value": "abcdefghijk"}, headers=headers)
         assert JobWorker(app.state.session_factory).run_once()
         job = await owner.get(created.json()["status_url"])
@@ -147,3 +149,32 @@ async def test_private_report_is_owner_only_until_admin_publishes_sample(tmp_pat
         assert (await visitor.get("/api/reports/public")).json()["total"] == 1
         no_csrf = await visitor.post(f"{report_path}/exports", json={"format": "html"})
         assert no_csrf.status_code == 403
+
+
+def test_worker_uses_server_upstage_key_for_user_jobs(tmp_path) -> None:
+    from app.auth.crypto import KeyEncryptionService
+    from app.db.models import AnalysisJob, User
+    from app.worker_main import _api_keys_for_job
+
+    settings = _settings(tmp_path).model_copy(update={"embedding_api_key": "server-upstage"})
+    app = create_app(settings, FakeOAuthProvider(), FakeKeyValidator())
+    Base.metadata.create_all(app.state.engine)
+    encryption = KeyEncryptionService(settings.api_key_encryption_key)
+    with app.state.session_factory.begin() as session:
+        user = User(google_sub="sub-1", email="u@example.com")
+        session.add(user)
+        session.flush()
+        for provider in ("anthropic", "upstage"):  # an old Upstage row is ignored
+            session.add(UserApiKey(
+                user_id=user.id, provider=provider, encrypted_key=encryption.encrypt(f"user-{provider}"),
+                key_fingerprint="••••", is_valid=True,
+            ))
+        job = AnalysisJob(user_id=user.id, input_value="abcdefghijk", youtube_video_id="abcdefghijk")
+        session.add(job)
+        session.flush()
+        job_id, user_id = job.id, user.id
+
+    keys, owner = _api_keys_for_job(settings, app.state.session_factory, job_id)
+
+    assert keys == {"anthropic": "user-anthropic", "upstage": "server-upstage"}
+    assert owner == user_id

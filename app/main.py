@@ -10,6 +10,7 @@ from app.api.auth import build_auth_router
 from app.api.exports import build_exports_router
 from app.api.jobs import build_jobs_router
 from app.api.me import build_me_router
+from app.api.methodology import build_methodology_router
 from app.api.reports import build_report_pages_router, build_reports_router
 from app.auth.google_oauth import GoogleOAuthProvider
 from app.auth.services import ApiKeyValidator
@@ -68,6 +69,7 @@ def create_app(
     app.include_router(build_report_pages_router(get_session, settings))
     app.include_router(build_exports_router(get_session, settings))
     app.include_router(build_admin_router(get_session, settings))
+    app.include_router(build_methodology_router(settings))
 
     @app.exception_handler(DomainError)
     async def domain_error_handler(_request, exc: DomainError) -> JSONResponse:

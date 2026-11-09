@@ -113,7 +113,10 @@ RAG_EMBEDDING_CONCURRENCY=4
 RAG_LLM_CONCURRENCY=4
 JEV_PREFILTER_ENABLED=true
 TYPESAFE_API_KEY=<값>
+UPSTAGE_API_KEY=<운영 upstage-api-key secret 값>
 ```
+
+v3부터 사용자는 Anthropic 키만 등록하고, 임베딩은 서버 키로 처리한다. worker에 `UPSTAGE_API_KEY`가 없으면 시작할 때 설정 오류로 멈춘다. 값은 3-4에서 받은 `$UPSTAGE`와 같다.
 
 로컬에서 새 `compose.yaml`(Jev 환경 변수 전달 포함)을 VM에 올리고 worker를 다시 띄운다.
 

@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowRight,
   BarChart3,
-  BrainCircuit,
   Check,
   ChevronDown,
   CircleDashed,
@@ -27,11 +26,12 @@ import {
 } from "lucide-react";
 import { Link, NavLink, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 
-import { ApiError, createExport, createJob, getAnalysisTiers, getAuthSession, getExport, getHateComments, getJob, getMyJobs, getReport, getReportNetwork, getScriptSegments, logout } from "./api";
+import { ApiError, createExport, createJob, getAnalysisTiers, getExport, getHateComments, getJob, getMyJobs, getReport, getReportNetwork, getScriptSegments } from "./api";
 import { ApiKeySettingsPage } from "./ApiKeySettingsPage";
 import { PublicHomePage } from "./PublicHomePage";
 import { RagMethodologyPage } from "./RagMethodologyPage";
-import type { AnalysisTier, AuthSession, CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage } from "./types";
+import { AuthCompletePage, SessionProvider, useSession } from "./session";
+import type { AnalysisTier, CommentNetwork, Job, JobStep, Report, ReportComment, ReportCommentPage, ReportScriptSegment, ReportScriptSegmentPage } from "./types";
 import { categoryLabel, formatDate, formatNumber, formatPlaybackTime, itemProgressText, ratioPercent, reportIdFromPath, TERMINAL_STATUSES } from "./utils";
 
 const STEP_LABELS: Record<string, string> = {
@@ -50,11 +50,16 @@ const STEP_LABELS: Record<string, string> = {
 const CommentNetworkGraph = lazy(() => import("./CommentNetworkGraph").then((module) => ({ default: module.CommentNetworkGraph })));
 
 export default function App() {
+  return <SessionProvider><AppRoutes /></SessionProvider>;
+}
+
+export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/samples" element={<PublicHomePage />} />
+      <Route path="/auth/complete" element={<AuthCompletePage />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<AnalysisRequestPage />} />
+        <Route path="/samples" element={<PublicHomePage />} />
         <Route path="/analyze" element={<Navigate to="/" replace />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/jobs/:jobId" element={<JobPage />} />
@@ -68,38 +73,45 @@ export default function App() {
 }
 
 function Header() {
-  const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
-  useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
+  const { session, signIn, signOut } = useSession();
+  const navigate = useNavigate();
+  const signedIn = Boolean(session);
+  const links = (
+    <>
+      <NavLink to="/" end>분석</NavLink>
+      <NavLink to="/samples">공개 샘플</NavLink>
+      <NavLink to="/rag-methodology">RAG 방법론</NavLink>
+    </>
+  );
 
-  async function signOut() {
-    await logout();
-    window.location.assign("/");
+  async function onSignOut() {
+    await signOut();
+    navigate("/");
   }
 
   return (
     <header className="topbar">
       <Link className="brand" to="/">HateScope</Link>
-      <nav className="topnav" aria-label="주 메뉴">
-        <NavLink to="/" end>분석</NavLink>
-        <NavLink to="/samples">공개 샘플</NavLink>
-        <NavLink to="/history">분석 이력</NavLink>
-        <NavLink to="/rag-methodology">RAG 방법론</NavLink>
-      </nav>
+      <nav className="topnav" aria-label="주 메뉴">{links}</nav>
       <details className="mobile-nav">
         <summary aria-label="메뉴 열기"><Menu size={20} /></summary>
         <nav aria-label="모바일 메뉴">
-          <NavLink to="/" end>분석</NavLink>
-          <NavLink to="/samples">공개 샘플</NavLink>
-          <NavLink to="/history">분석 이력</NavLink>
-          <NavLink to="/rag-methodology">RAG 방법론</NavLink>
+          {links}
+          {signedIn && <><NavLink to="/history">분석 이력</NavLink><NavLink to="/settings">API 키 설정</NavLink><button type="button" onClick={() => void onSignOut()}>로그아웃</button></>}
+          {session === null && <button type="button" onClick={signIn}>Google 로그인</button>}
         </nav>
       </details>
-      <div className="header-account">{session === undefined ? <span>세션 확인 중</span> : session === null ? <a href="/api/auth/google/login?return_to=/"><LogIn size={15} /> Google 로그인</a> : <><Link to="/settings"><KeyRound size={15} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={() => void signOut()}><LogOut size={15} /></button></>}</div>
+      <div className="header-account">
+        {session === undefined ? <span className="session-pending" aria-label="로그인 상태 확인 중"><LoaderCircle className="spin" size={15} /></span>
+          : session === null ? <button type="button" className="header-login" onClick={signIn}><LogIn size={15} /> Google 로그인</button>
+          : <><Link to="/settings"><KeyRound size={15} /> {session.display_name ?? session.email}</Link><button type="button" aria-label="로그아웃" onClick={() => void onSignOut()}><LogOut size={15} /></button></>}
+      </div>
     </header>
   );
 }
 
 function AppShell() {
+  const { session, signIn } = useSession();
   return (
     <div className="app-shell">
       <Header />
@@ -109,11 +121,19 @@ function AppShell() {
             <div className="engine-icon"><BarChart3 size={20} /></div>
             <div><strong>Analysis Engine</strong><small>RAG Pipeline Active</small></div>
           </div>
-          <nav>
-            <NavLink to="/history"><History size={18} /> 분석 이력</NavLink>
-            <NavLink to="/rag-methodology"><BrainCircuit size={18} /> RAG 방법론</NavLink>
-          </nav>
           <Link className="new-analysis" to="/"><Play size={16} /> 새 분석</Link>
+          {session && (
+            <nav aria-label="내 작업">
+              <NavLink to="/history"><History size={18} /> 분석 이력</NavLink>
+              <NavLink to="/settings"><KeyRound size={18} /> API 키 설정</NavLink>
+            </nav>
+          )}
+          {session === null && (
+            <div className="sidebar-login">
+              <p>로그인하면 영상을 분석하고 내 분석 이력을 볼 수 있습니다.</p>
+              <button type="button" onClick={signIn}><LogIn size={15} /> Google 로그인</button>
+            </div>
+          )}
           <div className="sidebar-note"><ShieldCheck size={18} /><span>분류 체계·규범 기준·사례 기반<br />three-vector RAG</span></div>
         </aside>
         <main className="shell-content"><Outlet /></main>
@@ -127,11 +147,10 @@ function AnalysisRequestPage() {
   const [input, setInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [session, setSession] = useState<AuthSession | null | undefined>(undefined);
+  const { session, signIn } = useSession();
   const [tiers, setTiers] = useState<AnalysisTier[]>([]);
   const [tier, setTier] = useState<string | undefined>(undefined);
 
-  useEffect(() => { void getAuthSession().then(setSession).catch(() => setSession(null)); }, []);
   useEffect(() => {
     void getAnalysisTiers()
       .then((list) => { setTiers(list.items); setTier(list.default); })
@@ -139,7 +158,7 @@ function AnalysisRequestPage() {
   }, []);
 
   if (session === undefined) return <LoadingState label="로그인 상태를 확인하는 중입니다" />;
-  if (session && (!session.api_keys_registered.anthropic || !session.api_keys_registered.upstage)) return <ApiKeysRequired session={session} />;
+  if (session && !session.api_keys_registered.anthropic) return <ApiKeysRequired />;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -148,7 +167,7 @@ function AnalysisRequestPage() {
       return;
     }
     if (session === null) {
-      window.location.assign("/api/auth/google/login?return_to=/");
+      signIn();
       return;
     }
     setSubmitting(true);
@@ -661,9 +680,8 @@ function EmptyState() {
   return <div className="state-card"><FileText size={32} /><strong>아직 분석 이력이 없습니다.</strong><Link to="/">첫 분석 시작하기</Link></div>;
 }
 
-function ApiKeysRequired({ session }: { session: AuthSession }) {
-  const missing = [!session.api_keys_registered.anthropic && "Anthropic", !session.api_keys_registered.upstage && "Upstage"].filter(Boolean).join(", ");
-  return <div className="state-card auth-required"><KeyRound size={34} /><strong>분석 API 키를 등록해주세요.</strong><p>필요한 키: {missing}</p><Link to="/settings">API 키 설정</Link></div>;
+function ApiKeysRequired() {
+  return <div className="state-card auth-required"><KeyRound size={34} /><strong>Anthropic API 키를 등록해주세요.</strong><p>판정에 쓰는 Claude 호출 비용은 등록한 키로 청구됩니다. 검색용 임베딩은 서비스가 부담합니다.</p><Link to="/settings">API 키 설정</Link></div>;
 }
 
 function errorMessage(cause: unknown): string {

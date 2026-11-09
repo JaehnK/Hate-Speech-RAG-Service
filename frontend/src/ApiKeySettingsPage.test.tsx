@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { ApiKeySettingsPage } from "./ApiKeySettingsPage";
 
 describe("API key issuance guidance", () => {
-  it("links both providers to their official key pages with safe external links", () => {
+  it("asks only for the Anthropic key and links its official page with safe external links", () => {
     const html = renderToStaticMarkup(<ApiKeySettingsPage />);
 
     expect(html).toContain('href="https://platform.claude.com/settings/keys"');
-    expect(html).toContain('href="https://console.upstage.ai/api-keys"');
-    expect(html.match(/target="_blank"/g)).toHaveLength(2);
-    expect(html.match(/rel="noreferrer"/g)).toHaveLength(2);
+    expect(html).not.toContain("console.upstage.ai");
+    expect(html.match(/target="_blank"/g)).toHaveLength(1);
+    expect(html.match(/rel="noreferrer"/g)).toHaveLength(1);
     expect(html).toContain("API Keys에서 Create Key를 선택");
-    expect(html).toContain("Upstage Console에 가입하거나 로그인");
+    expect(html).toContain("Anthropic 키만 등록하면 됩니다");
     expect(html).toContain("Git, 메신저, 스크린샷에는 남기지 마세요");
   });
 });

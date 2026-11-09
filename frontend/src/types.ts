@@ -211,11 +211,11 @@ export interface AuthSession {
   email: string;
   display_name: string | null;
   avatar_url: string | null;
-  api_keys_registered: { anthropic: boolean; upstage: boolean };
+  api_keys_registered: { anthropic: boolean };
 }
 
 export interface ApiKeySummary {
-  provider: "anthropic" | "upstage";
+  provider: "anthropic" | "upstage"; // "upstage" only for keys saved before 2026-11-09
   key_fingerprint: string;
   is_valid: boolean;
   last_validated_at: string | null;
@@ -240,4 +240,21 @@ export interface Page<T> {
   total: number;
   next_cursor: number | null;
   has_more: boolean;
+}
+
+export interface Methodology {
+  prompt_version: string;
+  prompt: string;
+  pinned_cards: { doc_id: string; text: string }[];
+  retrieval: {
+    taxonomy_k: number;
+    example_k: number;
+    authoritative_slots: { source_type: string; label: string; count: number; guided_by_examples: boolean }[];
+  };
+  models: {
+    classifier: string[];
+    embedding: string;
+    prefilter: { model: string; threshold: number } | null;
+  };
+  tiers: AnalysisTier[];
 }

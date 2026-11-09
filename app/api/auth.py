@@ -14,6 +14,7 @@ from app.auth.services import (
     ApiKeyValidator,
     OAuthStateCodec,
     ProviderApiKeyValidator,
+    SUPPORTED_KEY_PROVIDERS,
     SessionService,
     UserApiKeyService,
     UserService,
@@ -118,7 +119,7 @@ def build_auth_router(
             "email": user.email,
             "display_name": user.display_name,
             "avatar_url": user.avatar_url,
-            "api_keys_registered": {provider: bool(keys.get(provider)) for provider in ("anthropic", "upstage")},
+            "api_keys_registered": {provider: bool(keys.get(provider)) for provider in sorted(SUPPORTED_KEY_PROVIDERS)},
         }
 
     @router.post("/api/auth/logout", status_code=204)
