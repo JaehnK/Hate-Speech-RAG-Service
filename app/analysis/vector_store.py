@@ -11,7 +11,7 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult
 
 
-from app.analysis.collections import (  # noqa: E402  re-exported for existing callers
+from app.analysis.collections import (  # noqa: E402, F401  re-exported for existing callers
     AUTHORITATIVE_COLLECTION_NAME,
     EXAMPLE_COLLECTION_NAME,
     TAXONOMY_COLLECTION_NAME,
