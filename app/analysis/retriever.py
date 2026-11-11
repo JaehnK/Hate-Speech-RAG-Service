@@ -6,6 +6,7 @@ from typing import Any
 import chromadb
 
 from app.analysis.embeddings import HashEmbeddingFunction
+from app.analysis.example_index import ExampleIndex, has_example_index, index_directory
 from app.analysis.models import RetrievalBundle
 from app.analysis.normative_guidance import category_filter, guided_categories
 from app.analysis.vector_store import (
@@ -39,12 +40,17 @@ class DualVectorRetriever:
             embedding_function=self.embedding_function,
             client=self.client,
         )
-        self.example_collection = _get_collection(
-            persist_directory,
-            EXAMPLE_COLLECTION_NAME,
-            embedding_function=self.embedding_function,
-            client=self.client,
-        )
+        # The disk-backed example index, when built, replaces the Chroma example collection,
+        # whose in-memory HNSW index is too large for the production VM.
+        if client is None and has_example_index(persist_directory):
+            self.example_collection = ExampleIndex(index_directory(persist_directory))
+        else:
+            self.example_collection = _get_collection(
+                persist_directory,
+                EXAMPLE_COLLECTION_NAME,
+                embedding_function=self.embedding_function,
+                client=self.client,
+            )
 
     def retrieve(
         self,
