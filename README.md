@@ -33,6 +33,38 @@
 
 남은 누락은 사전 기준 안이라 사후 규칙으로 막지 않고 알려진 위험으로 기록했다. 기본은 꺼져 있고 `JEV_PREFILTER_ENABLED=true`와 서버 공용 `TYPESAFE_API_KEY`로 켠다. 걸러진 항목은 보고서에 "Jev 사전 필터로 혐오 아님 판정"으로 표시된다. Jev 비용은 댓글 1,000건당 약 $0.02다. 상세 내용은 `docs/47_jev_cascade_experiment.md`에 있다.
 
+## 벡터 저장소
+
+taxonomy(21)와 규범·기준 문서(66)는 Chroma에, 유사 사례(K-HATERS train 172,157건, Upstage 4096차원)는 디스크 기반 usearch 인덱스에 둔다.
+
+Chroma는 컬렉션을 건드리면 HNSW 인덱스 전체를 메모리에 올린다. 유사 사례 인덱스는 2.9GB라 운영 VM(e2-micro, RAM 1GB)에서 swap을 붙잡고 멈췄다. 처음에는 유사 사례를 10%로 줄여 봤지만 dev F1이 0.831에서 0.806으로 유의하게 떨어졌다(McNemar p=0.002). 그래서 데이터는 그대로 두고 저장 방식을 바꿨다.
+
+- int8로 양자화한 HNSW 인덱스(0.7GB)를 메모리 매핑으로 열어, 검색이 방문하는 페이지만 읽는다.
+- int8 검색으로 후보 48건을 뽑고 float16 벡터(1.4GB, 역시 메모리 매핑)로 정확한 cosine 유사도를 계산해 상위 6건을 고른다(rescoring).
+
+| 항목 | Chroma | 디스크 기반 인덱스 |
+| --- | ---: | ---: |
+| 필요 메모리 | 2.9GB | 400MB 제한에서 동작 |
+| 정확한 전수 검색 대비 recall@6 | 0.858 | 0.936 |
+| dev 1,000건 F1 (Haiku 5.5) | 0.831 | 0.830 (한쪽만 맞힌 문항 17 : 17) |
+
+### 다른 후보와 비교
+
+| 후보 | 형태 | 판단 |
+| --- | --- | --- |
+| **usearch (채택)** | 프로세스 내장 라이브러리 | 별도 서버가 없고 메모리 매핑으로 RAM을 거의 쓰지 않는다 |
+| LanceDB | 내장, 디스크 기반 | 같은 계열의 대안. IVF-PQ 양자화가 내장되어 있고 메타데이터 관리가 더 편하다 |
+| Qdrant (VM 설치) | 서버(Rust) | 원본 벡터는 디스크에 둘 수 있지만 양자화 벡터는 기본이 RAM 상주(int8 약 0.7GB)라, 서버 메모리까지 더하면 1GB VM에 빠듯하다 |
+| Qdrant Cloud 무료 | 관리형 | 무료 클러스터 RAM이 1GB 수준이라 int8로 겨우 들어간다. 무료 조건과 네트워크 지연을 따져야 한다 |
+| pgvector | Postgres 확장 | HNSW 인덱스 차원 한도(`vector` 2,000, `halfvec` 4,000)보다 4096차원이 커서 인덱스를 만들 수 없다 |
+| FAISS | 라이브러리 | IVF-PQ 등 양자화는 강력하지만 디스크 기반 사용이 번거롭고 의존성이 크다 |
+| Milvus, Weaviate | 서버 | 부속 서비스나 서버 메모리가 1GB VM에 무겁다 |
+| sqlite-vec | SQLite 확장 | 전수 비교라 172k × 4096에서 느리다 |
+
+Qdrant는 양자화 3종과 rescoring, 필터, 스냅샷을 기본 기능으로 갖춰 완성도가 가장 높다. 다만 지금은 worker 하나가 고정된 데이터를 읽기만 하므로, 서버를 하나 더 운영하는 비용이 이점보다 크다. VM을 필요할 때만 켜는 구조로 바꾸거나, 데이터가 수백만 건으로 늘거나, 여러 서비스가 검색을 공유해야 할 때 분리를 검토한다.
+
+측정 방법과 재현 명령은 `docs/51_example_index_memory.md`에 있다.
+
 ## 로컬 실행
 
 ```bash
@@ -48,7 +80,7 @@ uv run uvicorn app.main:app --reload
 uv run python -m app.worker_main
 ```
 
-기본 `PIPELINE_MODE=fake`는 외부 API 없이 backend job/report 경로를 검증한다. 로그인 UI를 사용하려면 Google OAuth client와 `API_KEY_ENCRYPTION_KEY`를 설정한다. 실제 수집에는 서버 공용 `YOUTUBE_API_KEY`가 필요하고, Anthropic/Upstage 키는 로그인한 사용자가 `/settings`에서 직접 등록한다.
+기본 `PIPELINE_MODE=fake`는 외부 API 없이 backend job/report 경로를 검증한다. 로그인 UI를 사용하려면 Google OAuth client와 `API_KEY_ENCRYPTION_KEY`를 설정한다. 실제 수집에는 서버 공용 `YOUTUBE_API_KEY`가 필요하다. 임베딩은 서버 공용 `UPSTAGE_API_KEY`로 처리하고, Anthropic 키는 로그인한 사용자가 `/settings`에서 직접 등록한다.
 
 ## Docker Compose
 
@@ -91,6 +123,8 @@ docker compose -f compose.yaml -f compose.prod.yaml config --quiet
 uv run python -m app.analysis.rag_ingest --persist-directory .chroma --reset
 uv run python -m app.analysis.definition_ingest --persist-directory .chroma
 uv run python -m app.analysis.example_ingest --persist-directory .chroma
+# 선택: 유사 사례를 디스크 기반 인덱스로 (있으면 retriever가 이것을 쓴다)
+uv run python -m app.analysis.example_index --source .chroma --target .chroma/example_index
 ```
 
 기본 ingest는 `commercial_ok` license tier만 허용한다. raw dataset과 vector store는 Git에 커밋하지 않는다.
