@@ -103,3 +103,21 @@ def test_no_target_allows_profanity_with_null_group() -> None:
     result = validate_classification_output(payload)
 
     assert result.valid
+
+
+def test_target_scope_must_match_the_decision() -> None:
+    payload = _base_payload()
+    payload["target_scope"] = "group"
+    assert validate_classification_output(payload, require_target_scope=True).valid
+
+    payload["target_scope"] = "none"
+    assert "hate_requires_group_or_individual_scope" in validate_classification_output(payload).errors
+
+    payload.update(is_hate_speech=False, categories=["unclassified"], target_group=None, hate_type=None, target_scope="individual")
+    assert "non_hate_requires_target_scope_none" in validate_classification_output(payload).errors
+
+
+def test_target_scope_is_required_only_when_asked() -> None:
+    payload = _base_payload()
+    assert validate_classification_output(payload).valid
+    assert "target_scope_must_be_group_individual_or_none" in validate_classification_output(payload, require_target_scope=True).errors

@@ -112,8 +112,28 @@ def _analysis_summary(results) -> dict:
         "failed": sum(result.status == "failed" for result in existing),
         "missing": len(results) - len(existing),
         "hate_speech_count": sum(bool(result.is_hate_speech) for result in existing),
+        "group_hate_count": sum(target_scope(result) == "group" for result in existing),
+        "insult_count": sum(target_scope(result) == "individual" for result in existing),
         "category_distribution": dict(sorted(categories.items())),
     }
+
+
+# Categories that name no group: insults at individuals and untargeted profanity.
+INSULT_ONLY_CATEGORIES = frozenset({"profanity", "no_target", "other", "unclassified"})
+
+
+def target_scope(result) -> str:
+    """group / individual / none for a stored result.
+
+    Prompt v0.7 returns target_scope; older results are classified by their categories, which
+    counts a politician insulted by name (state_authority) as group, so it over-counts group hate.
+    """
+    if not result.is_hate_speech:
+        return "none"
+    scope = (result.raw_response or {}).get("target_scope")
+    if scope in {"group", "individual"}:
+        return scope
+    return "group" if set(result.categories or ()) - INSULT_ONLY_CATEGORIES else "individual"
 
 
 def _representative_comments(rows, limit: int = 10) -> list[dict]:

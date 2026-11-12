@@ -2,15 +2,15 @@
 
 ## 1. 문서 목적과 기준 시점
 
-이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다. 2026-11-09에 worker 기본 prompt가 `category-rag-v0.6.2`로 바뀌었고(3.2a), 5절의 전체 prompt는 이전 운영 버전 `category-rag-v0.3.1`의 계약으로 남겨 둔다.
+이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다. 2026-11-09에 worker 기본 prompt가 `category-rag-v0.6.2`로, 2026-11-12에 `category-rag-v0.7.0`으로 바뀌었고(3.2a, 3.2b), 5절의 전체 prompt는 이전 운영 버전 `category-rag-v0.3.1`의 계약으로 남겨 둔다.
 
 - 공개 요약 화면: `/rag-methodology`. 이 문서의 운영 설정과 재현 세부는 내부 개발·감사 자료로만 유지한다.
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
-- worker 기본 prompt version: `category-rag-v0.6.2` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.3.1`)
+- worker 기본 prompt version: `category-rag-v0.7.0` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.6.2`, `category-rag-v0.3.1`)
 - 기본 LLM: 분석 방식(tier)이 정한다. 현재 두 방식 모두 `claude-haiku-5-5`, 절약 방식은 Jev 사전 필터를 더한다
-- taxonomy version: `v0.5.1`
-- definition corpus version: `definition-corpus-2026-11-09-v0.5.1`
+- taxonomy version: `v0.6.0`
+- definition corpus version: `definition-corpus-2026-11-12-v0.6.0`
 - 정확도·비용 근거: `docs/49_v062_benchmark_results.md`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
@@ -82,6 +82,15 @@ taxonomy collection에는 내부 taxonomy card만 들어간다. authoritative co
 | 문서 우선순위 | 혐오 여부와 category는 판정 규칙과 taxonomy가 정하고, 규범 문서는 근거 인용에 쓰며 판정 기준을 좁히지 않는다 | 데이터셋 README가 "최우선 기준"으로 판정을 좁히던 문제 |
 | category 체계 | taxonomy v0.5의 12개 category(`other`를 `profanity`로 통합). example의 `other` 라벨도 `profanity`로 보여준다 | 개인 모욕을 `other`와 `profanity` 중 어디에 둘지가 흔들렸다 |
 | 생성 옵션 | Claude 5 세대 모델은 temperature 대신 effort `low`, `max_tokens` 4096 이상 | 5 세대는 sampling parameter를 받지 않는다 |
+
+### 3.2b `category-rag-v0.7.0` 변경
+
+검색 방식은 v0.6.2와 같다. 판정 기준과 출력이 바뀐다(docs/52).
+
+| 변경 | 내용 | 근거 |
+| --- | --- | --- |
+| `target_scope` 출력 | `group`(보호 속성·정치 진영·조직 전체, 또는 집단 속성을 근거로 한 개인 공격), `individual`(집단 속성과 무관한 개인 공격, 대상 없는 욕설), `none`(비혐오). 검증기가 판정과 맞는지 확인한다 | 보고서의 "혐오표현 비율"이 개인 모욕까지 세고 있었다 |
+| taxonomy v0.6.0 | `gender`·`age`: 성별·나이 단어가 나오지만 집단을 비하하지 않는 서술은 제외. `profanity`: 이름 말장난·스캔들 농담·관상 품평처럼 욕설·멸칭이 없는 놀림은 제외. 문맥 예외: 뜻이 여러 개인 단어는 문맥상 뜻으로 판단 | 실제 영상 리포트에서 같은 말의 판정이 갈리고, 성별 단어만으로 `gender`가 붙었다 |
 
 세 collection 검색은 각각 독립적으로 예외를 처리한다.
 
@@ -160,7 +169,7 @@ worker를 정지한 상태에서 두 production collection을 reset하고 동일
 
 ### 4.3 Definition collection
 
-taxonomy v0.5.1은 9개 규칙 card와 12개 category card, 총 21개 문서를 생성한다(이전 v0.3.0은 10개 규칙과 13개 category, 23개 문서). `ALLOWED_CATEGORIES`는 저장된 결과와 `category-rag-v0.3.1` 호환을 위해 `other`를 유지하고, 새 prompt는 `CATEGORY_CODES`만 허용한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
+taxonomy v0.6.0(v0.5.1과 문서 구성 동일)은 9개 규칙 card와 12개 category card, 총 21개 문서를 생성한다(이전 v0.3.0은 10개 규칙과 13개 category, 23개 문서). `ALLOWED_CATEGORIES`는 저장된 결과와 `category-rag-v0.3.1` 호환을 위해 `other`를 유지하고, 새 prompt는 `CATEGORY_CODES`만 허용한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
 
 10개 규칙 card는 허용 category, 공통 hate threshold, 비혐오, `other`, 정치적 2축, 인용·풍자 문맥 예외, 복수 선택, `hate_type`, `target_group`, 배타 충돌 규칙을 각각 고정한다. category별 전체 기준은 `docs/12_category_taxonomy.md`를 기준으로 하며 코드의 `CATEGORY_CARDS`와 corpus 문서 생성 테스트로 동기화한다.
 

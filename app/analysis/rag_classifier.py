@@ -12,7 +12,7 @@ from app.analysis.models import DefinitionDocument, DefinitionSearchResult
 from app.analysis.models import ExampleDocument, ExampleSearchResult, SourceType
 from app.analysis.models import ValidationResult
 from app.analysis.observability import NoopObservabilityClient, ObservabilityClient
-from app.analysis.prompt_template import AUTHORITATIVE_SLOTS, PINNED_TAXONOMY_IDS, PROMPT_VERSION
+from app.analysis.prompt_template import AUTHORITATIVE_SLOTS, PINNED_TAXONOMY_IDS, PROMPT_VERSION, TARGET_SCOPE_VERSIONS
 from app.analysis.prompt_template import build_category_prompt
 from app.analysis.prompt_validator import validate_classification_output
 from app.analysis.retriever import DualVectorRetriever
@@ -151,7 +151,7 @@ class RagClassifier:
                 except Exception as exc:
                     raise ClassificationError("LLM classification request failed") from exc
 
-            payload, validation = _validated_payload(response.text)
+            payload, validation = _validated_payload(response.text, require_target_scope=self.prompt_version in TARGET_SCOPE_VERSIONS)
             last_validation = validation
             if validation.valid and payload is not None:
                 return ClassificationResult(
@@ -188,13 +188,13 @@ def _retrieval_query(input_text: str, source_type: SourceType) -> str:
     return f"{input_text}\nsource_type={source_type}"
 
 
-def _validated_payload(text: str) -> tuple[dict[str, Any] | None, ValidationResult]:
+def _validated_payload(text: str, require_target_scope: bool = False) -> tuple[dict[str, Any] | None, ValidationResult]:
     try:
         payload = json.loads(_extract_json(text))
     except json.JSONDecodeError:
         return None, ValidationResult(valid=False, errors=("json_parse_failed",))
 
-    validation = validate_classification_output(payload)
+    validation = validate_classification_output(payload, require_target_scope=require_target_scope)
     return payload, validation
 
 

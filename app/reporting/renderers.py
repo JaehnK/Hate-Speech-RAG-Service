@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.analysis.citations import describe_citation
 from app.analysis.taxonomy import CATEGORY_CARDS
+from app.reporting.builder import target_scope
 from app.db.models import (
     CommentAnalysisResult,
     CommentNetwork,
@@ -46,6 +47,7 @@ class HtmlReportRenderer:
         self.environment.filters["rag_context"] = lambda status: RAG_CONTEXT_LABELS.get(status or "", "상태 미기록")
         self.environment.filters["playback"] = _playback_time
         self.environment.filters["number"] = lambda value: f"{value or 0:,}"
+        self.environment.filters["scope_label"] = lambda result: SCOPE_LABELS[target_scope(result)]
 
     def render(self, session: Session, report: ReportSnapshot) -> str:
         payload = report.payload
@@ -75,6 +77,9 @@ class HtmlReportRenderer:
             collected=(collection.get("comments_collected") or 0) + (collection.get("replies_collected") or 0),
             summary=summary,
             hate_ratio=_percent(summary.get("hate_speech_count") or 0, total),
+            split="group_hate_count" in summary,
+            group_ratio=_percent(summary.get("group_hate_count") or 0, total),
+            insult_ratio=_percent(summary.get("insult_count") or 0, total),
             categories=[(name, count, _percent(count, total)) for name, count in categories],
             hate_comments=hate_comments,
             script_summary=payload.get("script_analysis_summary") or {},
@@ -82,6 +87,9 @@ class HtmlReportRenderer:
             network=_network_overview(session, report),
             config=payload.get("analysis_config") or {},
         )
+
+
+SCOPE_LABELS = {"group": "집단 혐오", "individual": "모욕·욕설", "none": "정상"}
 
 
 def category_label(category: str) -> str:
@@ -139,13 +147,13 @@ class ExcelExporter:
             summary.append([key, value])
 
         comments = workbook.create_sheet("comment_analysis")
-        comments.append(["youtube_comment_id", "is_reply", "text", "status", "is_hate_speech", "categories", "분석 사유"])
+        comments.append(["youtube_comment_id", "is_reply", "text", "status", "is_hate_speech", "target_scope", "categories", "분석 사유"])
         for comment, result in session.execute(
             select(CommentSnapshot, CommentAnalysisResult)
             .join(CommentAnalysisResult, CommentAnalysisResult.comment_snapshot_id == CommentSnapshot.id)
             .where(CommentAnalysisResult.analysis_run_id == report.analysis_run_id)
         ):
-            comments.append([comment.youtube_comment_id, comment.is_reply, comment.text_original, result.status, result.is_hate_speech, _json(result.categories), result.reasoning])
+            comments.append([comment.youtube_comment_id, comment.is_reply, comment.text_original, result.status, result.is_hate_speech, target_scope(result), _json(result.categories), result.reasoning])
 
         scripts = workbook.create_sheet("script_analysis")
         scripts.append(["segment_index", "start_seconds", "end_seconds", "text", "status", "is_hate_speech", "categories", "분석 사유"])

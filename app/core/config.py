@@ -51,9 +51,9 @@ class Settings(BaseSettings):
     llm_model: str = "claude-haiku-4-5-20251001"
     llm_api_key: str | None = Field(default=None, repr=False)
     llm_max_tokens: int = 1200
-    # Prompt used by the worker. v0.6.2 needs taxonomy v0.5.1 and the normative corpus in
-    # the vector store (docs/49); set category-rag-v0.3.1 to run against an older store.
-    rag_prompt_version: str = "category-rag-v0.6.2"
+    # Prompt used by the worker. v0.7.0 needs taxonomy v0.6.0 and the normative corpus in the
+    # vector store (docs/52); v0.6.2 runs against a taxonomy v0.5.1 store (docs/49).
+    rag_prompt_version: str = "category-rag-v0.7.0"
     llm_temperature: float = 0.0
     jev_prefilter_enabled: bool = False
     typesafe_api_key: str | None = Field(default=None, repr=False)

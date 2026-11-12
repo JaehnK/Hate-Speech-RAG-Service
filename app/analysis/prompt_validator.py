@@ -8,6 +8,8 @@ from app.analysis.models import ValidationResult
 from app.analysis.taxonomy import ALLOWED_CATEGORIES
 
 
+TARGET_SCOPES: tuple[str, ...] = ("group", "individual", "none")
+
 REQUIRED_OUTPUT_FIELDS: tuple[str, ...] = (
     "input_text",
     "is_hate_speech",
@@ -23,6 +25,7 @@ REQUIRED_OUTPUT_FIELDS: tuple[str, ...] = (
 def validate_classification_output(
     payload: Mapping[str, Any],
     allowed_categories: tuple[str, ...] = ALLOWED_CATEGORIES,
+    require_target_scope: bool = False,
 ) -> ValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
@@ -62,6 +65,15 @@ def validate_classification_output(
                 errors.append("no_target_requires_null_target_group")
         if payload.get("target_group") is None and category_set.difference({"profanity", "no_target"}):
             warnings.append("target_group_missing_for_targeted_category")
+
+    if require_target_scope or "target_scope" in payload:
+        scope = payload.get("target_scope")
+        if scope not in TARGET_SCOPES:
+            errors.append("target_scope_must_be_group_individual_or_none")
+        elif is_hate_speech is False and scope != "none":
+            errors.append("non_hate_requires_target_scope_none")
+        elif is_hate_speech is True and scope == "none":
+            errors.append("hate_requires_group_or_individual_scope")
 
     if not isinstance(payload.get("similar_cases_used", []), list):
         errors.append("similar_cases_used_must_be_list")

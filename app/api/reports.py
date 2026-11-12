@@ -22,6 +22,7 @@ from app.db.models import (
     ScriptAnalysisResult,
     TranscriptSegment,
 )
+from app.reporting.builder import target_scope
 from app.reporting.exports import ExportService
 from app.reporting.renderers import HtmlReportRenderer
 
@@ -236,7 +237,9 @@ def _report_list_payload(report: ReportSnapshot) -> dict[str, Any]:
     collection = report.payload.get("collection_summary", {})
     video = report.payload.get("video", {})
     total = int(summary.get("succeeded") or summary.get("total") or 0)
-    hate_count = int(summary.get("hate_speech_count") or 0)
+    # Reports built since prompt v0.7 count group hate separately from insults; the list shows
+    # group hate when available so it matches the report page.
+    hate_count = int(summary.get("group_hate_count", summary.get("hate_speech_count")) or 0)
     categories = summary.get("category_distribution") or {}
     return {
         "report_id": str(report.id),
@@ -258,6 +261,7 @@ def _analysis_payload(result) -> dict[str, Any]:
         "status": result.status,
         "is_hate_speech": result.is_hate_speech,
         "categories": result.categories,
+        "target_scope": target_scope(result),
         "target_group": result.target_group,
         "hate_type": result.hate_type,
         "reasoning": result.reasoning,

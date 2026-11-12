@@ -8,6 +8,7 @@
   --primary: #182442;
   --primary-soft: #2e3a59;
   --crimson: #bb0112;
+  --amber: #a15c00;
   --surface: #fff;
   --surface-low: #f2f4f6;
   --surface-high: #e6e8ea;
@@ -190,7 +191,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .distribution-panel, .cases-panel { height: 650px; min-height: 0; overflow: hidden; }
 .distribution-panel { display: flex; flex-direction: column; }
 .donut-wrap { padding: 22px; display: flex; align-items: center; justify-content: center; gap: 26px; }
-.donut { width: 142px; height: 142px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--crimson) var(--ratio), var(--primary) 0); position: relative; }
+.donut { width: 142px; height: 142px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--crimson) var(--ratio), var(--amber) var(--ratio) var(--insult, var(--ratio)), var(--primary) 0); position: relative; }
 .donut::after { content: ""; position: absolute; inset: 24px; border-radius: 50%; background: #fff; }
 .donut span { position: relative; z-index: 1; display: grid; color: var(--muted); font-size: 10px; text-align: center; }
 .donut strong { color: var(--primary); font: 700 19px "JetBrains Mono", monospace; }
@@ -198,6 +199,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .legend i { width: 8px; height: 8px; border-radius: 2px; }
 .legend i.normal { background: var(--primary); }
 .legend i.risk { background: var(--crimson); }
+.legend i.insult { background: var(--amber); }
 .legend strong { color: var(--primary); font-family: "JetBrains Mono", monospace; }
 .category-list { min-height: 0; padding: 0 22px 22px; display: grid; flex: 1; align-content: start; grid-auto-rows: min-content; gap: 12px; }
 .category-list.scrollable { overflow-y: auto; scrollbar-gutter: stable; }
@@ -219,6 +221,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .case-card summary:focus-visible { outline: 2px solid var(--primary-soft); outline-offset: -2px; }
 .case-card-meta, .case-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .case-card-meta span { padding: 3px 6px; color: #fff; background: var(--crimson); border-radius: 2px; font: 600 8px "JetBrains Mono", monospace; }
+.case-card-meta span.insult { background: var(--amber); }
 .case-card code { color: var(--muted); font-size: 9px; }
 .case-card-text { margin: 10px 0; display: block; color: #353941; font-size: 12px; line-height: 1.55; }
 .case-card-footer { color: var(--crimson); font-size: 9px; font-weight: 700; }
