@@ -181,3 +181,20 @@ sudo docker compose -f compose.yaml -f compose.vm.yaml up -d worker
 gcloud run deploy web --region $REGION --project $PROJECT --image $REG/backend:v2
 gcloud run deploy frontend --region $REGION --project $PROJECT --image $REG/frontend:v2
 ```
+
+## 부록: 1비트 유사 사례 인덱스 전환 (backend:v5, 2026-11-12)
+
+v4의 int8 인덱스는 VM 캐시에 들어가지 않아 댓글 1개에 수십 초가 걸렸다(docs/51 4절). v5는 기존 float16 벡터로 1비트 인덱스를 VM에서 직접 만든다. 업로드할 파일은 없다.
+
+```bash
+# VM
+NEW=us-central1-docker.pkg.dev/hsr-portfolio-49143/hsr/backend:v5
+sudo docker pull $NEW
+sudo docker stop hsr-worker-1
+sudo docker run --rm -v hsr_chroma_data:/data/chroma --entrypoint python $NEW -m app.analysis.example_index --from-vectors /data/chroma/example_index
+sudo docker run --rm -v hsr_chroma_data:/data/chroma --entrypoint python $NEW -m app.analysis.example_index --benchmark /data/chroma/example_index
+# .env의 IMG_BACKEND를 backend:v5로 바꾼 뒤
+cd /opt/hsr && sudo docker compose -f compose.yaml -f compose.vm.yaml up -d worker
+```
+
+v4로 되돌릴 때는 `IMG_BACKEND`만 v4로 바꾼다. v4는 `examples.usearch`(int8)를 그대로 읽는다.
