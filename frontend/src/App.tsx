@@ -411,7 +411,7 @@ function HistoryCard({ job, report }: { job: Job; report?: Report }) {
         <StatusBadge status={job.status} />
         <h2>{report?.video.title ?? `YouTube Video · ${job.youtube_video_id}`}</h2>
         <p>{formatDate(job.created_at)}</p>
-        <div className="history-meta"><span>진행률 <strong>{job.progress.percent}%</strong></span><span>단계 <strong>{job.steps.length}</strong></span></div>
+        <div className="history-meta"><span>진행률 <strong>{job.progress.percent}%</strong></span><span>현재 단계 <strong>{job.progress.current_step ? STEP_LABELS[job.progress.current_step] ?? job.progress.current_step : "완료"}</strong></span></div>
         <Link to={destination}>{reportId ? "보고서 보기" : "작업 상태 보기"} <ArrowRight size={16} /></Link>
       </div>
     </article>
