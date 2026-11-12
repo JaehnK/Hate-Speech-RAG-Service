@@ -4,7 +4,7 @@ import pytest
 
 from app.analysis.collections import EXAMPLE_COLLECTION_NAME
 from app.analysis.embeddings import HashEmbeddingFunction
-from app.analysis.example_index import ExampleIndex, build_example_index, has_example_index, index_directory
+from app.analysis.example_index import INDEX_FILE, ExampleIndex, build_binary_index, build_example_index, has_example_index, index_directory
 from app.analysis.retriever import DualVectorRetriever
 from app.analysis.vector_store import _get_collection, parse_example_query_result
 
@@ -23,7 +23,9 @@ def _metadata(i: int) -> dict:
 @pytest.fixture
 def store(tmp_path):
     rng = np.random.default_rng(0)
-    vectors = rng.normal(size=(300, 32)).astype(np.float32)
+    # Clustered like real embeddings (30 groups of 10), so nearest neighbours are well defined.
+    centers = rng.normal(size=(30, 256))
+    vectors = (np.repeat(centers, 10, axis=0) + 0.3 * rng.normal(size=(300, 256))).astype(np.float32)
     client = chromadb.PersistentClient(path=str(tmp_path / "chroma"))
     for name in ("hate_speech_taxonomy", "hate_speech_authoritative"):
         _get_collection(tmp_path / "chroma", name, client=client)
@@ -62,12 +64,24 @@ def test_index_matches_exact_cosine_neighbours(store) -> None:
 
 def test_retriever_prefers_example_index_when_built(store) -> None:
     persist, _ = store
-    assert not isinstance(DualVectorRetriever(persist, HashEmbeddingFunction(32)).example_collection, ExampleIndex)
+    assert not isinstance(DualVectorRetriever(persist, HashEmbeddingFunction(256)).example_collection, ExampleIndex)
 
     build_example_index(str(persist), str(index_directory(persist)))
-    retriever = DualVectorRetriever(persist, HashEmbeddingFunction(32))
+    retriever = DualVectorRetriever(persist, HashEmbeddingFunction(256))
     assert isinstance(retriever.example_collection, ExampleIndex)
 
     bundle = retriever.retrieve("comment", taxonomy_n=0, authoritative_n=0, example_n=4)
     assert len(bundle.examples) == 4
     assert bundle.failures == ()
+
+
+def test_partial_index_directory_is_an_error_not_a_fallback(store) -> None:
+    persist, _ = store
+    build_example_index(str(persist), str(index_directory(persist)))
+    (index_directory(persist) / INDEX_FILE).unlink()
+    with pytest.raises(RuntimeError, match="--from-vectors"):
+        has_example_index(persist)
+
+    summary = build_binary_index(index_directory(persist))
+    assert summary["examples"] == 300 and has_example_index(persist)
+    assert ExampleIndex(index_directory(persist)).count() == 300
