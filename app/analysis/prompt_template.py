@@ -15,7 +15,11 @@ PROMPT_V060 = "category-rag-v0.6.0"
 PROMPT_V061 = "category-rag-v0.6.1"
 # v0.6.2: taxonomy v0.5.0 category set (`other` folded into `profanity`).
 PROMPT_V062 = "category-rag-v0.6.2"
-MERGED_CATEGORY_VERSIONS = frozenset({PROMPT_V062})
+# v0.7.0: taxonomy v0.6.0 (narrower gender/age/profanity boundaries) and a target_scope field
+# that separates group hate from insults aimed at individuals (docs/52).
+PROMPT_V070 = "category-rag-v0.7.0"
+MERGED_CATEGORY_VERSIONS = frozenset({PROMPT_V062, PROMPT_V070})
+TARGET_SCOPE_VERSIONS = frozenset({PROMPT_V070})
 
 _RULES_V031: tuple[str, ...] = (
     "Do not assume the input is hate speech. Decide hate/non-hate first.",
@@ -50,6 +54,11 @@ _RULES_V050: tuple[str, ...] = (
     "service's hate threshold; apply it as written.",
 )
 
+_RULES_V070: tuple[str, ...] = (
+    *_RULES_V050,
+    "Set target_scope as that card defines it: group, individual, or none for non-hate.",
+)
+
 DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_VERSION: _RULES_V031,
     PROMPT_V040: _RULES_V040,
@@ -58,6 +67,7 @@ DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_V060: _RULES_V050,
     PROMPT_V061: _RULES_V050,
     PROMPT_V062: _RULES_V050,
+    PROMPT_V070: _RULES_V070,
 }
 
 # Taxonomy cards included in every prompt for a version, regardless of retrieval rank.
@@ -66,6 +76,7 @@ PINNED_TAXONOMY_IDS: dict[str, tuple[str, ...]] = {
     PROMPT_V060: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V061: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V062: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+    PROMPT_V070: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
 }
 
 # v0.6.0 searches the curated normative corpus (data/normative) one slot per source
@@ -90,6 +101,7 @@ AUTHORITATIVE_SLOTS: dict[str, tuple[tuple[str, int], ...]] = {
     ),
 }
 AUTHORITATIVE_SLOTS[PROMPT_V062] = AUTHORITATIVE_SLOTS[PROMPT_V061]
+AUTHORITATIVE_SLOTS[PROMPT_V070] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 
 _CONTEXT_RULES_V031: tuple[str, ...] = (
     "Use taxonomy_context for allowed output schema and category boundaries.",
@@ -132,6 +144,7 @@ CONTEXT_RULES: dict[str, tuple[str, ...]] = {
 }
 CONTEXT_RULES[PROMPT_V061] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V062] = CONTEXT_RULES[PROMPT_V060]
+CONTEXT_RULES[PROMPT_V070] = CONTEXT_RULES[PROMPT_V060]
 SOURCE_TYPES: tuple[str, ...] = ("comment", "reply", "script_segment")
 
 
@@ -148,7 +161,7 @@ def build_category_prompt(
     if source_type not in SOURCE_TYPES:
         raise ValueError(f"unsupported source_type: {source_type}")
 
-    payload_shape = {
+    payload_shape: dict = {
         "input_text": input_text,
         "is_hate_speech": "boolean",
         "categories": ["one or more allowed category codes"],
@@ -171,6 +184,13 @@ def build_category_prompt(
             }
         ],
     }
+
+    if prompt_version in TARGET_SCOPE_VERSIONS:
+        payload_shape = {
+            **{key: value for key, value in payload_shape.items() if key != "reasoning"},
+            "target_scope": "group | individual | none",
+            "reasoning": payload_shape["reasoning"],
+        }
 
     return "\n".join(
         [

@@ -33,11 +33,13 @@ def test_network_report_html_and_excel_builders(tmp_path) -> None:
     with app.state.session_factory.begin() as session:
         report = _seed_report(session)
         assert report.payload["comment_analysis_summary"]["hate_speech_count"] == 1
+        assert report.payload["comment_analysis_summary"]["group_hate_count"] == 1
+        assert report.payload["comment_analysis_summary"]["insult_count"] == 0
         assert report.payload["network_summary"]["node_count"] == 2
         assert report.payload["analysis_config"]["retriever_config"]["example_min_similarity"] == 0.4
         session.scalar(select(CommentSnapshot).where(CommentSnapshot.youtube_comment_id == "reply")).text_original = "<script>alert(1)</script>"
         rendered = HtmlReportRenderer().render(session, report)
-        for heading in ("카테고리 분포", "전체 혐오 댓글", "자막 RAG 분석", "댓글 네트워크 분석"):
+        for heading in ("카테고리 분포", "전체 혐오·모욕 댓글", "혐오표현 (집단 대상)", "자막 RAG 분석", "댓글 네트워크 분석"):
             assert heading in rendered
         assert "성별" in rendered and "targeted" in rendered
         assert "normal script" in rendered
@@ -46,7 +48,8 @@ def test_network_report_html_and_excel_builders(tmp_path) -> None:
         workbook = load_workbook(BytesIO(ExcelExporter().render(session, report)))
         assert workbook.sheetnames == ["summary", "comment_analysis", "script_analysis", "network_nodes", "network_edges"]
         assert workbook["comment_analysis"].max_row == 3
-        assert workbook["comment_analysis"].cell(1, 7).value == "분석 사유"
+        assert workbook["comment_analysis"].cell(1, 6).value == "target_scope"
+        assert workbook["comment_analysis"].cell(1, 8).value == "분석 사유"
         assert workbook["script_analysis"].cell(1, 8).value == "분석 사유"
 
 
@@ -268,3 +271,18 @@ def _seed_report(session):
     session.flush()
     CommentNetworkBuilder().build(session, run)
     return ReportBuilder().build(session, run)
+
+
+def test_target_scope_prefers_the_model_field_and_falls_back_to_categories() -> None:
+    from types import SimpleNamespace
+
+    from app.reporting.builder import target_scope
+
+    def result(is_hate, categories, raw=None):
+        return SimpleNamespace(is_hate_speech=is_hate, categories=categories, raw_response=raw)
+
+    assert target_scope(result(False, ["unclassified"])) == "none"
+    assert target_scope(result(True, ["profanity"])) == "individual"
+    assert target_scope(result(True, ["profanity", "no_target"])) == "individual"
+    assert target_scope(result(True, ["gender", "profanity"])) == "group"
+    assert target_scope(result(True, ["state_authority", "profanity"], {"target_scope": "individual"})) == "individual"

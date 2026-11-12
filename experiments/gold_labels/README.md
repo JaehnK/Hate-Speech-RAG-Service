@@ -19,3 +19,10 @@ MVP에서는 단일 검토자 small set으로 시작하고, 운영 전에는 2�
 현재 정확도 평가셋·결과 현황과 실제 gold set 요구사항은 `docs/41_rag_accuracy_evaluation_status.md`를 기준으로 한다.
 
 레거시 실제 결과셋을 활용한 반자동 gold 후보 구축 절차는 `docs/43_semi_automatic_gold_pipeline.md`와 `experiments.prepare_legacy_gold`를 기준으로 한다.
+
+## YouTube 정답셋 (2026-11-12)
+
+- `youtube_eval300.labels.jsonl`: 실제 YouTube 영상 3개에서 100건씩 뽑은 300건. `is_hate_speech`(서비스 기준: 집단 혐오 + 개인 공격), `target_scope`(group / individual / none), `categories`.
+- `youtube_consistency.labels.jsonl`: 젠슨 황 영상에서 거의 같은 말을 묶은 111건. `group` 필드가 묶음 이름이다. 프롬프트 튜닝에 쓴 세트라 효과 판단에는 쓰지 않는다.
+- 라벨은 Claude 한 명이 달았고 사람 검토 전이다. 댓글 본문은 넣지 않고 `experiments.fetch_youtube_comments`로 다시 받는다.
+- 채점: `experiments.evaluate_youtube`. 결과와 한계는 `docs/52_v070_youtube_eval.md`.

@@ -508,6 +508,9 @@ function ReportPage() {
 
   const summary = report.comment_analysis_summary;
   const hateRatio = ratioPercent(summary.hate_speech_count, summary.total);
+  const split = summary.group_hate_count !== undefined;
+  const groupRatio = ratioPercent(summary.group_hate_count ?? 0, summary.total);
+  const insultRatio = ratioPercent(summary.insult_count ?? 0, summary.total);
   const categories = Object.entries(summary.category_distribution).sort((a, b) => b[1] - a[1]);
   return (
     <div className="page-wrap report-page">
@@ -524,19 +527,22 @@ function ReportPage() {
       <section className="stat-grid">
         <StatCard label="수집 댓글" value={formatNumber(report.collection_summary.comments_collected + report.collection_summary.replies_collected)} />
         <StatCard label="분석 완료" value={formatNumber(summary.succeeded)} />
-        <StatCard label="혐오표현 비율" value={`${hateRatio.toFixed(1)}%`} danger={hateRatio > 0} />
+        {split ? <>
+          <StatCard label="혐오표현 (집단 대상)" value={`${groupRatio.toFixed(1)}%`} danger={groupRatio > 0} />
+          <StatCard label="모욕·욕설 (개인 대상)" value={`${insultRatio.toFixed(1)}%`} />
+        </> : <StatCard label="혐오표현 비율" value={`${hateRatio.toFixed(1)}%`} danger={hateRatio > 0} />}
       </section>
       <div className="report-grid">
         <section className="panel distribution-panel">
           <PanelTitle icon={<BarChart3 size={18} />} title="카테고리 분포" />
           <div className="donut-wrap">
-            <div className="donut" style={{ "--ratio": `${Math.min(hateRatio, 100) * 3.6}deg` } as CSSProperties}><span><strong>{formatNumber(summary.total)}</strong>분석</span></div>
-            <div className="legend"><p><i className="normal" />정상 <strong>{(100 - hateRatio).toFixed(1)}%</strong></p><p><i className="risk" />혐오표현 <strong>{hateRatio.toFixed(1)}%</strong></p></div>
+            <div className="donut" style={{ "--ratio": `${Math.min(split ? groupRatio : hateRatio, 100) * 3.6}deg`, "--insult": `${Math.min(split ? groupRatio + insultRatio : hateRatio, 100) * 3.6}deg` } as CSSProperties}><span><strong>{formatNumber(summary.total)}</strong>분석</span></div>
+            <div className="legend"><p><i className="normal" />정상 <strong>{(100 - hateRatio).toFixed(1)}%</strong></p>{split ? <><p><i className="risk" />혐오표현 <strong>{groupRatio.toFixed(1)}%</strong></p><p><i className="insult" />모욕·욕설 <strong>{insultRatio.toFixed(1)}%</strong></p></> : <p><i className="risk" />혐오표현 <strong>{hateRatio.toFixed(1)}%</strong></p>}</div>
           </div>
           <div className={`category-list ${categories.length > 7 ? "scrollable" : ""}`}>{categories.length ? categories.map(([name, count]) => <div key={name}><span>{categoryLabel(name)}</span><div><i style={{ width: `${ratioPercent(count, summary.total)}%` }} /></div><strong>{formatNumber(count)}</strong></div>) : <p className="muted">분류된 혐오 카테고리가 없습니다.</p>}</div>
         </section>
         <section className="panel cases-panel">
-          <PanelTitle icon={<AlertTriangle size={18} />} title="전체 혐오 댓글" />
+          <PanelTitle icon={<AlertTriangle size={18} />} title={split ? "전체 혐오·모욕 댓글" : "전체 혐오 댓글"} />
           <div className="cases-summary"><span>좋아요 많은 순</span><strong>{formatNumber(hateComments.length)} / {formatNumber(hateCommentPage?.total ?? summary.hate_speech_count)}</strong></div>
           {hateCommentsError && <div className="cases-error" role="alert">{hateCommentsError}</div>}
           <div className="cases-list" aria-live="polite">
@@ -590,6 +596,8 @@ function ScriptSegmentCard({ segment }: { segment: ReportScriptSegment }) {
   );
 }
 
+const SCOPE_LABELS: Record<string, string> = { group: "집단 혐오", individual: "모욕·욕설" };
+
 export function HateCommentCard({ comment }: { comment: ReportComment }) {
   const similarCases = comment.analysis.similar_cases_used ?? [];
   const definitionDocs = comment.analysis.definition_docs_used ?? [];
@@ -597,7 +605,7 @@ export function HateCommentCard({ comment }: { comment: ReportComment }) {
     <article className="case-card">
       <details>
         <summary>
-          <span className="case-card-meta"><span>FLAGGED</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></span>
+          <span className="case-card-meta"><span className={comment.analysis.target_scope === "individual" ? "insult" : undefined}>{SCOPE_LABELS[comment.analysis.target_scope ?? ""] ?? "FLAGGED"}</span><code>{comment.youtube_comment_id.slice(0, 12)}</code></span>
           <span className="case-card-text">{comment.text_original || "내용이 없는 댓글입니다."}</span>
           <span className="case-card-footer"><span>{comment.analysis.categories.map(categoryLabel).join(", ") || "미분류"}</span><small>좋아요 {formatNumber(comment.like_count)}</small></span>
           <span className="case-card-affordance">분석 근거 보기 <ChevronDown size={14} /></span>

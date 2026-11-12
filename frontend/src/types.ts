@@ -61,6 +61,9 @@ export interface AnalysisSummary {
   failed: number;
   missing: number;
   hate_speech_count: number;
+  /** Present on reports built since prompt v0.7: group-targeted hate vs. insults at individuals. */
+  group_hate_count?: number;
+  insult_count?: number;
   category_distribution: Record<string, number>;
 }
 
@@ -145,6 +148,7 @@ export interface ReportComment {
     status: string;
     is_hate_speech: boolean | null;
     categories: string[];
+    target_scope?: "group" | "individual" | "none";
     target_group: string | null;
     hate_type: string | null;
     reasoning: string | null;

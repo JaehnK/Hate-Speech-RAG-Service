@@ -64,22 +64,31 @@
   <section class="stats">
     <div class="panel"><small class="kicker">수집 댓글</small><div class="stat-value">{{ collected|number }}</div></div>
     <div class="panel"><small class="kicker">분석 완료</small><div class="stat-value">{{ summary.succeeded|number }}</div></div>
+    {% if split %}
+    <div class="panel"><small class="kicker">혐오표현 (집단 대상)</small><div class="stat-value{% if group_ratio > 0 %} danger{% endif %}">{{ "%.1f"|format(group_ratio) }}%</div></div>
+    <div class="panel"><small class="kicker">모욕·욕설 (개인 대상)</small><div class="stat-value">{{ "%.1f"|format(insult_ratio) }}%</div></div>
+    {% else %}
     <div class="panel"><small class="kicker">혐오표현 비율</small><div class="stat-value{% if hate_ratio > 0 %} danger{% endif %}">{{ "%.1f"|format(hate_ratio) }}%</div></div>
+    {% endif %}
   </section>
 
   <section class="panel">
     <h2>카테고리 분포</h2>
+    {% if split %}
+    <div class="ratio"><span>정상 <strong>{{ "%.1f"|format(100 - hate_ratio) }}%</strong></span><span class="risk">혐오표현 <strong>{{ "%.1f"|format(group_ratio) }}%</strong></span><span>모욕·욕설 <strong>{{ "%.1f"|format(insult_ratio) }}%</strong></span><span class="muted">분석 {{ summary.total|number }}건 중 집단 대상 혐오표현 {{ summary.group_hate_count|number }}건, 개인 대상 모욕·욕설 {{ summary.insult_count|number }}건</span></div>
+    {% else %}
     <div class="ratio"><span>정상 <strong>{{ "%.1f"|format(100 - hate_ratio) }}%</strong></span><span class="risk">혐오표현 <strong>{{ "%.1f"|format(hate_ratio) }}%</strong></span><span class="muted">분석 {{ summary.total|number }}건 중 혐오표현 {{ summary.hate_speech_count|number }}건</span></div>
+    {% endif %}
     {% for name, count, percent in categories %}
     <div class="bar-row"><span>{{ name|category }}</span><div class="bar"><i style="width: {{ "%.2f"|format(percent) }}%"></i></div><strong>{{ count|number }}</strong></div>
     {% else %}<p class="muted">분류된 혐오 카테고리가 없습니다.</p>{% endfor %}
   </section>
 
   <section class="panel">
-    <h2>전체 혐오 댓글 <span class="muted">({{ hate_comments|length|number }}건 · 좋아요 많은 순)</span></h2>
+    <h2>{% if split %}전체 혐오·모욕 댓글{% else %}전체 혐오 댓글{% endif %} <span class="muted">({{ hate_comments|length|number }}건 · 좋아요 많은 순)</span></h2>
     {% for comment, result in hate_comments %}
     <article class="case">
-      <div class="case-meta"><span><span class="flag">FLAGGED</span> · <code>{{ comment.youtube_comment_id[:12] }}</code>{% if comment.is_reply %} · 답글{% endif %}</span><span>좋아요 {{ comment.like_count|number }}</span></div>
+      <div class="case-meta"><span><span class="flag">{% if split %}{{ result|scope_label }}{% else %}FLAGGED{% endif %}</span> · <code>{{ comment.youtube_comment_id[:12] }}</code>{% if comment.is_reply %} · 답글{% endif %}</span><span>좋아요 {{ comment.like_count|number }}</span></div>
       <p>{{ comment.text_original or "내용이 없는 댓글입니다." }}</p>
       <div class="muted">{{ (result.categories or [])|map("category")|join(", ") or "미분류" }}</div>
       <details>
