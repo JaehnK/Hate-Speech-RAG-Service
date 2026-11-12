@@ -45,7 +45,7 @@ export function ApiKeySettingsPage() {
   return (
     <div className="page-wrap key-settings">
       <div className="page-title"><div><small>BYOK SETTINGS</small><h1>분석 API 키</h1></div></div>
-      <p className="page-description">키는 유효성을 확인한 뒤 암호화해 저장하며, 분석 작업 중에만 복호화합니다. 검색용 임베딩(Upstage)은 서비스 키로 처리하므로 Anthropic 키만 등록하면 됩니다.</p>
+      <p className="page-description">키는 유효성을 확인한 뒤 암호화해 저장하며, 분석 작업 중에만 복호화합니다.</p>
       <aside className="key-security-note"><ShieldCheck size={18} /><p><strong>API 키를 안전하게 보관하세요.</strong> 이 페이지에만 입력하고 Git, 메신저, 스크린샷에는 남기지 마세요.</p></aside>
       {message && <div className="settings-message" role="status">{message}</div>}
       <div className="key-grid">{PROVIDERS.map((provider) => {
@@ -57,9 +57,14 @@ export function ApiKeySettingsPage() {
             <ol>{provider.steps.map((step) => <li key={step}>{step}</li>)}</ol>
             <p>{provider.note}</p>
           </section>
-          {saved && <div className="saved-key"><Check size={16} /><span>{saved.key_fingerprint}</span><strong>{saved.is_valid ? "검증됨" : "재검증 필요"}</strong></div>}
-          <label>새 API 키<input type="password" autoComplete="off" minLength={8} required value={values[provider.id]} onChange={(event) => setValues((current) => ({ ...current, [provider.id]: event.target.value }))} placeholder={`${provider.title} API key`} /></label>
-          <div className="key-actions"><button className="button-small" disabled={busy !== null}>{busy === provider.id ? <LoaderCircle className="spin" size={15} /> : <KeyRound size={15} />} 검증 후 저장</button>{saved && <button className="key-delete" type="button" disabled={busy !== null} onClick={() => void remove(provider.id)}><Trash2 size={15} /> 삭제</button>}</div>
+          {saved ? <>
+            <div className="saved-key"><Check size={16} /><span>{saved.key_fingerprint}</span><strong>{saved.is_valid ? "검증됨" : "재검증 필요"}</strong></div>
+            <p className="key-replace-note">키는 하나만 등록할 수 있습니다. 다른 키를 쓰려면 삭제한 뒤 다시 등록하세요.</p>
+            <div className="key-actions"><button className="key-delete" type="button" disabled={busy !== null} onClick={() => void remove(provider.id)}>{busy === provider.id ? <LoaderCircle className="spin" size={15} /> : <Trash2 size={15} />} 삭제</button></div>
+          </> : <>
+            <label>API 키<input type="password" autoComplete="off" minLength={8} required value={values[provider.id]} onChange={(event) => setValues((current) => ({ ...current, [provider.id]: event.target.value }))} placeholder={`${provider.title} API key`} /></label>
+            <div className="key-actions"><button className="button-small" disabled={busy !== null}>{busy === provider.id ? <LoaderCircle className="spin" size={15} /> : <KeyRound size={15} />} 검증 후 저장</button></div>
+          </>}
         </form>;
       })}</div>
     </div>

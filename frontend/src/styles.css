@@ -488,7 +488,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .key-security-note p { margin: 0; font-size: 12px; line-height: 1.65; }
 .key-security-note strong { color: var(--primary); }
 .settings-message { margin: 0 0 18px; padding: 12px 14px; color: var(--primary); background: #edf2fb; border: 1px solid #c8d4e6; font-size: 12px; }
-.key-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.key-grid { display: grid; grid-template-columns: minmax(0, 760px); gap: 18px; }
 .key-card { padding: 22px; display: flex; flex-direction: column; }
 .key-title { display: flex; align-items: center; gap: 12px; }
 .key-title > span { width: 42px; height: 42px; display: grid; place-items: center; color: #fff; background: var(--primary); border-radius: 5px; }
@@ -510,6 +510,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .key-actions { margin-top: auto; display: flex; gap: 8px; }
 .key-card button { border: 0; }
 .key-delete { padding: 8px 12px; display: inline-flex; align-items: center; gap: 6px; color: var(--crimson); background: #ffedeb; border-radius: 5px; font-size: 11px; font-weight: 700; }
+.key-replace-note { margin: 12px 0 18px; color: var(--muted); font-size: 11px; }
 .auth-required p { margin: 0; color: var(--muted); font-size: 12px; }
 
 @media (max-width: 980px) {

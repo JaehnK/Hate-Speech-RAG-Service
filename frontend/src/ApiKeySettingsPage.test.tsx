@@ -12,7 +12,7 @@ describe("API key issuance guidance", () => {
     expect(html.match(/target="_blank"/g)).toHaveLength(1);
     expect(html.match(/rel="noreferrer"/g)).toHaveLength(1);
     expect(html).toContain("API Keys에서 Create Key를 선택");
-    expect(html).toContain("Anthropic 키만 등록하면 됩니다");
+    expect(html).not.toContain("Upstage");
     expect(html).toContain("Git, 메신저, 스크린샷에는 남기지 마세요");
   });
 });
