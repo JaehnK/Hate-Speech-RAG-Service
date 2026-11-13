@@ -54,7 +54,11 @@ class FakeTranscriptProvider:
 
 
 class FakeClassifier:
-    def classify_text(self, text, _source_type):
+    def __init__(self):
+        self.video_titles = []
+
+    def classify_text(self, text, _source_type, video_title=None):
+        self.video_titles.append(video_title)
         return SimpleNamespace(
             payload={
                 "input_text": text,
@@ -81,11 +85,14 @@ class PartiallyFailingYouTubeClient(FakeYouTubeClient):
 def test_real_adapter_pipeline_persists_collection_and_analysis_artifacts(tmp_path) -> None:
     app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'production.db'}"))
     Base.metadata.create_all(app.state.engine)
-    handlers = _handlers(FakeYouTubeClient(), app.state.session_factory)
+    classifier = FakeClassifier()
+    handlers = _handlers(FakeYouTubeClient(), app.state.session_factory, classifier)
 
     with app.state.session_factory() as session:
         job_id = AnalysisJobService(session).create_job("abcdefghijk").id
     assert JobWorker(app.state.session_factory, handlers=handlers).run_once()
+    # Comments and script segments are classified with the video title as context.
+    assert classifier.video_titles == ["Real adapter video", "Real adapter video"]
 
     with app.state.session_factory() as session:
         assert AnalysisJobService(session).get_job(job_id).status == "succeeded"
@@ -115,8 +122,8 @@ def test_incomplete_comment_collection_is_preserved_but_not_analyzed(tmp_path) -
         assert session.scalar(select(func.count()).select_from(CommentAnalysisResult)) == 0
 
 
-def _handlers(youtube, session_factory):
-    classifier = FakeClassifier()
+def _handlers(youtube, session_factory, classifier=None):
+    classifier = classifier or FakeClassifier()
     runtime = RagRuntime([classifier])
     result_store = AnalysisResultStore(session_factory)
     handlers = build_fake_handlers()

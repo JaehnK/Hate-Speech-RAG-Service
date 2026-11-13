@@ -13,7 +13,9 @@ from app.jobs.exceptions import WorkerShutdownRequested
 
 
 class Classifier(Protocol):
-    def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult: ...
+    def classify_text(
+        self, input_text: str, source_type: SourceType, video_title: str | None = None
+    ) -> ClassificationResult: ...
 
 
 class RuntimeMetrics:
@@ -213,7 +215,7 @@ def _submit_one(
 
 def _classify(classifier: Classifier, item: AnalysisItem) -> AnalysisOutcome:
     try:
-        result = classifier.classify_text(item.text, item.source_type)
+        result = classifier.classify_text(item.text, item.source_type, item.video_title)
     except ClassificationError as exc:
         return AnalysisOutcome(
             source_id=item.source_id,

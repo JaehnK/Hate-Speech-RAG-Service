@@ -6,7 +6,7 @@ from experiments.variants import ExperimentVariant
 
 
 class FakeClassifier:
-    def classify_text(self, _text, _source_type):
+    def classify_text(self, _text, _source_type, _video_title=None):
         return SimpleNamespace(
             payload={"is_hate_speech": False, "categories": ["unclassified"]},
             model="fake",

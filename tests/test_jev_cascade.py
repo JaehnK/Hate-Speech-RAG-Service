@@ -132,7 +132,7 @@ class FakeRag:
     def __init__(self):
         self.calls, self.closed = 0, False
 
-    def classify_text(self, _text, _source_type):
+    def classify_text(self, _text, _source_type, _video_title=None):
         self.calls += 1
         return "rag-result"
 

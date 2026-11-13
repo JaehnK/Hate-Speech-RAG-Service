@@ -18,8 +18,12 @@ PROMPT_V062 = "category-rag-v0.6.2"
 # v0.7.0: taxonomy v0.6.0 (narrower gender/age/profanity boundaries) and a target_scope field
 # that separates group hate from insults aimed at individuals (docs/52).
 PROMPT_V070 = "category-rag-v0.7.0"
-MERGED_CATEGORY_VERSIONS = frozenset({PROMPT_V062, PROMPT_V070})
-TARGET_SCOPE_VERSIONS = frozenset({PROMPT_V070})
+# v0.7.1: v0.7.0 plus the video title, so comments about the people in the video can be
+# resolved (docs/53).
+PROMPT_V071 = "category-rag-v0.7.1"
+MERGED_CATEGORY_VERSIONS = frozenset({PROMPT_V062, PROMPT_V070, PROMPT_V071})
+TARGET_SCOPE_VERSIONS = frozenset({PROMPT_V070, PROMPT_V071})
+VIDEO_CONTEXT_VERSIONS = frozenset({PROMPT_V071})
 
 _RULES_V031: tuple[str, ...] = (
     "Do not assume the input is hate speech. Decide hate/non-hate first.",
@@ -59,6 +63,14 @@ _RULES_V070: tuple[str, ...] = (
     "Set target_scope as that card defines it: group, individual, or none for non-hate.",
 )
 
+_RULES_V071: tuple[str, ...] = (
+    *_RULES_V070,
+    "Video title, when given, is the title of the video the comment was posted under. Use it "
+    "only to work out who or what the input refers to (for example, a person or group shown "
+    "in the video). Judge the input itself: the title's wording or topic never makes an input "
+    "hate speech, and a comment that merely agrees with or reacts to the topic is not an attack.",
+)
+
 DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_VERSION: _RULES_V031,
     PROMPT_V040: _RULES_V040,
@@ -68,6 +80,7 @@ DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_V061: _RULES_V050,
     PROMPT_V062: _RULES_V050,
     PROMPT_V070: _RULES_V070,
+    PROMPT_V071: _RULES_V071,
 }
 
 # Taxonomy cards included in every prompt for a version, regardless of retrieval rank.
@@ -77,6 +90,7 @@ PINNED_TAXONOMY_IDS: dict[str, tuple[str, ...]] = {
     PROMPT_V061: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V062: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V070: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+    PROMPT_V071: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
 }
 
 # v0.6.0 searches the curated normative corpus (data/normative) one slot per source
@@ -102,6 +116,7 @@ AUTHORITATIVE_SLOTS: dict[str, tuple[tuple[str, int], ...]] = {
 }
 AUTHORITATIVE_SLOTS[PROMPT_V062] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 AUTHORITATIVE_SLOTS[PROMPT_V070] = AUTHORITATIVE_SLOTS[PROMPT_V061]
+AUTHORITATIVE_SLOTS[PROMPT_V071] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 
 _CONTEXT_RULES_V031: tuple[str, ...] = (
     "Use taxonomy_context for allowed output schema and category boundaries.",
@@ -145,6 +160,7 @@ CONTEXT_RULES: dict[str, tuple[str, ...]] = {
 CONTEXT_RULES[PROMPT_V061] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V062] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V070] = CONTEXT_RULES[PROMPT_V060]
+CONTEXT_RULES[PROMPT_V071] = CONTEXT_RULES[PROMPT_V060]
 SOURCE_TYPES: tuple[str, ...] = ("comment", "reply", "script_segment")
 
 
@@ -155,6 +171,7 @@ def build_category_prompt(
     authoritative_context: Sequence[DefinitionDocument] = (),
     example_context: Sequence[ExampleDocument] = (),
     prompt_version: str = PROMPT_VERSION,
+    video_title: str | None = None,
 ) -> str:
     if prompt_version not in DECISION_RULES:
         raise ValueError(f"unknown prompt_version: {prompt_version}")
@@ -212,6 +229,11 @@ def build_category_prompt(
             "",
             f"Allowed categories: {', '.join(CATEGORY_CODES if prompt_version in MERGED_CATEGORY_VERSIONS else ALLOWED_CATEGORIES)}",
             f"Source type: {source_type}",
+            *(
+                (f"Video title JSON: {json.dumps(video_title, ensure_ascii=False)}",)
+                if video_title and prompt_version in VIDEO_CONTEXT_VERSIONS
+                else ()
+            ),
             f"Input text JSON: {json.dumps(input_text, ensure_ascii=False)}",
             "",
             "[taxonomy_context]",

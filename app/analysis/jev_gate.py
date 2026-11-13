@@ -31,14 +31,16 @@ class JevGatedClassifier:
         self.jev_client = jev_client
         self.threshold = threshold
 
-    def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
+    def classify_text(
+        self, input_text: str, source_type: SourceType, video_title: str | None = None
+    ) -> ClassificationResult:
         try:
             score = self.jev_client.score(input_text)
         except Exception as exc:
             logger.warning("jev prefilter failed, falling back to RAG: %s", type(exc).__name__)
-            return self.inner.classify_text(input_text, source_type)
+            return self.inner.classify_text(input_text, source_type, video_title)
         if score.p_hate >= self.threshold:
-            return self.inner.classify_text(input_text, source_type)
+            return self.inner.classify_text(input_text, source_type, video_title)
         return _filtered_result(score.p_hate, score.model, self.threshold)
 
     def __getattr__(self, name: str):

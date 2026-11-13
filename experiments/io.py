@@ -11,6 +11,7 @@ class ExperimentInput:
     item_id: str
     text: str
     source_type: str
+    video_title: str | None = None
 
 
 def read_inputs(path: Path | str, limit: int | None = None) -> list[ExperimentInput]:
@@ -25,6 +26,7 @@ def read_inputs(path: Path | str, limit: int | None = None) -> list[ExperimentIn
                     item_id=str(row["item_id"]),
                     text=str(row["text"]),
                     source_type=str(row.get("source_type", "comment")),
+                    video_title=row.get("video_title"),
                 )
             )
             if limit is not None and len(inputs) >= limit:

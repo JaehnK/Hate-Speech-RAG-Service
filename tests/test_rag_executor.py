@@ -16,7 +16,7 @@ class DelayedClassifier:
         self.state = state
         self.lock = lock
 
-    def classify_text(self, text, _source_type):
+    def classify_text(self, text, _source_type, _video_title=None):
         with self.lock:
             self.state["active"] += 1
             self.state["max_active"] = max(self.state["max_active"], self.state["active"])
@@ -70,7 +70,7 @@ def test_parallel_runtime_is_bounded_and_faster_than_sequential() -> None:
 
 def test_parallel_runtime_persists_every_out_of_order_result() -> None:
     class VariableClassifier(DelayedClassifier):
-        def classify_text(self, text, source_type):
+        def classify_text(self, text, source_type, _video_title=None):
             self.delay = (6 - int(text)) * 0.005
             return super().classify_text(text, source_type)
 

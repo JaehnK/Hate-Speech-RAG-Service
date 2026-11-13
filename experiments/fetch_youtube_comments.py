@@ -1,7 +1,7 @@
 """Download the public comments of YouTube videos as experiment inputs.
 
 Comment text stays under experiments/outputs (git-ignored); only labels keyed by item_id are
-versioned. Author names are dropped. Usage:
+versioned. Author names are dropped; the video title is kept for prompt v0.7.1. Usage:
 
     uv run python -m experiments.fetch_youtube_comments VIDEO_ID [VIDEO_ID ...] \
         --output-path experiments/outputs/youtube/comments.inputs.jsonl
@@ -22,6 +22,7 @@ def item_id(video_id: str, comment_id: str) -> str:
 
 
 def fetch(client: YouTubeApiClient, video_id: str) -> list[dict]:
+    title = client.get_video(video_id)["snippet"]["title"]
     rows = []
     for record in client.iter_comments(video_id):
         text = record.text_original.strip()
@@ -33,6 +34,7 @@ def fetch(client: YouTubeApiClient, video_id: str) -> list[dict]:
                 "source_type": "reply" if record.is_reply else "comment",
                 "text": text,
                 "video_id": video_id,
+                "video_title": title,
                 "like_count": record.like_count,
             }
         )
