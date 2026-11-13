@@ -67,8 +67,10 @@ _RULES_V071: tuple[str, ...] = (
     *_RULES_V070,
     "Video title, when given, is the title of the video the comment was posted under. Use it "
     "only to work out who or what the input refers to (for example, a person or group shown "
-    "in the video). Judge the input itself: the title's wording or topic never makes an input "
-    "hate speech, and a comment that merely agrees with or reacts to the topic is not an attack.",
+    "in the video), as taxonomy:hate_threshold:0 describes. Judge the words of the input itself: "
+    "the title's wording or topic never makes an input hate speech, a reaction, observation or "
+    "opinion about the topic without insult is not an attack, and the title naming a group does "
+    "not by itself make target_scope group.",
 )
 
 DECISION_RULES: dict[str, tuple[str, ...]] = {
