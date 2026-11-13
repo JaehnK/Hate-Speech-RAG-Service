@@ -2,12 +2,12 @@
 
 ## 1. 문서 목적과 기준 시점
 
-이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다. 2026-11-09에 worker 기본 prompt가 `category-rag-v0.6.2`로, 2026-11-12에 `category-rag-v0.7.0`으로 바뀌었고(3.2a, 3.2b), 5절의 전체 prompt는 이전 운영 버전 `category-rag-v0.3.1`의 계약으로 남겨 둔다.
+이 문서는 서비스가 댓글, 답글, 공개 자막 세그먼트를 분류할 때 실제로 실행하는 three-vector RAG 파이프라인을 재현 가능한 수준으로 설명한다. 설계 의도가 아니라 `app/analysis/`와 `app/worker_main.py` 구현을 기준으로 한다. 2026-11-09에 worker 기본 prompt가 `category-rag-v0.6.2`로, 2026-11-12에 `category-rag-v0.7.0`으로, 2026-11-13에 `category-rag-v0.8.0`으로 바뀌었고(3.2a, 3.2b, 3.2d), 5절의 전체 prompt는 이전 운영 버전 `category-rag-v0.3.1`의 계약으로 남겨 둔다.
 
 - 공개 요약 화면: `/rag-methodology`. 이 문서의 운영 설정과 재현 세부는 내부 개발·감사 자료로만 유지한다.
 - Stitch 설계 화면 ID: `b8156a72574e4f94890af9a0e8ec63bf`
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
-- worker 기본 prompt version: `category-rag-v0.7.0` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.6.2`, `category-rag-v0.3.1`)
+- worker 기본 prompt version: `category-rag-v0.8.0` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.7.0`, `category-rag-v0.6.2`, `category-rag-v0.3.1`)
 - 기본 LLM: 분석 방식(tier)이 정한다. 현재 두 방식 모두 `claude-haiku-5-5`, 절약 방식은 Jev 사전 필터를 더한다
 - taxonomy version: `v0.7.0`
 - definition corpus version: `definition-corpus-2026-11-13-v0.7.0`
@@ -96,7 +96,7 @@ taxonomy collection에는 내부 taxonomy card만 들어간다. authoritative co
 
 v0.7.0에 영상 제목을 더한다(docs/53). worker는 job의 최신 `video_metadata_snapshots.title`을 댓글과 자막 구간 분류에 넘기고, prompt는 입력 앞에 `Video title JSON`을 넣는다. 검색 쿼리에는 제목을 넣지 않는다. taxonomy v0.6.1은 `hate_threshold` 카드에 영상 제목을 쓰는 기준을 더했다. 제목이 다루는 집단을 묶어 비인간화하거나 일반화하면 `group`, 영상 속 사람의 특정 행동에 대한 욕은 `individual`, 주제에 대한 반응·관찰·의견은 모욕이 없으면 비혐오다. v0.7.0 이하 prompt는 제목을 받아도 쓰지 않는다.
 
-### 3.2d `category-rag-v0.8.0` (실험)
+### 3.2d `category-rag-v0.8.0` (2026-11-13부터 기본)
 
 taxonomy v0.7.0의 6개 category(`gender`, `age`, `identity`, `political_actor`, `political_camp`, `profanity`)와 `unclassified`만 허용한다(docs/54). 정치 6개 category(state/non_state × authority/regime/community)를 이름 있는 정치 주체(`political_actor`)와 이름 없는 지지층·진영(`political_camp`)으로 줄였다. `state_community`는 `identity`, `no_target`과 `other`는 `profanity`로 읽는다(`V07_CATEGORY_MAP`). 유사 사례의 label도 이 표로 바꿔 보여 준다. 영상 제목과 `target_scope`는 v0.7.1과 같다. taxonomy v0.7.0 store가 필요하며, 이전 prompt는 이 store와 함께 쓰지 않는다.
 
