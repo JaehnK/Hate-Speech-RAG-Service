@@ -222,3 +222,27 @@ gcloud run deploy frontend --region $REGION --project $PROJECT --image $REG/fron
 새 보고서부터 "혐오표현 (집단 대상)"과 "모욕·욕설 (개인 대상)"이 나뉜다. 기존 보고서는 예전 화면 그대로다.
 
 되돌리기: `IMG_BACKEND`를 v5로 바꾸고 v5 이미지로 같은 `rag_ingest` 명령을 실행해 taxonomy v0.5.1을 다시 적재한다. v6의 카드가 남아 있어도 v0.6.2는 동작하지만, 판정 기준이 v0.6.0으로 바뀐 상태가 된다.
+
+## 부록: 프롬프트 v0.8.0 · taxonomy v0.7.0 (backend:v7, frontend:v6, 2026-11-13)
+
+v7은 기본 프롬프트가 `category-rag-v0.8.0`(영상 제목 입력, 6개 분류)이고, taxonomy v0.7.0 카드(16건)가 벡터 저장소에 있어야 한다(docs/54). v6 부록과 같은 순서로 **taxonomy 재적재를 worker 교체보다 먼저** 한다. 규범 문서와 유사 사례 인덱스는 그대로 둔다. 영상 제목은 이미 저장되는 `VideoMetadataSnapshot.title`을 읽으므로 DB 마이그레이션은 없다.
+
+```bash
+# VM
+NEW=us-central1-docker.pkg.dev/hsr-portfolio-49143/hsr/backend:v7
+sudo docker pull $NEW
+sudo docker stop hsr-worker-1
+sudo docker run --rm --env-file /opt/hsr/.env -v hsr_chroma_data:/data/chroma --entrypoint python $NEW \
+  -m app.analysis.rag_ingest --persist-directory /data/chroma --embedding-provider upstage --reset
+# 출력의 document_count 16, corpus_version definition-corpus-2026-11-13-v0.7.0 확인
+# .env의 IMG_BACKEND를 backend:v7로 바꾼 뒤
+cd /opt/hsr && sudo docker compose -f compose.yaml -f compose.vm.yaml up -d worker
+
+# 로컬
+gcloud run deploy web --region $REGION --project $PROJECT --image $REG/backend:v7
+gcloud run deploy frontend --region $REGION --project $PROJECT --image $REG/frontend:v6
+```
+
+새 보고서부터 정치 대상이 "정치인·정당·기관 공격"과 "지지층·진영 비하"로 나뉜다. 기존 보고서의 예전 코드는 "(이전 분류)" 라벨로 보인다.
+
+되돌리기: `IMG_BACKEND`를 v6로 바꾸고 v6 이미지로 같은 `rag_ingest` 명령을 실행해 taxonomy v0.6.0(21건)을 다시 적재한다.
