@@ -75,3 +75,22 @@ def test_v071_adds_the_video_title_and_older_versions_ignore_it() -> None:
     assert '"target_scope"' in v071
     assert "Video title JSON" not in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V071)
     assert title not in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V070, video_title=title)
+
+
+def test_v080_offers_six_categories_and_maps_example_labels() -> None:
+    from app.analysis.models import ExampleDocument
+    from app.analysis.prompt_template import PROMPT_V071, PROMPT_V080
+
+    example = ExampleDocument(
+        doc_id="ex:1", text="t", source_dataset="d", source_split="s", source_revision="r", license_tier="l",
+        mapped_categories=("non_state_community", "no_target"), is_hate_speech=True, raw_labels={},
+        target_labels=(), hate_type_labels=(), text_hash="h", score=0.9,
+    )
+    v080 = build_category_prompt("text", "comment", [], example_context=[example], prompt_version=PROMPT_V080, video_title="제목")
+    assert "Allowed categories: gender, age, identity, political_actor, political_camp, profanity, unclassified" in v080
+    assert '"mapped_categories":["political_camp","profanity"]' in v080
+    assert "named political actor" in v080
+    assert 'Video title JSON: "제목"' in v080
+    v071 = build_category_prompt("text", "comment", [], example_context=[example], prompt_version=PROMPT_V071)
+    assert "political_actor" not in v071
+    assert '"mapped_categories":["non_state_community","no_target"]' in v071

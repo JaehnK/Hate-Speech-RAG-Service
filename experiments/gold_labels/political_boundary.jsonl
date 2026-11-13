@@ -1,0 +1,18 @@
+{"item_id": "boundary:00", "text": "좌빨 김제동 방송 퇴출해라", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_actor", "political_camp"]}
+{"item_id": "boundary:01", "text": "김제동 정치 선동 그만해라 병신아", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:02", "text": "김제동 하나도 안 웃김, 한물간 개그맨", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["profanity"]}
+{"item_id": "boundary:03", "text": "김제동 발언은 사실관계가 틀렸다", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": false, "target_scope": "none", "categories": ["unclassified"]}
+{"item_id": "boundary:04", "text": "조인성 얼굴만 믿고 발연기하네 ㅉㅉ", "video_title": "조인성 신작 드라마 첫 방송 시청률", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["profanity"]}
+{"item_id": "boundary:05", "text": "조인성도 빨갱이였네", "video_title": "좌파 발언에 난리난 조인성 SNS, 좌표 찍힘", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_actor", "political_camp"]}
+{"item_id": "boundary:06", "text": "조인성이 그런 말 했다니 좀 실망", "video_title": "좌파 발언에 난리난 조인성 SNS, 좌표 찍힘", "source_type": "comment", "is_hate_speech": false, "target_scope": "none", "categories": ["unclassified"]}
+{"item_id": "boundary:07", "text": "조인성 그냥 무식한 놈이네", "video_title": "좌파 발언에 난리난 조인성 SNS, 좌표 찍힘", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:08", "text": "전한길 미친놈", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:09", "text": "극우 틀딱 전한길", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_actor", "political_camp", "age"]}
+{"item_id": "boundary:10", "text": "전한길 따르는 것들은 다 벌레", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_camp"]}
+{"item_id": "boundary:11", "text": "전한길 주장은 근거가 없다", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": false, "target_scope": "none", "categories": ["unclassified"]}
+{"item_id": "boundary:12", "text": "선관위 새끼들 다 잡아넣어야", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:13", "text": "국힘 쓰레기 정당", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:14", "text": "윤석열 개새끼", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "individual", "categories": ["political_actor", "profanity"]}
+{"item_id": "boundary:15", "text": "개딸들 수준 보소", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["political_camp"]}
+{"item_id": "boundary:16", "text": "사전투표 제도는 폐지해야 한다", "video_title": "전한길 집회 발언 논란", "source_type": "comment", "is_hate_speech": false, "target_scope": "none", "categories": ["unclassified"]}
+{"item_id": "boundary:17", "text": "국민은 개돼지다 진짜", "video_title": "김제동, 정부 비판 발언 논란", "source_type": "comment", "is_hate_speech": true, "target_scope": "group", "categories": ["identity"]}

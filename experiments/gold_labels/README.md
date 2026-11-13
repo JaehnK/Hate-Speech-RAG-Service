@@ -28,3 +28,6 @@ MVP에서는 단일 검토자 small set으로 시작하고, 운영 전에는 2�
 - 채점: `experiments.evaluate_youtube`. 결과와 한계는 `docs/52_v070_youtube_eval.md`.
 - `youtube_eval300_ctx.labels.jsonl` (2026-11-13): 같은 300건을 영상 제목을 보고 다시 라벨링했다. 바뀐 7건은 `previous` 필드에 이전 라벨이 있다. 기준은 `docs/53_v071_video_title.md`.
 - `youtube_heldout200.labels.jsonl` (2026-11-13): 새 영상 2개에서 100건씩. 모델을 돌리기 전에 라벨링한 효과 판단용 세트다.
+- `youtube_eval300_v08.labels.jsonl` (2026-11-13): taxonomy v0.7.0 code와 "복수로 묶으면 group" 기준. 바뀐 3건은 `previous` 필드.
+- `youtube_celeb200.labels.jsonl` (2026-11-13): 정치 발언으로 공격받은 연예인(조인성·정우성) 영상 100건씩. 모델 실행 전에 라벨링했다.
+- `political_boundary.jsonl` (2026-11-13): 정치 행위자·진영 경계를 보는 합성 문장 18개. 본문과 가상의 영상 제목을 함께 둔다. 기준은 `docs/54_v080_six_categories.md`.

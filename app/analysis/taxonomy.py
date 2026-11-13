@@ -6,8 +6,8 @@ from hashlib import sha256
 from app.analysis.models import DefinitionDocument
 
 
-TAXONOMY_VERSION = "v0.6.1"
-DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-13-v0.6.1"
+TAXONOMY_VERSION = "v0.7.0"
+DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-13-v0.7.0"
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "gender",
@@ -40,6 +40,31 @@ POLITICAL_CATEGORIES: tuple[str, ...] = (
     "non_state_community",
 )
 
+# taxonomy v0.7.0 (prompt v0.8.0, docs/54) keeps six categories. The two political ones
+# replace the six-way state/non_state x authority/regime/community split, which no public
+# gold set could score and which the model rarely used for regimes. The old codes stay in
+# CATEGORY_CODES because stored results, the normative corpus tags and older prompts use them.
+TAXONOMY_CATEGORY_CODES: tuple[str, ...] = (
+    "gender",
+    "age",
+    "identity",
+    "political_actor",
+    "political_camp",
+    "profanity",
+    "unclassified",
+)
+# How older codes read under taxonomy v0.7.0 (retrieved examples, stored results, gold sets).
+V07_CATEGORY_MAP: dict[str, str] = {
+    "state_authority": "political_actor",
+    "non_state_authority": "political_actor",
+    "state_regime": "political_actor",
+    "non_state_regime": "political_actor",
+    "state_community": "identity",
+    "non_state_community": "political_camp",
+    "no_target": "profanity",
+    "other": "profanity",
+}
+
 @dataclass(frozen=True)
 class CategoryCard:
     name: str
@@ -67,7 +92,7 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
         definition="나이, 연령대 또는 세대 소속을 이유로 사람이나 집단을 공격하는 표현.",
         include=("청소년·노인·특정 세대 전체의 무능·해악을 일반화", "연령을 이유로 권리·참여 배제를 주장", "나이에 근거한 모욕적 호칭이나 위협"),
         exclude=("공격 없이 연령별 특성·정책 효과를 설명", "세대 정책이나 이해관계에 대한 구체적 비판", "나이와 무관한 개인 행동 비판", "특정 인물의 나이를 언급할 뿐 연령 집단이나 나이를 비하하지 않는 서술"),
-        boundary="세대 정치 지지 성향이 핵심 표적이면 non_state_community를 함께 검토한다.",
+        boundary="세대 정치 지지 성향이 핵심 표적이면 political_camp를 함께 검토한다.",
         cues=("노인·청년·10대·기성세대·특정 세대명", "나이 때문에 무능하다는 일반화, 세대 퇴출 주장"),
         retrieval_tags=("protected_attribute", "generation"),
     ),
@@ -76,7 +101,7 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
         definition="출신지역, 인종·민족, 국적, 종교, 성적지향, 성별정체성, 장애 등 보호 속성을 이유로 공격하는 표현.",
         include=("보호 속성 집단의 열등성·비인간화·위험성을 일반화", "해당 정체성을 이유로 배제·추방·차별·폭력을 주장", "집단을 겨냥한 멸칭이나 혐오 고정관념"),
         exclude=("공격이 없는 문화·종교·국적 정보", "정치 이념·정당·후보 지지층에 대한 공격", "직업·외모·취향처럼 이 taxonomy가 보호 속성으로 정하지 않은 표적"),
-        boundary="국적·민족 정체성 공격은 identity, 시민·유권자라는 정치 공동체 공격은 state_community로 구분한다.",
+        boundary="국적·민족·국민 전체에 대한 공격은 identity, 정치 성향으로 묶은 지지층·진영 공격은 political_camp로 구분한다.",
         cues=("지역·민족·국적·종교·성소수자·장애 집단명", "오염·기생·추방·말살 등 비인간화와 배제 표현"),
         retrieval_tags=("protected_attribute", "race", "nationality", "religion", "disability", "sexual_identity"),
     ),
@@ -91,10 +116,11 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
             "욕설이 없어도 인격·외모·능력을 깎아내리는 의도가 분명한 조롱·모욕",
             "직업·외모·경제적 지위 등 다른 category에 없는 집단에 대한 공격",
             "다른 category 공격을 강화하는 노골적 비속어",
-            "대상 없는 강한 욕설(no_target과 함께)",
+            "대상 없는 강한 욕설",
+            "정치와 무관한 일로 연예인·방송인 같은 공인을 공격",
         ),
         exclude=("보도·교육·비판 목적으로 욕설을 인용하고 동조하지 않는 경우", "누구도 겨냥하지 않은 가벼운 감탄·강조", "모욕 없는 행동·결정 비판", "아쉬움·실망 표현(얼굴 아깝다, 연기가 아쉽다)", "인물에 대한 사실 확인·질문·가벼운 감상", "공인의 이름을 비튼 말장난·언어유희, 스캔들에 대한 농담, 관상 품평, 행동을 묘사하는 평가어(바람둥이 등)처럼 욕설·멸칭·인격 비하가 없는 놀림"),
-        boundary="표적 category와 함께 복수 선택할 수 있다. 표적이 성별·연령·출신·정치 등 다른 category로 설명되면 그 category를 먼저 고르고, 욕설·모욕이 있으면 profanity를 함께 쓴다. 식별 가능한 표적이 전혀 없으면 no_target을 함께 사용한다.",
+        boundary="표적 category와 함께 복수 선택할 수 있다. 표적이 성별·연령·출신·정치 등 다른 category로 설명되면 그 category를 먼저 고르고, 욕설·모욕이 있으면 profanity를 함께 쓴다. 다른 category로 설명되지 않는 표적이나 대상 없는 욕설은 profanity만 쓴다.",
         cues=("직접 욕설, 외설적 비유, 모욕적 별칭", "2인칭·집단명과 욕설의 결합"),
         retrieval_tags=("expression_form", "insult"),
     ),
@@ -144,13 +170,54 @@ CATEGORY_CARDS: dict[str, CategoryCard] = {
         retrieval_tags=("political_category", "state", "community"),
     ),
     "non_state_community": CategoryCard(
-        name="지지층·진영 비하",
+        name="지지층·진영 비하 (이전 분류)",
         definition="특정 정당 지지자, 정치 팬덤, 좌·우 같은 이념 진영, 정치 커뮤니티 등 특정 정치 성향의 사람들 무리를 비하하는 표현.",
         include=("특정 후보·정당 지지자 전체를 열등·위험 집단으로 일반화", "이념·운동·팬덤 구성원의 배제·추방·폭력을 주장", "온라인 정치 커뮤니티 전체를 멸칭으로 공격"),
         exclude=("특정 주장·시위·댓글 행동에 대한 구체적 비판", "정당·후보·언론 등 조직이나 지도자 공격", "종교·국적·성별 등 보호 정체성 집단 공격"),
         boundary="조직·지도자는 non_state_authority, 지지자·일반 구성원은 non_state_community로 구분한다.",
         cues=("지지자·팬덤·좌파·우파·진영·온라인 커뮤니티명", "구성원 전체의 무지·악성·제거 필요성 일반화"),
         retrieval_tags=("political_category", "non_state", "community"),
+    ),
+    "political_actor": CategoryCard(
+        name="정치인·정당·기관 공격",
+        definition=(
+            "이름을 대거나 특정할 수 있는 정치 주체를 깎아내리거나 위협하는 표현. 현직·전직 정치인, 정당, 정부·국회·법원 같은 "
+            "국가기관, 언론사, 정치 평론가·유튜버·활동가가 해당하며 직책이나 권력 유무는 따지지 않는다."
+        ),
+        include=(
+            "정치인·정당·국가기관·언론을 향한 모욕·멸칭·조롱",
+            "정치 주체에 대한 위협·폭력·제거 선동",
+            "연예인·방송인 같은 비정치 공인을 정치적 발언·활동 때문에 공격",
+        ),
+        exclude=(
+            "결정·발언·정책·판결에 대한 모욕 없는 비판",
+            "법·정책·제도 자체에 대한 비판(모욕이 있으면 그것을 만든 주체에 대한 공격으로 본다)",
+            "연예인·방송인을 정치와 무관한 일(연기·외모·사생활)로 공격하는 경우는 profanity만 쓴다",
+            "이름 없는 지지층·진영 전체에 대한 공격(political_camp)",
+        ),
+        boundary=(
+            "같은 사람도 댓글이 그 사람을 어떤 역할로 공격하는지로 정한다. 정치인 한 명을 이름으로 공격하면 target_scope는 individual, "
+            "정당·기관·언론 같은 조직 전체면 group이다. 진영 멸칭(좌빨, 극우 등)을 근거로 공격하면 political_camp를 함께 쓰고 group이다."
+        ),
+        cues=("정치인·정당·정부·국회·법원·검찰·선관위·언론·평론가 이름", "정치 주체를 향한 욕설·멸칭·조롱·위협"),
+        retrieval_tags=("political_category", "actor"),
+    ),
+    "political_camp": CategoryCard(
+        name="지지층·진영 비하",
+        definition="특정 정당·정치인 지지자, 좌·우 이념 진영, 정치 팬덤처럼 이름 없는 다수 시민을 정치 성향으로 묶어 비하하는 표현.",
+        include=(
+            "지지층·진영 전체를 열등·위험·벌레 같은 존재로 일반화",
+            "진영 멸칭(개딸, 1찍, 2찍, 좌빨, 일베충, 태극기부대 등) 사용",
+            "개인을 공격하면서 진영 멸칭을 근거로 씀",
+        ),
+        exclude=(
+            "특정 주장·시위·댓글 행동에 대한 모욕 없는 비판",
+            "정치인·정당·기관·언론 같은 이름 있는 정치 주체 공격(political_actor)",
+            "국적·종교·지역 같은 보호 속성 집단 공격(identity)",
+        ),
+        boundary="target_scope는 항상 group이다. 정치인과 그 지지층을 함께 공격하면 political_actor와 함께 쓴다.",
+        cues=("지지자·팬덤·좌파·우파·진영·커뮤니티 이름과 멸칭", "구성원 전체의 무지·악성·제거 필요성 일반화"),
+        retrieval_tags=("political_category", "camp"),
     ),
     "no_target": CategoryCard(
         name="대상 없는 욕설",
@@ -193,10 +260,10 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:allowed_categories:0",
             tags=("taxonomy", "allowed_categories"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
                 "MVP categories are: "
-                + ", ".join(CATEGORY_CODES)
+                + ", ".join(TAXONOMY_CATEGORY_CODES)
                 + ". Choose only these category codes."
             ),
             corpus_version=corpus_version,
@@ -204,7 +271,7 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:hate_threshold:0",
             tags=("taxonomy", "hate_threshold", "decision_rule"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
                 "혐오·공격 판정 기준: 이 서비스는 집단에 대한 혐오와 사람을 향한 공격적 표현을 모두 "
                 "is_hate_speech=true로 본다. (1) 집단 혐오: 성별·연령·출신·인종·종교·장애·정치 성향 등을 이유로 "
@@ -213,13 +280,14 @@ def build_internal_taxonomy_documents(
                 "강한 욕설이면 해당한다. 어조가 공손하거나 질문 형태여도 멸칭·모욕이 있으면 해당한다. "
                 "행동·결정·정책에 대한 모욕 없는 비판, 동조하지 않는 인용·보도, 누구도 겨냥하지 않은 가벼운 감탄, "
                 "집단에 대한 중립적 언급, 인물에 대한 가벼운 평가·감상·농담, 비하 없는 외모·실력 언급, 공인의 이름을 비튼 말장난이나 "
-                "스캔들 농담은 해당하지 않는다. 판정이 true이면 target_scope를 정한다. group: 성별·연령·출신·인종·종교·장애·성적지향·"
-                "정치 진영 같은 집단, 또는 정당·언론·국가기관 같은 조직 전체를 겨냥하거나, 개인을 공격하면서 그 사람의 집단 속성을 멸칭·비하의 "
-                "근거로 쓴다. individual: 특정 개인(공인·정치인·영상 속 인물·다른 댓글 작성자)을 집단 속성과 무관하게 공격하거나, 대상 없는 "
-                "욕설이다. 판정이 false이면 target_scope는 none이다. 영상 제목이 주어지면 댓글이 누구를 가리키는지 정하는 데 쓴다. "
-                "제목이 다루는 집단(특정 국적·연령·성별 등)을 복수형이나 '저런 것들'처럼 묶어 가리키며 동물·질병·벌레에 빗대거나 "
-                "열등성을 일반화하면 group이다. 영상 속 사람의 특정 행동에 대한 분노·욕설은 individual이다. 제목의 주제에 대한 반응·관찰·"
-                "탄식·의견은 모욕이나 비하가 없으면 혐오가 아니며, 제목이 집단을 다룬다는 이유만으로 group이 되지 않는다."
+                "스캔들 농담은 해당하지 않는다. 판정이 true이면 target_scope를 정한다. group: 성별·연령·출신·인종·종교·장애·성적지향 같은 "
+                "보호 속성 집단, 정치 진영·지지층, 또는 정당·언론·국가기관 같은 조직 전체를 겨냥하거나, 개인을 공격하면서 그 사람의 집단 속성·"
+                "진영을 멸칭·비하의 근거로 쓴다. individual: 특정 개인(정치인·공인·영상 속 인물·다른 댓글 작성자)이나 출연자 몇 명을 집단 속성과 "
+                "무관하게 공격하거나, 대상 없는 욕설이다. 판정이 false이면 target_scope는 none이다. 영상 제목이 주어지면 댓글이 누구를 가리키는지 "
+                "정하는 데 쓴다. 제목이나 댓글이 국적·연령·성별·종교·진영 같은 집단 속성으로 정한 사람들을 '인간들', '것들', '-들'처럼 복수로 "
+                "묶어 모욕하거나 동물·질병·벌레에 빗대거나 열등성을 일반화하면 group이다. 그런 묶음 없이 영상 속 사람의 특정 행동에 대한 "
+                "분노·욕설은 individual이다. 제목의 주제에 대한 반응·관찰·탄식·의견은 모욕이나 비하가 없으면 혐오가 아니며, 제목이 집단을 "
+                "다룬다는 이유만으로 group이 되지 않는다."
             ),
             corpus_version=corpus_version,
         ),
@@ -234,22 +302,23 @@ def build_internal_taxonomy_documents(
             corpus_version=corpus_version,
         ),
         _doc(
-            doc_id="taxonomy:political_axis:0",
-            tags=("taxonomy", "political_axis", "political_category"),
-            related_categories=POLITICAL_CATEGORIES,
+            doc_id="taxonomy:political_target:0",
+            tags=("taxonomy", "political_target", "political_category"),
+            related_categories=("political_actor", "political_camp"),
             chunk_text=(
-                "정치 category는 두 가지 질문으로 고른다. 질문 1, 무엇을 겨냥했나: 기관이나 인물이면 authority, "
-                "법·정책·선거·내부 규칙 같은 제도면 regime, 국민·지지층·진영 같은 사람들 무리면 community다. "
-                "질문 2, 공적인 쪽인가 민간인가: 정부·국회·법원·공직자·국민이면 state, 정당·정치인·언론·단체와 "
-                "그 지지자면 non_state다. 강한 정치적 반대나 정책 비판만으로는 부족하며 hate_threshold를 먼저 "
-                "충족해야 한다."
+                "정치 category는 하나만 묻는다. 이름을 대거나 특정할 수 있는 정치 주체(현직·전직 정치인, 정당, 국가기관, 언론, "
+                "정치 평론가·유튜버·활동가)면 political_actor, 이름 없는 다수 시민을 정치 성향으로 묶은 지지층·진영이면 political_camp다. "
+                "권력이나 직책 유무는 따지지 않는다. 연예인·방송인 같은 비정치 공인은 정치적 발언·활동 때문에 공격받거나 진영 멸칭으로 "
+                "공격받을 때만 political_actor이고, 연기·외모·사생활 같은 일로 공격받으면 profanity만 쓴다. 같은 사람도 댓글마다 어떤 "
+                "역할로 공격받는지로 정한다. 법·정책·제도 비판은 모욕이 없으면 혐오가 아니다. 강한 정치적 반대만으로는 부족하며 "
+                "hate_threshold를 먼저 충족해야 한다."
             ),
             corpus_version=corpus_version,
         ),
         _doc(
             doc_id="taxonomy:context_exception:0",
             tags=("taxonomy", "context_rule", "quotation", "satire"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
                 "문맥 예외: 뉴스 보도, 연구·교육, 반박·비판 목적으로 혐오표현을 인용하고 화자가 동조하지 않으면 "
                 "인용된 욕설만으로 혐오로 판정하지 않는다. 풍자·반어는 문자 그대로만 읽지 말고 실제 공격 대상과 "
@@ -261,18 +330,18 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:multi_label_rule:0",
             tags=("taxonomy", "multi_label", "conflict_rule"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
-                "복수 category는 서로 다른 근거가 각각 명시될 때만 선택한다. profanity는 공격 방식이므로 target category와 "
-                "함께 사용할 수 있다. 보호 속성이 둘 이상이면 해당 category를 함께 선택할 수 있다. 같은 정치 표적을 "
-                "authority와 community로 중복 선택하지 말고 실제 표적 단위를 우선한다. unclassified는 항상 단독이다."
+                "복수 category는 서로 다른 근거가 각각 명시될 때만 선택한다. profanity는 공격 방식이므로 다른 category와 "
+                "함께 사용할 수 있다. 보호 속성이 둘 이상이면 해당 category를 함께 선택할 수 있다. 정치인을 진영 멸칭으로 공격하면 "
+                "political_actor와 political_camp를 함께 쓴다. unclassified는 항상 단독이다."
             ),
             corpus_version=corpus_version,
         ),
         _doc(
             doc_id="taxonomy:hate_type:0",
             tags=("taxonomy", "hate_type", "output_rule"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
                 "hate_type은 표현 방식을 한국어로 요약한다. 권장 유형은 모욕·비하, 집단 일반화, 비인간화, "
                 "배제·차별, 위협·폭력, 제거·억압 선동, 욕설이다. 여러 방식이 함께 있으면 핵심 1~2개를 "
@@ -283,28 +352,27 @@ def build_internal_taxonomy_documents(
         _doc(
             doc_id="taxonomy:target_group:0",
             tags=("taxonomy", "target_group", "output_rule"),
-            related_categories=CATEGORY_CODES,
+            related_categories=TAXONOMY_CATEGORY_CODES,
             chunk_text=(
                 "target_group은 원문에서 공격받는 사람·집단·기관·제도명을 간결한 한국어 명사구로 기록한다. "
                 "욕설을 제거하고 원문보다 넓은 집단으로 일반화하지 않는다. 대명사는 item 문맥에서 선행 대상이 "
-                "명확할 때만 복원한다. no_target 또는 unclassified이면 null이다."
+                "명확할 때만 복원한다. 대상 없는 욕설이거나 unclassified이면 null이다."
             ),
             corpus_version=corpus_version,
         ),
         _doc(
             doc_id="conflict:exclusive_categories:0",
             tags=("taxonomy", "conflict_rule"),
-            related_categories=("profanity", "no_target", "unclassified"),
+            related_categories=("profanity", "unclassified"),
             chunk_text=(
-                "unclassified는 비혐오에만 단독 사용한다. 다른 category로 설명되지 않는 대상(특정 개인, 직업·외모 집단 등)에 "
-                "대한 공격은 profanity로 기록한다. no_target은 표적이 없을 때만 사용하고 profanity 외 target category와 함께 "
-                "사용할 수 없으며 target_group은 null이어야 한다."
+                "unclassified는 비혐오에만 단독 사용한다. 다른 category로 설명되지 않는 대상(정치와 무관한 특정 개인, 연예인, "
+                "직업·외모 집단 등)에 대한 공격과 대상 없는 강한 욕설은 profanity로 기록한다. 대상 없는 욕설이면 target_group은 null이다."
             ),
             corpus_version=corpus_version,
         ),
     ]
 
-    for category in CATEGORY_CODES:
+    for category in TAXONOMY_CATEGORY_CODES:
         card = CATEGORY_CARDS[category]
         documents.append(
             _doc(

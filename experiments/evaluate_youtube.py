@@ -19,9 +19,16 @@ import random
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from app.analysis.taxonomy import V07_CATEGORY_MAP
 from experiments.io import read_jsonl
 
 INSULT_ONLY = {"profanity", "no_target", "unclassified", "other"}
+# Scored when the gold uses taxonomy v0.7.0 codes; older predictions are mapped onto them.
+POLITICAL_V07 = ("political_actor", "political_camp")
+
+
+def v07_categories(categories) -> set[str]:
+    return {V07_CATEGORY_MAP.get(c, c) for c in categories or ()}
 
 
 def predicted_scope(payload: dict) -> str:
@@ -80,6 +87,12 @@ def evaluate(results: list[dict], gold: list[dict]) -> dict:
         "predicted_scope": dict(Counter(predicted_scope(first[i]) for i in scored)),
         "gold_scope": dict(Counter(gold_by_id[i]["target_scope"] for i in scored)),
     }
+
+    if any(set(POLITICAL_V07) & set(gold_by_id[i].get("categories") or ()) for i in scored):
+        report["political_categories"] = {
+            code: prf([(code in gold_by_id[i]["categories"], code in v07_categories(first[i].get("categories"))) for i in scored])
+            for code in POLITICAL_V07
+        }
 
     repeated = {i: rows for i, rows in by_item.items() if len(rows) > 1}
     if repeated:

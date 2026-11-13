@@ -15,7 +15,9 @@ from experiments.io import read_jsonl
 # plus a coarse "political" target in K-HATERS. Political predictions are folded into
 # "political" when the gold has it; finer categories the gold lacks fold into "other",
 # so the model is not penalised for being more specific than the gold label space.
-FOLDABLE_INTO_OTHER = frozenset({*POLITICAL_CATEGORIES, "no_target"})
+# political_actor / political_camp are the taxonomy v0.7.0 political codes (prompt v0.8.0).
+POLITICAL_CODES = frozenset({*POLITICAL_CATEGORIES, "political_actor", "political_camp"})
+FOLDABLE_INTO_OTHER = frozenset({*POLITICAL_CODES, "no_target"})
 BOOTSTRAP_SAMPLES = 1000
 BOOTSTRAP_SEED = 20261108
 
@@ -100,7 +102,7 @@ def _merge(categories: list[str], mapping: dict[str, str]) -> list[str]:
 def _categories(raw: list[str], label_space: list[str]) -> frozenset[str]:
     categories = set(raw) - {"unclassified"}
     if "political" in label_space:
-        categories = {"political" if c in POLITICAL_CATEGORIES else c for c in categories}
+        categories = {"political" if c in POLITICAL_CODES else c for c in categories}
     if "other" in label_space:
         categories = {"other" if c in FOLDABLE_INTO_OTHER and c not in label_space else c for c in categories}
     return frozenset(categories)
