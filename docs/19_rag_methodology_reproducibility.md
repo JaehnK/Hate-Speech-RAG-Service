@@ -9,8 +9,8 @@
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - worker 기본 prompt version: `category-rag-v0.7.0` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.6.2`, `category-rag-v0.3.1`)
 - 기본 LLM: 분석 방식(tier)이 정한다. 현재 두 방식 모두 `claude-haiku-5-5`, 절약 방식은 Jev 사전 필터를 더한다
-- taxonomy version: `v0.6.1`
-- definition corpus version: `definition-corpus-2026-11-13-v0.6.1`
+- taxonomy version: `v0.7.0`
+- definition corpus version: `definition-corpus-2026-11-13-v0.7.0`
 - 정확도·비용 근거: `docs/49_v062_benchmark_results.md`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
@@ -96,6 +96,10 @@ taxonomy collection에는 내부 taxonomy card만 들어간다. authoritative co
 
 v0.7.0에 영상 제목을 더한다(docs/53). worker는 job의 최신 `video_metadata_snapshots.title`을 댓글과 자막 구간 분류에 넘기고, prompt는 입력 앞에 `Video title JSON`을 넣는다. 검색 쿼리에는 제목을 넣지 않는다. taxonomy v0.6.1은 `hate_threshold` 카드에 영상 제목을 쓰는 기준을 더했다. 제목이 다루는 집단을 묶어 비인간화하거나 일반화하면 `group`, 영상 속 사람의 특정 행동에 대한 욕은 `individual`, 주제에 대한 반응·관찰·의견은 모욕이 없으면 비혐오다. v0.7.0 이하 prompt는 제목을 받아도 쓰지 않는다.
 
+### 3.2d `category-rag-v0.8.0` (실험)
+
+taxonomy v0.7.0의 6개 category(`gender`, `age`, `identity`, `political_actor`, `political_camp`, `profanity`)와 `unclassified`만 허용한다(docs/54). 정치 6개 category(state/non_state × authority/regime/community)를 이름 있는 정치 주체(`political_actor`)와 이름 없는 지지층·진영(`political_camp`)으로 줄였다. `state_community`는 `identity`, `no_target`과 `other`는 `profanity`로 읽는다(`V07_CATEGORY_MAP`). 유사 사례의 label도 이 표로 바꿔 보여 준다. 영상 제목과 `target_scope`는 v0.7.1과 같다. taxonomy v0.7.0 store가 필요하며, 이전 prompt는 이 store와 함께 쓰지 않는다.
+
 세 collection 검색은 각각 독립적으로 예외를 처리한다.
 
 | 검색 결과 | `rag_context_status` | 처리 |
@@ -173,7 +177,7 @@ worker를 정지한 상태에서 두 production collection을 reset하고 동일
 
 ### 4.3 Definition collection
 
-taxonomy v0.6.1(v0.5.1과 문서 구성 동일)은 9개 규칙 card와 12개 category card, 총 21개 문서를 생성한다(이전 v0.3.0은 10개 규칙과 13개 category, 23개 문서). `ALLOWED_CATEGORIES`는 저장된 결과와 `category-rag-v0.3.1` 호환을 위해 `other`를 유지하고, 새 prompt는 `CATEGORY_CODES`만 허용한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
+taxonomy v0.7.0은 9개 규칙 card와 7개 category card, 총 16개 문서를 생성한다(v0.5.1~v0.6.1은 9개 규칙과 12개 category, 21개 문서. v0.3.0은 10개 규칙과 13개 category, 23개 문서). 정치 2축 규칙 card(`taxonomy:political_axis:0`)는 `taxonomy:political_target:0`으로 바뀌었다. `ALLOWED_CATEGORIES`는 저장된 결과와 `category-rag-v0.3.1` 호환을 위해 `other`를 유지하고, 새 prompt는 `CATEGORY_CODES`만 허용한다. 각 category card에는 한국어 이름, 정의, 포함 기준, 제외 기준, 인접 category와의 경계, 검색 cue, 복수 선택 가능 여부가 들어간다.
 
 10개 규칙 card는 허용 category, 공통 hate threshold, 비혐오, `other`, 정치적 2축, 인용·풍자 문맥 예외, 복수 선택, `hate_type`, `target_group`, 배타 충돌 규칙을 각각 고정한다. category별 전체 기준은 `docs/12_category_taxonomy.md`를 기준으로 하며 코드의 `CATEGORY_CARDS`와 corpus 문서 생성 테스트로 동기화한다.
 

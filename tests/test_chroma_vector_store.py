@@ -9,7 +9,7 @@ def test_ingests_internal_taxonomy_to_chroma(tmp_path) -> None:
     assert count == len(build_internal_taxonomy_documents())
 
 
-def test_political_query_retrieves_political_axis(tmp_path) -> None:
+def test_political_query_retrieves_political_target_rule(tmp_path) -> None:
     ingest_internal_taxonomy(tmp_path, reset=True)
 
     results = query_definition_documents(
@@ -19,7 +19,7 @@ def test_political_query_retrieves_political_axis(tmp_path) -> None:
         n_results=8,
     )
 
-    assert "taxonomy:political_axis:0" in {result.doc_id for result in results}
+    assert "taxonomy:political_target:0" in {result.doc_id for result in results}
 
 
 def test_protected_attribute_query_retrieves_gender_card(tmp_path) -> None:

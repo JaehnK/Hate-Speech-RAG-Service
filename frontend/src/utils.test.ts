@@ -28,7 +28,9 @@ describe("report helpers", () => {
   it("translates canonical category codes for display", () => {
     expect(categoryLabel("identity")).toBe("출신·인종·종교·장애 등 비하");
     expect(categoryLabel("state_authority")).toBe("정부·공직자 공격");
-    expect(categoryLabel("non_state_community")).toBe("지지층·진영 비하");
+    expect(categoryLabel("non_state_community")).toBe("지지층·진영 비하 (이전 분류)");
+    expect(categoryLabel("political_actor")).toBe("정치인·정당·기관 공격");
+    expect(categoryLabel("political_camp")).toBe("지지층·진영 비하");
     expect(categoryLabel("unclassified")).toBe("혐오 아님");
   });
 
