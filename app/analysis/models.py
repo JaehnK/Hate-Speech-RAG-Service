@@ -92,6 +92,7 @@ class AnalysisItem:
     source_id: UUID
     source_type: SourceType
     text: str
+    video_title: str | None = None
 
 
 @dataclass(frozen=True)

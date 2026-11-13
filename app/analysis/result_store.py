@@ -16,6 +16,7 @@ from app.db.models import (
     ScriptAnalysisResult,
     TranscriptSegment,
     TranscriptSnapshot,
+    VideoMetadataSnapshot,
     utcnow,
 )
 from app.jobs.exceptions import StaleStepExecution
@@ -24,12 +25,22 @@ from app.jobs.exceptions import StaleStepExecution
 ResultKind = Literal["comment", "script"]
 
 
+def _video_title(session: Session, context: StepAttemptContext) -> str | None:
+    return session.scalar(
+        select(VideoMetadataSnapshot.title)
+        .where(VideoMetadataSnapshot.job_id == context.job_id)
+        .order_by(VideoMetadataSnapshot.collected_at.desc())
+        .limit(1)
+    )
+
+
 class AnalysisResultStore:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self.session_factory = session_factory
 
     def load_comment_items(self, context: StepAttemptContext) -> tuple[int, list[AnalysisItem]]:
         with self.session_factory() as session:
+            title = _video_title(session, context)
             total = session.scalar(
                 select(func.count()).select_from(CommentSnapshot).where(CommentSnapshot.job_id == context.job_id)
             ) or 0
@@ -50,6 +61,7 @@ class AnalysisResultStore:
                     source_id=row.id,
                     source_type="reply" if row.is_reply else "comment",
                     text=row.text_original or row.text_display or "",
+                    video_title=title,
                 )
                 for row in session.execute(statement)
             ]
@@ -63,6 +75,7 @@ class AnalysisResultStore:
             .subquery()
         )
         with self.session_factory() as session:
+            title = _video_title(session, context)
             total = session.scalar(select(func.count()).select_from(source)) or 0
             statement = (
                 select(source.c.id, source.c.text)
@@ -77,7 +90,7 @@ class AnalysisResultStore:
                 .order_by(source.c.segment_index)
             )
             items = [
-                AnalysisItem(source_id=row.id, source_type="script_segment", text=row.text)
+                AnalysisItem(source_id=row.id, source_type="script_segment", text=row.text, video_title=title)
                 for row in session.execute(statement)
             ]
         return total, items

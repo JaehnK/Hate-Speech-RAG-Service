@@ -6,8 +6,8 @@ from hashlib import sha256
 from app.analysis.models import DefinitionDocument
 
 
-TAXONOMY_VERSION = "v0.6.0"
-DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-12-v0.6.0"
+TAXONOMY_VERSION = "v0.6.1"
+DEFAULT_DEFINITION_CORPUS_VERSION = "definition-corpus-2026-11-13-v0.6.1"
 
 ALLOWED_CATEGORIES: tuple[str, ...] = (
     "gender",
@@ -216,7 +216,10 @@ def build_internal_taxonomy_documents(
                 "스캔들 농담은 해당하지 않는다. 판정이 true이면 target_scope를 정한다. group: 성별·연령·출신·인종·종교·장애·성적지향·"
                 "정치 진영 같은 집단, 또는 정당·언론·국가기관 같은 조직 전체를 겨냥하거나, 개인을 공격하면서 그 사람의 집단 속성을 멸칭·비하의 "
                 "근거로 쓴다. individual: 특정 개인(공인·정치인·영상 속 인물·다른 댓글 작성자)을 집단 속성과 무관하게 공격하거나, 대상 없는 "
-                "욕설이다. 판정이 false이면 target_scope는 none이다."
+                "욕설이다. 판정이 false이면 target_scope는 none이다. 영상 제목이 주어지면 댓글이 누구를 가리키는지 정하는 데 쓴다. "
+                "제목이 다루는 집단(특정 국적·연령·성별 등)을 복수형이나 '저런 것들'처럼 묶어 가리키며 동물·질병·벌레에 빗대거나 "
+                "열등성을 일반화하면 group이다. 영상 속 사람의 특정 행동에 대한 분노·욕설은 individual이다. 제목의 주제에 대한 반응·관찰·"
+                "탄식·의견은 모욕이나 비하가 없으면 혐오가 아니며, 제목이 집단을 다룬다는 이유만으로 group이 되지 않는다."
             ),
             corpus_version=corpus_version,
         ),

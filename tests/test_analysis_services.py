@@ -17,7 +17,7 @@ class FakeClassifier:
     def __init__(self) -> None:
         self.calls = []
 
-    def classify_text(self, text, _source_type):
+    def classify_text(self, text, _source_type, _video_title=None):
         self.calls.append(text)
         if text == "fail":
             raise ClassificationError("fake failure")

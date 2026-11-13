@@ -75,7 +75,9 @@ class RagClassifier:
         self.should_stop = should_stop or (lambda: False)
         self.invalid_provider: str | None = None
 
-    def classify_text(self, input_text: str, source_type: SourceType) -> ClassificationResult:
+    def classify_text(
+        self, input_text: str, source_type: SourceType, video_title: str | None = None
+    ) -> ClassificationResult:
         if self.should_stop():
             raise WorkerShutdownRequested
         with self.observability.observation(
@@ -125,6 +127,7 @@ class RagClassifier:
             authoritative_context=[_definition_document(result) for result in authoritative],
             example_context=[_example_document(result) for result in examples],
             prompt_version=self.prompt_version,
+            video_title=video_title,
         )
 
         last_validation = ValidationResult(valid=False, errors=("not_attempted",))

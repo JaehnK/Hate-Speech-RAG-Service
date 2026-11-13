@@ -26,3 +26,5 @@ MVP에서는 단일 검토자 small set으로 시작하고, 운영 전에는 2�
 - `youtube_consistency.labels.jsonl`: 젠슨 황 영상에서 거의 같은 말을 묶은 111건. `group` 필드가 묶음 이름이다. 프롬프트 튜닝에 쓴 세트라 효과 판단에는 쓰지 않는다.
 - 라벨은 Claude 한 명이 달았고 사람 검토 전이다. 댓글 본문은 넣지 않고 `experiments.fetch_youtube_comments`로 다시 받는다.
 - 채점: `experiments.evaluate_youtube`. 결과와 한계는 `docs/52_v070_youtube_eval.md`.
+- `youtube_eval300_ctx.labels.jsonl` (2026-11-13): 같은 300건을 영상 제목을 보고 다시 라벨링했다. 바뀐 7건은 `previous` 필드에 이전 라벨이 있다. 기준은 `docs/53_v071_video_title.md`.
+- `youtube_heldout200.labels.jsonl` (2026-11-13): 새 영상 2개에서 100건씩. 모델을 돌리기 전에 라벨링한 효과 판단용 세트다.

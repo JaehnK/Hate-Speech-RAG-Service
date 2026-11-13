@@ -216,7 +216,7 @@ def _run_item(
 ) -> dict[str, Any]:
     started_at = datetime.now(UTC)
     try:
-        result = classifier.classify_text(item.text, item.source_type)  # type: ignore[arg-type]
+        result = classifier.classify_text(item.text, item.source_type, item.video_title)  # type: ignore[arg-type]
         return {
             "item_id": item.item_id,
             "variant": variant.name,

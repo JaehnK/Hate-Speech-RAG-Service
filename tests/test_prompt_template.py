@@ -64,3 +64,14 @@ def test_v070_asks_for_target_scope_and_older_versions_do_not() -> None:
 
     assert '"target_scope"' in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V070)
     assert '"target_scope"' not in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V062)
+
+
+def test_v071_adds_the_video_title_and_older_versions_ignore_it() -> None:
+    from app.analysis.prompt_template import PROMPT_V070, PROMPT_V071
+
+    title = "젠슨황 불륜 폭로"
+    v071 = build_category_prompt("text", "comment", [], prompt_version=PROMPT_V071, video_title=title)
+    assert f'Video title JSON: "{title}"' in v071
+    assert '"target_scope"' in v071
+    assert "Video title JSON" not in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V071)
+    assert title not in build_category_prompt("text", "comment", [], prompt_version=PROMPT_V070, video_title=title)
