@@ -11,7 +11,7 @@ def test_internal_taxonomy_has_required_cards() -> None:
     documents = build_internal_taxonomy_documents()
     doc_ids = {doc.doc_id for doc in documents}
 
-    # taxonomy v0.7.0: 9 rule documents + one card per current category (six + unclassified)
+    # taxonomy v0.7.x: 9 rule documents + one card per current category (six + unclassified)
     assert len(documents) == 9 + len(TAXONOMY_CATEGORY_CODES) == 16
     assert "taxonomy:allowed_categories:0" in doc_ids
     assert "taxonomy:hate_threshold:0" in doc_ids
