@@ -30,10 +30,11 @@ PROMPT_V071 = "category-rag-v0.7.1"
 # v0.8.0: taxonomy v0.7.0 with six categories; political_actor / political_camp replace the
 # six political codes (docs/54). Needs a store ingested with taxonomy v0.7.0.
 PROMPT_V080 = "category-rag-v0.8.0"
+PROMPT_V081 = "category-rag-v0.8.1"
 MERGED_CATEGORY_VERSIONS = frozenset({PROMPT_V062, PROMPT_V070, PROMPT_V071})
-SIX_CATEGORY_VERSIONS = frozenset({PROMPT_V080})
-TARGET_SCOPE_VERSIONS = frozenset({PROMPT_V070, PROMPT_V071, PROMPT_V080})
-VIDEO_CONTEXT_VERSIONS = frozenset({PROMPT_V071, PROMPT_V080})
+SIX_CATEGORY_VERSIONS = frozenset({PROMPT_V080, PROMPT_V081})
+TARGET_SCOPE_VERSIONS = frozenset({PROMPT_V070, PROMPT_V071, PROMPT_V080, PROMPT_V081})
+VIDEO_CONTEXT_VERSIONS = frozenset({PROMPT_V071, PROMPT_V080, PROMPT_V081})
 
 
 def allowed_categories(prompt_version: str) -> tuple[str, ...]:
@@ -91,6 +92,16 @@ _RULES_V071: tuple[str, ...] = (
     "not by itself make target_scope group.",
 )
 
+_RULES_V081: tuple[str, ...] = (
+    *_RULES_V070,
+    "Video title, when given, is the title of the video the comment was posted under. Use it "
+    "to work out who or what the input refers to, as taxonomy:hate_threshold:0 describes. The "
+    "title's wording never makes an input hate speech by itself: a reaction or opinion about the "
+    "topic is not an attack unless it insults someone or makes an unfounded negative "
+    "generalization about a group. When the input insults several people shown in the video as "
+    "members of the group the title is about, target_scope is group.",
+)
+
 DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_VERSION: _RULES_V031,
     PROMPT_V040: _RULES_V040,
@@ -102,6 +113,7 @@ DECISION_RULES: dict[str, tuple[str, ...]] = {
     PROMPT_V070: _RULES_V070,
     PROMPT_V071: _RULES_V071,
     PROMPT_V080: _RULES_V071,
+    PROMPT_V081: _RULES_V081,
 }
 
 # Taxonomy cards included in every prompt for a version, regardless of retrieval rank.
@@ -113,6 +125,7 @@ PINNED_TAXONOMY_IDS: dict[str, tuple[str, ...]] = {
     PROMPT_V070: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V071: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
     PROMPT_V080: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
+    PROMPT_V081: ("taxonomy:hate_threshold:0", "taxonomy:context_exception:0"),
 }
 
 # v0.6.0 searches the curated normative corpus (data/normative) one slot per source
@@ -140,6 +153,7 @@ AUTHORITATIVE_SLOTS[PROMPT_V062] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 AUTHORITATIVE_SLOTS[PROMPT_V070] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 AUTHORITATIVE_SLOTS[PROMPT_V071] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 AUTHORITATIVE_SLOTS[PROMPT_V080] = AUTHORITATIVE_SLOTS[PROMPT_V061]
+AUTHORITATIVE_SLOTS[PROMPT_V081] = AUTHORITATIVE_SLOTS[PROMPT_V061]
 
 _CONTEXT_RULES_V031: tuple[str, ...] = (
     "Use taxonomy_context for allowed output schema and category boundaries.",
@@ -185,6 +199,7 @@ CONTEXT_RULES[PROMPT_V062] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V070] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V071] = CONTEXT_RULES[PROMPT_V060]
 CONTEXT_RULES[PROMPT_V080] = CONTEXT_RULES[PROMPT_V060]
+CONTEXT_RULES[PROMPT_V081] = CONTEXT_RULES[PROMPT_V060]
 SOURCE_TYPES: tuple[str, ...] = ("comment", "reply", "script_segment")
 
 

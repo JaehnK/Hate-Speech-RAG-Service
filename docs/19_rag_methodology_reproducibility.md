@@ -9,8 +9,8 @@
 - 호출 흐름 FigJam: `https://www.figma.com/board/sGQ5uzigH8gTdLRYVGDM6X`
 - worker 기본 prompt version: `category-rag-v0.8.0` (설정 `RAG_PROMPT_VERSION`, 이전 운영 버전 `category-rag-v0.7.0`, `category-rag-v0.6.2`, `category-rag-v0.3.1`)
 - 기본 LLM: 분석 방식(tier)이 정한다. 현재 두 방식 모두 `claude-haiku-5-5`, 절약 방식은 Jev 사전 필터를 더한다
-- taxonomy version: `v0.7.0`
-- definition corpus version: `definition-corpus-2026-11-13-v0.7.0`
+- taxonomy version: `v0.7.1`
+- definition corpus version: `definition-corpus-2026-11-15-v0.7.1`
 - 정확도·비용 근거: `docs/49_v062_benchmark_results.md`
 
 이 분류는 통계적 모델 출력이다. 동일 입력이라도 외부 모델 또는 embedding API의 변경으로 결과가 달라질 수 있으며, 사람의 최종 판단을 대체하지 않는다.
@@ -99,6 +99,10 @@ v0.7.0에 영상 제목을 더한다(docs/53). worker는 job의 최신 `video_me
 ### 3.2d `category-rag-v0.8.0` (2026-11-13부터 기본)
 
 taxonomy v0.7.0의 6개 category(`gender`, `age`, `identity`, `political_actor`, `political_camp`, `profanity`)와 `unclassified`만 허용한다(docs/54). 정치 6개 category(state/non_state × authority/regime/community)를 이름 있는 정치 주체(`political_actor`)와 이름 없는 지지층·진영(`political_camp`)으로 줄였다. `state_community`는 `identity`, `no_target`과 `other`는 `profanity`로 읽는다(`V07_CATEGORY_MAP`). 유사 사례의 label도 이 표로 바꿔 보여 준다. 영상 제목과 `target_scope`는 v0.7.1과 같다. taxonomy v0.7.0 store가 필요하며, 이전 prompt는 이 store와 함께 쓰지 않는다.
+
+### 3.2e `category-rag-v0.8.1` (실험)
+
+사람 라벨과 조정한 판정 기준을 taxonomy v0.7.1 `hate_threshold` 카드에 반영했다(docs/55). 멸칭 없는 근거 없는 부정적 일반화와 욕설 없는 조롱은 혐오, 모욕 없는 비판·퇴진 요구는 비혐오다. 진영 멸칭과 여러 사람을 복수로 묶은 욕은 `group`, 한 사람을 나이·출신 멸칭으로 욕하면 `individual`(멸칭의 category는 함께 씀), 영상 제목이 다루는 집단의 구성원 여럿을 향한 욕은 `group`이다. prompt는 영상 제목 규칙만 이 기준에 맞게 바꿨다. 카드 수는 16개 그대로다.
 
 세 collection 검색은 각각 독립적으로 예외를 처리한다.
 

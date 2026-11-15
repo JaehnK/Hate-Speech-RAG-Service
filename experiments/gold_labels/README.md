@@ -31,3 +31,4 @@ MVP에서는 단일 검토자 small set으로 시작하고, 운영 전에는 2�
 - `youtube_eval300_v08.labels.jsonl` (2026-11-13): taxonomy v0.7.0 code와 "복수로 묶으면 group" 기준. 바뀐 3건은 `previous` 필드.
 - `youtube_celeb200.labels.jsonl` (2026-11-13): 정치 발언으로 공격받은 연예인(조인성·정우성) 영상 100건씩. 모델 실행 전에 라벨링했다.
 - `political_boundary.jsonl` (2026-11-13): 정치 행위자·진영 경계를 보는 합성 문장 18개. 본문과 가상의 영상 제목을 함께 둔다. 기준은 `docs/54_v080_six_categories.md`.
+- `youtube_sample200_claude.labels.jsonl`, `youtube_human200.labels.jsonl`, `youtube_adjudicated200.labels.jsonl` (2026-11-15): heldout200·eval300·celeb200에서 층화 추출한 200건(`experiments.build_annotation_sample`, seed 20261115). 사람이 Claude 라벨을 보지 않고 라벨링했고, 불일치를 원칙(A1~A7)과 항목별 합의로 조정했다. `basis` 필드가 조정 근거다. 기준은 `docs/55_v081_adjudication.md`.
