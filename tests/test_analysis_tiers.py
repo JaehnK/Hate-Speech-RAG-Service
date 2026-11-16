@@ -86,3 +86,11 @@ async def test_methodology_publishes_running_prompt_and_models() -> None:
     assert body["models"]["prefilter"]["model"] == "jev-1.14.0"
     assert [card["doc_id"] for card in body["pinned_cards"]] == ["taxonomy:hate_threshold:0", "taxonomy:context_exception:0"]
     assert sum(slot["count"] for slot in body["retrieval"]["authoritative_slots"]) == 7
+
+    from app.analysis.taxonomy import TAXONOMY_CATEGORY_CODES, build_internal_taxonomy_documents
+
+    assert [category["code"] for category in body["taxonomy"]["categories"]] == list(TAXONOMY_CATEGORY_CODES)
+    assert all(category["name"] and category["include"] for category in body["taxonomy"]["categories"])
+    assert body["corpus"]["taxonomy_items"] == len(build_internal_taxonomy_documents())
+    assert body["corpus"]["normative_chunks"] > 0 and body["corpus"]["normative_sources"] > 0
+    assert "라벨링" not in body["prompt"] and "범주" not in body["prompt"]

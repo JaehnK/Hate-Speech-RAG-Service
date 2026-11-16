@@ -7,12 +7,14 @@ from what runs.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Any
 
 from fastapi import APIRouter
 
 from app.analysis.analysis_tiers import available_tiers
-from app.analysis.taxonomy import build_internal_taxonomy_documents
+from app.analysis.normative_corpus import load_normative_documents
+from app.analysis.taxonomy import CATEGORY_CARDS, TAXONOMY_CATEGORY_CODES, TAXONOMY_VERSION, build_internal_taxonomy_documents
 from app.analysis.prompt_template import AUTHORITATIVE_SLOTS, PINNED_TAXONOMY_IDS, build_category_prompt
 from app.core.config import Settings
 
@@ -24,10 +26,13 @@ SOURCE_TYPE_NAMES = {
     "dataset_guideline": "데이터셋 라벨 기준",
 }
 CONTEXT_PLACEHOLDERS = (
-    "(검색된 분류 체계 카드 4개 + 항상 포함되는 판정 기준 카드 2개)",
-    "(유사 사례 범주로 골라 검색한 규범·기준 문서 7개)",
-    "(의미가 가까운 라벨링 사례 6개: 문장, 출처 데이터셋, 혐오 여부, 범주, 유사도)",
+    "(검색한 분류 체계 항목 4개 + 항상 넣는 판정 기준 2개)",
+    "(비슷한 사례의 유형으로 골라 찾은 법령·심의 기준 문서 7개)",
+    "(의미가 가까운, 사람이 판정해 둔 사례 6개: 문장, 출처 데이터셋, 혐오 여부, 유형, 유사도)",
 )
+# The example index lives outside the web container (usearch files on the worker disk),
+# so its size is recorded here from the loader inventory (docs/40_public_artifact_inventory.md).
+EXAMPLE_CORPUS = {"label": "K-HATERS 학습용 데이터", "count": 172_157}
 
 
 def render_prompt_preview(prompt_version: str) -> str:
@@ -45,6 +50,41 @@ def _pinned_cards(prompt_version: str) -> list[dict[str, str]]:
     return [{"doc_id": doc_id, "text": documents[doc_id].chunk_text} for doc_id in pinned if doc_id in documents]
 
 
+def taxonomy_categories() -> list[dict[str, Any]]:
+    """The categories the classifier may output now, straight from the cards it reads."""
+    categories = []
+    for code in TAXONOMY_CATEGORY_CODES:
+        card = CATEGORY_CARDS[code]
+        categories.append(
+            {
+                "code": code,
+                "name": card.name,
+                "definition": card.definition,
+                "include": list(card.include),
+                "exclude": list(card.exclude),
+            }
+        )
+    return categories
+
+
+@lru_cache(maxsize=1)
+def corpus_sizes() -> dict[str, Any]:
+    """Counts of what retrieval searches, computed from the same loaders ingest uses."""
+    try:
+        normative = load_normative_documents()
+        normative_chunks: int | None = len(normative)
+        normative_sources: int | None = len({doc.source_id for doc in normative})
+    except (OSError, ValueError):
+        normative_chunks = normative_sources = None
+    return {
+        "taxonomy_items": len(build_internal_taxonomy_documents()),
+        "normative_chunks": normative_chunks,
+        "normative_sources": normative_sources,
+        "examples": EXAMPLE_CORPUS["count"],
+        "example_source": EXAMPLE_CORPUS["label"],
+    }
+
+
 def build_methodology_router(settings: Settings) -> APIRouter:
     router = APIRouter(prefix="/api/methodology", tags=["methodology"])
 
@@ -56,6 +96,8 @@ def build_methodology_router(settings: Settings) -> APIRouter:
             "prompt_version": version,
             "prompt": render_prompt_preview(version),
             "pinned_cards": _pinned_cards(version),
+            "taxonomy": {"version": TAXONOMY_VERSION, "categories": taxonomy_categories()},
+            "corpus": corpus_sizes(),
             "retrieval": {
                 "taxonomy_k": 4,
                 "example_k": 6,
