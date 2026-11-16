@@ -66,6 +66,6 @@ describe("comment network graph", () => {
 
   it("renders an explicit empty state without a browser canvas", () => {
     const html = renderToStaticMarkup(<CommentNetworkGraph network={{ ...network, nodes: [], edges: [] }} />);
-    expect(html).toContain("표시할 관계가 없습니다");
+    expect(html).toContain("답글 관계를 그릴 수 없습니다");
   });
 });

@@ -115,5 +115,5 @@ export function AuthCompletePage() {
     try { window.localStorage.setItem(STORAGE_KEY, String(Date.now())); } catch { /* storage blocked */ }
     window.close();
   }, []);
-  return <div className="state-card"><strong>로그인을 완료했습니다.</strong><p>이 창이 닫히지 않으면 직접 닫아주세요.</p><a href="/">HateScope로 이동</a></div>;
+  return <div className="hs-state"><div className="hs-stack"><strong>로그인을 마쳤습니다.</strong><p className="hs-note">이 창이 닫히지 않으면 직접 닫아주세요.</p><a href="/">HateScope로 이동</a></div></div>;
 }

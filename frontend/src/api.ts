@@ -49,7 +49,7 @@ export function putApiKey(provider: "anthropic", apiKey: string): Promise<ApiKey
   return request(`/api/me/api-keys/${provider}`, { method: "PUT", body: JSON.stringify({ api_key: apiKey }) });
 }
 
-export function deleteApiKey(provider: "anthropic"): Promise<void> {
+export function deleteApiKey(provider: "anthropic" | "upstage"): Promise<void> {
   return request<void>(`/api/me/api-keys/${provider}`, { method: "DELETE" });
 }
 
@@ -89,7 +89,12 @@ export function getReportNetwork(reportId: string): Promise<CommentNetwork> {
   return request(`/api/reports/${encodeURIComponent(reportId)}/network`);
 }
 
-export function getHateComments(reportId: string, cursor = 0): Promise<ReportCommentPage> {
+export interface CommentFilters {
+  category?: string;
+  authorChannelId?: string;
+}
+
+export function getHateComments(reportId: string, cursor = 0, filters: CommentFilters = {}): Promise<ReportCommentPage> {
   const query = new URLSearchParams({
     is_hate_speech: "true",
     status: "succeeded",
@@ -97,6 +102,8 @@ export function getHateComments(reportId: string, cursor = 0): Promise<ReportCom
     limit: "200",
     cursor: String(cursor),
   });
+  if (filters.category) query.set("category", filters.category);
+  if (filters.authorChannelId) query.set("author_channel_id", filters.authorChannelId);
   return request(`/api/reports/${encodeURIComponent(reportId)}/comments?${query}`);
 }
 
