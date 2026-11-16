@@ -139,6 +139,7 @@ export function CommentNetworkGraph({ network }: { network: CommentNetwork }) {
   };
   const relayout = () => graphRef.current?.layout({ name: "cose", animate: true, animationDuration: 350, fit: true, padding: 46 }).run();
   const metrics = buildNetworkMetrics(network);
+  const nodeValues = computeNodeMetrics(network);
   const clearSelection = () => { graphRef.current?.elements().unselect(); setSelectedNode(null); setSelectedEdge(null); };
 
   return (
@@ -146,7 +147,7 @@ export function CommentNetworkGraph({ network }: { network: CommentNetwork }) {
       <div className="network-toolbar">
         <div className="network-counts">
           <strong>{formatCount(network.nodes.length)}명</strong><span>작성자</span>
-          <strong>{formatCount(network.edges.length)}개</strong><span>답글 관계</span>
+          <strong>{formatCount(metrics.edgeCount)}개</strong><span>답글 관계</span>
         </div>
         {network.edges.length > 0 && connectedNodeCount < network.nodes.length && (
           <div className="network-scope" role="group" aria-label="네트워크 표시 범위">
@@ -163,7 +164,7 @@ export function CommentNetworkGraph({ network }: { network: CommentNetwork }) {
             ref={containerRef}
             className="network-canvas"
             role="img"
-            aria-label={`작성자 노드 ${network.nodes.length}개와 답글 연결 ${network.edges.length}개의 상호작용 네트워크`}
+            aria-label={`작성자 노드 ${network.nodes.length}개와 답글 관계 ${metrics.edgeCount}개의 상호작용 네트워크`}
           />
           <div className="network-controls" aria-label="그래프 화면 제어">
             <button aria-label="확대" title="확대" onClick={() => zoom(1.25)}><Plus size={16} /></button>
@@ -171,7 +172,7 @@ export function CommentNetworkGraph({ network }: { network: CommentNetwork }) {
             <button aria-label="화면에 맞춤" title="화면에 맞춤" onClick={fit}><Maximize2 size={16} /></button>
             <button aria-label="배치 다시 계산" title="배치 다시 계산" onClick={relayout}><RefreshCw size={16} /></button>
           </div>
-          {selectedNode && <NodeDetails node={selectedNode} onClose={clearSelection} />}
+          {selectedNode && <NodeDetails node={selectedNode} values={nodeValues.get(selectedNode.node_key)!} onClose={clearSelection} />}
           {selectedEdge && <EdgeDetails edge={selectedEdge} onClose={clearSelection} />}
         </div>
       </div>
@@ -181,31 +182,37 @@ export function CommentNetworkGraph({ network }: { network: CommentNetwork }) {
 }
 
 function NetworkOverview({ metrics }: { metrics: ReturnType<typeof buildNetworkMetrics> }) {
-  return <aside className="network-overview"><small>NETWORK METRICS</small><h3>관계 구조 요약</h3><dl>
-    <div><dt>전체 작성자</dt><dd>{formatCount(metrics.nodeCount)}</dd></div>
-    <div><dt>답글 관계</dt><dd>{formatCount(metrics.edgeCount)}</dd></div>
-    <div><dt>연결 작성자</dt><dd>{formatCount(metrics.connectedNodes)}</dd></div>
-    <div><dt>고립 작성자</dt><dd>{formatCount(metrics.isolatedNodes)}</dd></div>
-    <div><dt>혐오 포함 작성자</dt><dd>{formatCount(metrics.hateNodes)}</dd></div>
-    <div><dt>혐오 답글</dt><dd>{formatCount(metrics.hateEdges)}</dd></div>
-    <div><dt>평균 연결 차수</dt><dd>{metrics.averageDegree.toFixed(2)}</dd></div>
-    <div><dt>관계 밀도</dt><dd>{metrics.density.toFixed(2)}%</dd></div>
-  </dl><p>관계 밀도는 가능한 작성자 간 방향 연결 중 실제 고유 연결의 비율입니다.</p></aside>;
+  const rows: [string, string, string][] = [
+    ["전체 작성자", "Nodes", formatCount(metrics.nodeCount)],
+    ["답글 관계", "Edges", formatCount(metrics.edgeCount)],
+    ["답글 수", "Replies", formatCount(metrics.replyCount)],
+    ["답글을 주고받은 작성자", "", formatCount(metrics.connectedNodes)],
+    ["답글이 없는 작성자", "Isolates", formatCount(metrics.isolatedNodes)],
+    ["혐오표현을 쓴 작성자", "", formatCount(metrics.hateNodes)],
+    ["혐오표현이 담긴 답글", "", formatCount(metrics.hateEdges)],
+    ["평균 연결 수", "Avg. degree", metrics.averageDegree.toFixed(2)],
+    ["평균 답글 수", "Avg. strength", metrics.averageStrength.toFixed(2)],
+    ["연결 밀도", "Density", `${metrics.density.toFixed(2)}%`],
+  ];
+  return <aside className="network-overview"><h3>답글 관계 요약</h3><dl>
+    {rows.map(([label, term, value]) => <div key={label}><dt>{label}{term && <span className="sna-term"> ({term})</span>}</dt><dd>{value}</dd></div>)}
+  </dl><p>답글 관계는 답글이 오간 작성자 쌍(방향 구분), 답글 수는 중복을 포함한 전체 답글입니다. 연결 밀도는 가능한 모든 쌍 중 실제로 답글이 오간 비율입니다.{metrics.selfReplyCount > 0 && ` 자기 댓글에 단 답글 ${formatCount(metrics.selfReplyCount)}개는 제외했습니다.`}</p></aside>;
 }
 
-function NodeDetails({ node, onClose }: { node: CommentNetworkNode; onClose: () => void }) {
+function NodeDetails({ node, values, onClose }: { node: CommentNetworkNode; values: NodeMetrics; onClose: () => void }) {
   return (
     <aside className="network-details" aria-label="선택한 작성자 상세 정보">
       <button aria-label="상세 정보 닫기" onClick={onClose}><X size={16} /></button>
-      <small>SELECTED AUTHOR</small>
+      <small>선택한 작성자</small>
       <strong>{node.label || "이름 없는 작성자"}</strong>
       <dl>
         <div><dt>댓글</dt><dd>{formatCount(node.comment_count)}</dd></div>
         <div><dt>혐오표현</dt><dd>{formatCount(node.hate_speech_count)}</dd></div>
         <div><dt>비율</dt><dd>{Math.round(node.hate_speech_ratio * 100)}%</dd></div>
-        <div><dt>연결 차수</dt><dd>{metric(node, "degree")}</dd></div>
-        <div><dt>받은 답글</dt><dd>{metric(node, "in_degree")}</dd></div>
-        <div><dt>작성 답글</dt><dd>{metric(node, "out_degree")}</dd></div>
+        <div><dt>답글 보낸 사람 <span className="sna-term">(In-degree)</span></dt><dd>{formatCount(values.inDegree)}</dd></div>
+        <div><dt>답글 받은 사람 <span className="sna-term">(Out-degree)</span></dt><dd>{formatCount(values.outDegree)}</dd></div>
+        <div><dt>받은 답글 <span className="sna-term">(In-strength)</span></dt><dd>{formatCount(values.inStrength)}</dd></div>
+        <div><dt>단 답글 <span className="sna-term">(Out-strength)</span></dt><dd>{formatCount(values.outStrength)}</dd></div>
       </dl>
     </aside>
   );
@@ -214,10 +221,10 @@ function NodeDetails({ node, onClose }: { node: CommentNetworkNode; onClose: () 
 function EdgeDetails({ edge, onClose }: { edge: EdgeDetailsData; onClose: () => void }) {
   return <aside className="network-details" aria-label="선택한 답글 관계 상세 정보">
     <button aria-label="상세 정보 닫기" onClick={onClose}><X size={16} /></button>
-    <small>SELECTED EDGE</small><strong>{edge.sourceLabel} → {edge.targetLabel}</strong>
+    <small>선택한 답글 관계</small><strong>{edge.sourceLabel} → {edge.targetLabel}</strong>
     <dl>
-      <div><dt>답글 빈도</dt><dd>{formatCount(edge.frequency)}</dd></div>
-      <div><dt>혐오 답글</dt><dd>{formatCount(edge.hateCount)}</dd></div>
+      <div><dt>답글 수 <span className="sna-term">(Weight)</span></dt><dd>{formatCount(edge.frequency)}</dd></div>
+      <div><dt>혐오표현 답글</dt><dd>{formatCount(edge.hateCount)}</dd></div>
       <div><dt>혐오 비율</dt><dd>{Math.round(edge.hateRatio * 100)}%</dd></div>
       <div><dt>선 굵기</dt><dd>{edge.lineWidth.toFixed(1)}</dd></div>
     </dl>
@@ -239,10 +246,12 @@ export function buildNetworkElements(network: CommentNetwork, showAllNodes: bool
   const edges = [...grouped.values()];
   const connected = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
   const nodes = showAllNodes || edges.length === 0 ? network.nodes : network.nodes.filter((node) => connected.has(node.node_key));
-  const maxMetric = Math.max(1, ...nodes.map((node) => node.comment_count + numberMetric(node, "degree")));
+  const nodeValues = computeNodeMetrics(network);
+  const degreeOf = (key: string) => nodeValues.get(key)?.degree ?? 0;
+  const maxMetric = Math.max(1, ...nodes.map((node) => node.comment_count + degreeOf(node.node_key)));
   return [
     ...nodes.map((node) => {
-      const degree = numberMetric(node, "degree");
+      const degree = degreeOf(node.node_key);
       const sizeMetric = node.comment_count + degree;
       const size = 22 + (sizeMetric / maxMetric) * 26;
       return {
@@ -268,33 +277,65 @@ export function buildNetworkElements(network: CommentNetwork, showAllNodes: bool
   ];
 }
 
+export interface NodeMetrics {
+  inDegree: number;
+  outDegree: number;
+  degree: number;
+  inStrength: number;
+  outStrength: number;
+  strength: number;
+}
+
+// Mirrors app/reporting/network_metrics.py. Degree counts distinct partners on the
+// simple directed graph; strength counts replies. Self-replies are excluded from both.
+export function computeNodeMetrics(network: CommentNetwork): Map<string, NodeMetrics> {
+  const values = new Map<string, NodeMetrics>(network.nodes.map((node) => [node.node_key, { inDegree: 0, outDegree: 0, degree: 0, inStrength: 0, outStrength: 0, strength: 0 }]));
+  const ensure = (key: string) => {
+    if (!values.has(key)) values.set(key, { inDegree: 0, outDegree: 0, degree: 0, inStrength: 0, outStrength: 0, strength: 0 });
+    return values.get(key)!;
+  };
+  const pairs = new Set<string>();
+  for (const edge of network.edges) {
+    if (edge.source_node_key === edge.target_node_key) continue;
+    const source = ensure(edge.source_node_key);
+    const target = ensure(edge.target_node_key);
+    source.outStrength += 1;
+    target.inStrength += 1;
+    const pair = `${edge.source_node_key}\u0000${edge.target_node_key}`;
+    if (pairs.has(pair)) continue;
+    pairs.add(pair);
+    source.outDegree += 1;
+    target.inDegree += 1;
+  }
+  for (const value of values.values()) {
+    value.degree = value.inDegree + value.outDegree;
+    value.strength = value.inStrength + value.outStrength;
+  }
+  return values;
+}
+
 export function buildNetworkMetrics(network: CommentNetwork) {
-  const connected = connectedNodeKeys(network);
-  const uniqueEdges = new Set(network.edges.filter((edge) => edge.source_node_key !== edge.target_node_key).map((edge) => `${edge.source_node_key}\u0000${edge.target_node_key}`));
+  const replies = network.edges.filter((edge) => edge.source_node_key !== edge.target_node_key);
+  const uniqueEdges = new Set(replies.map((edge) => `${edge.source_node_key}\u0000${edge.target_node_key}`));
+  const connected = new Set(replies.flatMap((edge) => [edge.source_node_key, edge.target_node_key]));
   const nodeCount = network.nodes.length;
   return {
     nodeCount,
-    edgeCount: network.edges.length,
+    edgeCount: uniqueEdges.size,
+    replyCount: replies.length,
+    selfReplyCount: network.edges.length - replies.length,
     connectedNodes: connected.size,
     isolatedNodes: Math.max(0, nodeCount - connected.size),
     hateNodes: network.nodes.filter((node) => node.hate_speech_count > 0).length,
     hateEdges: network.edges.filter((edge) => edge.is_hate_speech).length,
-    averageDegree: nodeCount ? network.nodes.reduce((sum, node) => sum + numberMetric(node, "degree"), 0) / nodeCount : 0,
+    averageDegree: nodeCount ? (2 * uniqueEdges.size) / nodeCount : 0,
+    averageStrength: nodeCount ? (2 * replies.length) / nodeCount : 0,
     density: nodeCount > 1 ? uniqueEdges.size / (nodeCount * (nodeCount - 1)) * 100 : 0,
   };
 }
 
 function connectedNodeKeys(network: CommentNetwork): Set<string> {
-  return new Set(network.edges.flatMap((edge) => [edge.source_node_key, edge.target_node_key]));
-}
-
-function metric(node: CommentNetworkNode, key: string): string {
-  return formatCount(numberMetric(node, key));
-}
-
-function numberMetric(node: CommentNetworkNode, key: string): number {
-  const value = Number(node.metrics[key] ?? 0);
-  return Number.isFinite(value) ? value : 0;
+  return new Set(network.edges.filter((edge) => edge.source_node_key !== edge.target_node_key).flatMap((edge) => [edge.source_node_key, edge.target_node_key]));
 }
 
 function formatCount(value: number): string {

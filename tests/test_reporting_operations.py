@@ -25,7 +25,20 @@ from app.main import create_app
 from app.reporting.builder import ReportBuilder
 from app.reporting.exports import ExportService
 from app.reporting.network import CommentNetworkBuilder
+from app.reporting.network_metrics import network_overview, node_metrics
 from app.reporting.renderers import ExcelExporter, HtmlReportRenderer
+
+
+def test_network_metrics_split_degree_and_strength() -> None:
+    edges = [("a", "b"), ("a", "b"), ("b", "a"), ("c", "c")]
+    values = node_metrics(["a", "b", "c", "d"], edges)
+    assert values["a"] == {"in_degree": 1, "out_degree": 1, "degree": 2, "in_strength": 1, "out_strength": 2, "strength": 3, "self_replies": 0}
+    assert values["c"]["degree"] == 0 and values["c"]["self_replies"] == 1
+    overview = network_overview(["a", "b", "c", "d"], [(s, t, False) for s, t in edges])
+    assert overview["edge_count"] == 2 and overview["reply_count"] == 3 and overview["self_reply_count"] == 1
+    assert overview["connected_nodes"] == 2 and overview["isolated_nodes"] == 2
+    assert overview["average_degree"] == 1.0 and overview["average_strength"] == 1.5
+    assert abs(overview["average_degree"] - 2 * 3 * overview["density"] / 100) < 1e-9
 
 
 def test_network_report_html_and_excel_builders(tmp_path) -> None:
