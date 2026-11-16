@@ -13,6 +13,11 @@
   --hs-data-insult: light-dark(#d57113, #ffb072);
   --hs-data-normal: light-dark(#d4d4d4, #4a4a4a);
 
+  /* Graph ink for the reply network and the methodology flowchart. */
+  --hs-graph-node: light-dark(#5c5c5c, #a8a8a8);
+  --hs-graph-edge: light-dark(#c4c4c4, #5e5e5e);
+  --hs-graph-line: light-dark(#8f8f8f, #7a7a7a);
+
   --hs-page-width: 1120px;
   --hs-gutter: var(--spacing-8);
 }
@@ -119,7 +124,7 @@ body {
 .hs-table-scroll { overflow-x: auto; }
 .hs-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-1) var(--spacing-4); color: var(--color-text-secondary); font-size: var(--text-supporting-size); }
 .hs-legend > span { display: inline-flex; align-items: center; gap: var(--spacing-1-5); }
-.hs-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #5c5c5c; }
+.hs-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--hs-graph-node); }
 .hs-dot.is-hate { background: var(--hs-data-hate); }
 .hs-kv--wrap dd { white-space: normal; text-align: end; max-width: 70%; }
 .hs-aside--ruled { padding-left: var(--spacing-6); border-left: 1px solid var(--color-border); display: flex; flex-direction: column; gap: var(--spacing-4); }
@@ -242,11 +247,11 @@ body {
 .rag-flowchart { display: block; min-width: 880px; width: 100%; height: auto; font-family: var(--font-family-body); }
 .flow-phase rect { fill: var(--color-background-surface); stroke: var(--color-border); }
 .flow-phase text { fill: var(--color-text-secondary); font-size: 13px; font-weight: 600; }
-.flow-edge { fill: none; stroke: #8f8f8f; stroke-width: 1.5; }
+.flow-edge { fill: none; stroke: var(--hs-graph-line); stroke-width: 1.5; }
 .flow-edge.critical { stroke-width: 3; stroke: var(--color-text-primary); }
 .flow-edge.optional, .flow-edge.failure { stroke-dasharray: 4 4; }
 .flow-edge.success { stroke: var(--color-text-primary); }
-#rag-arrow path { fill: #8f8f8f; }
+#rag-arrow path { fill: var(--hs-graph-line); }
 .flow-edge-label { fill: var(--color-text-secondary); font-size: 11px; }
 .flow-node-shape { fill: var(--color-background-surface); stroke: var(--color-border-emphasized); stroke-width: 1.2; }
 .flow-node.store .flow-node-shape, .flow-node.merge .flow-node-shape { fill: var(--color-background-muted); }
@@ -259,7 +264,7 @@ body {
 .rag-flow-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--spacing-2); color: var(--color-text-secondary); font-size: var(--font-size-xs); }
 .rag-flow-legend { display: flex; gap: var(--spacing-4); }
 .rag-flow-legend span { display: inline-flex; align-items: center; gap: var(--spacing-1); }
-.rag-flow-legend i { display: inline-block; width: 18px; border-top: 2px solid #8f8f8f; }
+.rag-flow-legend i { display: inline-block; width: 18px; border-top: 2px solid var(--hs-graph-line); }
 .rag-flow-legend i.thick { border-top-width: 3px; border-top-color: var(--color-text-primary); }
 .rag-flow-legend i.dotted { border-top-style: dashed; }
 .rag-flow-mobile-hint { display: none; }
