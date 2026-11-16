@@ -21,6 +21,7 @@ import { categoryLabel, formatDate, formatNumber, formatPlaybackTime, ratioPerce
 const CommentNetworkGraph = lazy(() => import("../CommentNetworkGraph").then((module) => ({ default: module.CommentNetworkGraph })));
 
 type Scope = "all" | "group" | "individual";
+const PAGE_SIZE = 20;
 type ActiveFilter = { kind: "category"; value: string } | { kind: "author"; value: string; label: string } | null;
 
 export function ReportPage() {
@@ -168,6 +169,7 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scope, setScope] = useState<Scope>("all");
+  const [shown, setShown] = useState(PAGE_SIZE);
   const split = report.comment_analysis_summary.group_hate_count !== undefined;
   const filters: CommentFilters = filter?.kind === "category" ? { category: filter.value } : filter?.kind === "author" ? { authorChannelId: filter.value } : {};
 
@@ -175,6 +177,7 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
     let active = true;
     setItems([]);
     setPage(null);
+    setShown(PAGE_SIZE);
     setLoading(true);
     setError(null);
     void getHateComments(reportId, 0, filters)
@@ -186,9 +189,12 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
   }, [reportId, filter?.kind, filter?.value]);
 
   async function loadMore() {
+    // Reveal what is already loaded first; fetch the next server page only when it runs out.
+    if (shown < visible.length) { setShown((count) => count + PAGE_SIZE); return; }
     if (page?.next_cursor == null) return;
     setLoading(true);
     setError(null);
+    setShown((count) => count + PAGE_SIZE);
     try {
       const next = await getHateComments(reportId, page.next_cursor, filters);
       setItems((current) => [...current, ...next.items]);
@@ -211,7 +217,7 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
       </div>
       <div className="hs-toolbar">
         {split && (
-          <SegmentedControl label="볼 댓글" value={scope} onChange={(value) => setScope(value as Scope)} size="sm">
+          <SegmentedControl label="볼 댓글" value={scope} onChange={(value) => { setScope(value as Scope); setShown(PAGE_SIZE); }} size="sm">
             <SegmentedControlItem value="all" label="전체" />
             <SegmentedControlItem value="group" label="집단 혐오" />
             <SegmentedControlItem value="individual" label="모욕·욕설" />
@@ -221,13 +227,13 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
       </div>
       {error && <Banner status="error" title="댓글을 불러오지 못했습니다" description={error} />}
       <div className="hs-comment-list" aria-live="polite">
-        {visible.map((comment) => <HateCommentCard comment={comment} key={comment.comment_snapshot_id} />)}
+        {visible.slice(0, shown).map((comment) => <HateCommentCard comment={comment} key={comment.comment_snapshot_id} />)}
         {loading && items.length === 0 && <div className="hs-state"><Spinner label="댓글을 불러오는 중입니다" /></div>}
         {!loading && !error && visible.length === 0 && (
           <EmptyState title={filterLabel ? "조건에 맞는 댓글이 없습니다" : "혐오표현으로 판정된 댓글이 없습니다"} icon={<ShieldCheck size={28} aria-hidden />} isCompact />
         )}
       </div>
-      {page?.has_more && <Button label="댓글 더 보기" isLoading={loading} onClick={() => void loadMore()} />}
+      {(shown < visible.length || page?.has_more) && <Button label={`댓글 더 보기 (${formatNumber(Math.min(shown, visible.length))} / ${formatNumber(scope === "all" ? page?.total ?? visible.length : visible.length)}개 표시 중)`} isLoading={loading} onClick={() => void loadMore()} />}
     </section>
   );
 }

@@ -20,24 +20,66 @@ interface EdgeDetailsData {
   lineWidth: number;
 }
 
-// Mirrors the theme tokens: neutral nodes, --hs-data-hate for hate, accent ring for selection.
-const COLOR = { node: "#5c5c5c", hate: "#c9303a", edge: "#c4c4c4", selected: "#1b1b1b", label: "#1b1b1b" };
+type GraphPalette = { node: string; hate: string; edge: string; selected: string; label: string; surface: string };
 
-function graphStyle(highlightHate: boolean): StylesheetJson {
+const FALLBACK_PALETTE: GraphPalette = { node: "#5c5c5c", hate: "#c9303a", edge: "#c4c4c4", selected: "#1b1b1b", label: "#1b1b1b", surface: "#ffffff" };
+
+/**
+ * Cytoscape draws on canvas and cannot read CSS variables, and a custom property's
+ * computed value stays as the raw `light-dark(...)` text. Resolve each token through
+ * a probe element so the graph follows the active light/dark scheme.
+ */
+function readPalette(host: HTMLElement | null): GraphPalette {
+  if (!host || typeof getComputedStyle === "undefined") return FALLBACK_PALETTE;
+  const probe = document.createElement("span");
+  probe.style.display = "none";
+  host.appendChild(probe);
+  const resolve = (token: string, fallback: string) => {
+    probe.style.color = "";
+    probe.style.color = `var(${token}, ${fallback})`;
+    return getComputedStyle(probe).color || fallback;
+  };
+  const palette = {
+    node: resolve("--hs-graph-node", FALLBACK_PALETTE.node),
+    hate: resolve("--hs-data-hate", FALLBACK_PALETTE.hate),
+    edge: resolve("--hs-graph-edge", FALLBACK_PALETTE.edge),
+    selected: resolve("--color-text-primary", FALLBACK_PALETTE.selected),
+    label: resolve("--color-text-primary", FALLBACK_PALETTE.label),
+    surface: resolve("--color-background-muted", FALLBACK_PALETTE.surface),
+  };
+  probe.remove();
+  return palette;
+}
+
+/** Re-renders when the OS switches between light and dark. */
+function useColorScheme(): "light" | "dark" {
+  const darkQuery = () => (typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null);
+  const [scheme, setScheme] = useState<"light" | "dark">(() => (darkQuery()?.matches ? "dark" : "light"));
+  useEffect(() => {
+    const query = darkQuery();
+    if (!query) return;
+    const onChange = (event: MediaQueryListEvent) => setScheme(event.matches ? "dark" : "light");
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+  return scheme;
+}
+
+function graphStyle(highlightHate: boolean, palette: GraphPalette): StylesheetJson {
   return [
     {
       selector: "node",
       style: {
         width: "data(size)",
         height: "data(size)",
-        "background-color": COLOR.node,
-        "border-color": "#ffffff",
+        "background-color": palette.node,
+        "border-color": palette.surface,
         "border-width": 2,
         "font-family": "Figtree, 'IBM Plex Sans KR', sans-serif",
         "font-size": 11,
-        color: COLOR.label,
+        color: palette.label,
         label: "",
-        "text-background-color": "#ffffff",
+        "text-background-color": palette.surface,
         "text-background-opacity": 0.9,
         "text-background-padding": "3px",
         "text-margin-y": 6,
@@ -46,23 +88,23 @@ function graphStyle(highlightHate: boolean): StylesheetJson {
         "text-max-width": "110px",
       },
     },
-    { selector: "node.risk", style: { "background-color": COLOR.hate } },
+    { selector: "node.risk", style: { "background-color": palette.hate } },
     { selector: "node.hub", style: { label: "data(label)" } },
-    { selector: "node:selected", style: { label: "data(label)", "border-color": COLOR.selected, "border-width": 4 } },
+    { selector: "node:selected", style: { label: "data(label)", "border-color": palette.selected, "border-width": 4 } },
     {
       selector: "edge",
       style: {
         width: "data(lineWidth)",
         "curve-style": "bezier",
-        "line-color": COLOR.edge,
-        "target-arrow-color": COLOR.edge,
+        "line-color": palette.edge,
+        "target-arrow-color": palette.edge,
         "target-arrow-shape": "triangle",
         "arrow-scale": 0.75,
         opacity: 0.8,
       },
     },
-    ...(highlightHate ? [{ selector: "edge.risk", style: { "line-color": COLOR.hate, "target-arrow-color": COLOR.hate, opacity: 0.9 } }] : []),
-    { selector: "edge:selected", style: { "line-color": COLOR.selected, "target-arrow-color": COLOR.selected, opacity: 1 } },
+    ...(highlightHate ? [{ selector: "edge.risk", style: { "line-color": palette.hate, "target-arrow-color": palette.hate, opacity: 0.9 } }] : []),
+    { selector: "edge:selected", style: { "line-color": palette.selected, "target-arrow-color": palette.selected, opacity: 1 } },
   ];
 }
 
@@ -87,6 +129,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
   const elements = useMemo(() => buildNetworkElements(network, showAllNodes), [network, showAllNodes]);
   const metrics = useMemo(() => buildNetworkMetrics(network), [network]);
   const nodeValues = useMemo(() => computeNodeMetrics(network), [network]);
+  const scheme = useColorScheme();
   const hasIsolates = metrics.edgeCount > 0 && metrics.connectedNodes < network.nodes.length;
 
   useEffect(() => {
@@ -96,7 +139,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
     const graph = cytoscape({
       container: containerRef.current,
       elements,
-      style: graphStyle(true),
+      style: graphStyle(true, readPalette(containerRef.current)),
       layout: { name: "cose", animate: false, fit: true, padding: 40, nodeRepulsion: () => 7000, idealEdgeLength: () => 90, edgeElasticity: () => 100, gravity: 0.35, numIter: 700 },
       minZoom: 0.18,
       maxZoom: 3.5,
@@ -112,7 +155,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
     return () => { window.removeEventListener("resize", resize); graph.destroy(); graphRef.current = null; };
   }, [elements, network.nodes.length]);
 
-  useEffect(() => { graphRef.current?.style(graphStyle(highlightHate)); }, [highlightHate]);
+  useEffect(() => { graphRef.current?.style(graphStyle(highlightHate, readPalette(containerRef.current))); }, [highlightHate, scheme, elements]);
 
   if (network.nodes.length === 0) {
     return <Text type="supporting" as="p">모은 댓글 작성자 데이터가 없어 답글 관계를 그릴 수 없습니다.</Text>;
