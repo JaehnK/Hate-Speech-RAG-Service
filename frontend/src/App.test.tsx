@@ -2,10 +2,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 
-import App, { HateCommentCard, TierPicker } from "./App";
+import App from "./App";
+import { TierPicker } from "./pages/HomePage";
+import { HateCommentCard } from "./report/HateCommentCard";
 
 describe("public navigation", () => {
-  it("uses the analysis workspace as the main page", () => {
+  it("renders the home page inside the shared shell while the session loads", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/"]}>
         <App />
@@ -13,19 +15,8 @@ describe("public navigation", () => {
     );
 
     expect(html).toContain("HateScope");
-    expect(html).toContain("로그인 상태를 확인하는 중입니다");
-    expect(html).toContain('href="/samples"');
-  });
-
-  it("publishes the portfolio methodology without API developer links", () => {
-    const html = renderToStaticMarkup(
-      <MemoryRouter initialEntries={["/samples"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    expect(html).toContain("HateScope");
-    expect(html).toContain("RAG 방법론");
+    expect(html).toContain("YouTube 영상의 혐오표현을 근거와 함께 분석합니다");
+    expect(html).toContain("방법론");
     expect(html).not.toContain("API 문서");
     expect(html).not.toContain('href="/docs"');
     expect(html).not.toContain("/api/health/readiness");
@@ -33,7 +24,7 @@ describe("public navigation", () => {
 });
 
 describe("hate comment evidence", () => {
-  it("renders expandable reasoning and RAG document references", () => {
+  it("renders expandable reasoning and cited references", () => {
     const html = renderToStaticMarkup(
       <HateCommentCard comment={{
         comment_snapshot_id: "snapshot-id",
@@ -64,14 +55,15 @@ describe("hate comment evidence", () => {
 
     expect(html).toContain("<details>");
     expect(html).toContain("<summary>");
-    expect(html).toContain("분석 근거 보기");
+    expect(html).toContain("판정 근거 보기");
     expect(html).toContain("연령을 이유로 집단 전체를 비하합니다.");
     expect(html).toContain("k-haters:train:42");
     expect(html).toContain("category:age:0");
     expect(html).toContain("정보통신에 관한 심의규정");
     expect(html).toContain("제8조 제3호 바목");
-    expect(html).toContain("판정 근거 기준");
-    expect(html).toContain("정의·유사 사례 사용");
+    expect(html).toContain("근거로 쓴 기준");
+    expect(html).toContain("유형 정의 + 비슷한 사례");
+    expect(html).toContain('rel="noopener noreferrer"');
   });
 });
 
