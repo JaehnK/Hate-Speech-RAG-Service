@@ -35,8 +35,8 @@
     .reason { white-space: pre-wrap; }
     .segment.flagged { border-color: var(--crimson); background: #fff7f7; }
     .segment small { display: block; color: var(--muted); white-space: pre-wrap; }
-    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 16px; }
-    .metrics div { background: var(--surface-low); border-radius: 6px; padding: 10px 12px; } .metrics dt { color: var(--muted); font-size: 12px; } .metrics dd { margin: 2px 0 0; font-weight: 700; font-size: 18px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin: 0 0 16px; }
+    .metrics div { background: var(--surface-low); border-radius: 6px; padding: 10px 12px; } .metrics dt { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .metrics dt .en { font-size: 11px; } .metrics dd { margin: 2px 0 0; font-weight: 700; font-size: 18px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; } th, td { padding: 9px 10px; border-bottom: 1px solid var(--surface-high); text-align: left; } th { color: var(--muted); font-weight: 600; }
     footer.method { color: var(--muted); font-size: 13px; }
     @media (max-width: 720px) { .hero, .stats, .metrics, .evidence dl { grid-template-columns: 1fr; } .bar-row { grid-template-columns: 96px 1fr 48px; } }
@@ -129,19 +129,22 @@
     <h2>댓글 네트워크 분석</h2>
     {% if network %}
     <dl class="metrics">
-      <div><dt>전체 작성자</dt><dd>{{ network.node_count|number }}</dd></div>
-      <div><dt>답글 관계</dt><dd>{{ network.edge_count|number }}</dd></div>
-      <div><dt>연결 작성자</dt><dd>{{ network.connected_nodes|number }}</dd></div>
-      <div><dt>고립 작성자</dt><dd>{{ network.isolated_nodes|number }}</dd></div>
-      <div><dt>혐오 포함 작성자</dt><dd>{{ network.hate_nodes|number }}</dd></div>
-      <div><dt>혐오 답글</dt><dd>{{ network.hate_edges|number }}</dd></div>
-      <div><dt>평균 연결 차수</dt><dd>{{ "%.2f"|format(network.average_degree) }}</dd></div>
-      <div><dt>관계 밀도</dt><dd>{{ "%.2f"|format(network.density) }}%</dd></div>
+      <div><dt>전체 작성자 <span class="en">(Nodes)</span></dt><dd>{{ network.node_count|number }}</dd></div>
+      <div><dt>답글 관계 <span class="en">(Edges)</span></dt><dd>{{ network.edge_count|number }}</dd></div>
+      <div><dt>답글 수 <span class="en">(Replies)</span></dt><dd>{{ network.reply_count|number }}</dd></div>
+      <div><dt>답글을 주고받은 작성자</dt><dd>{{ network.connected_nodes|number }}</dd></div>
+      <div><dt>답글이 없는 작성자 <span class="en">(Isolates)</span></dt><dd>{{ network.isolated_nodes|number }}</dd></div>
+      <div><dt>혐오표현을 쓴 작성자</dt><dd>{{ network.hate_nodes|number }}</dd></div>
+      <div><dt>혐오표현이 담긴 답글</dt><dd>{{ network.hate_edges|number }}</dd></div>
+      <div><dt>평균 연결 수 <span class="en">(Avg. degree)</span></dt><dd>{{ "%.2f"|format(network.average_degree) }}</dd></div>
+      <div><dt>평균 답글 수 <span class="en">(Avg. strength)</span></dt><dd>{{ "%.2f"|format(network.average_strength) }}</dd></div>
+      <div><dt>연결 밀도 <span class="en">(Density)</span></dt><dd>{{ "%.2f"|format(network.density) }}%</dd></div>
     </dl>
+    <p class="muted">답글 관계는 답글이 오간 작성자 쌍(방향 구분)이고, 답글 수는 중복을 포함한 전체 답글입니다. 자기 댓글에 단 답글 {{ network.self_reply_count|number }}개는 모든 지표에서 제외했습니다.</p>
     {% if network.top_authors %}
     <h3>혐오 댓글이 많은 작성자 상위 {{ network.top_authors|length }}명</h3>
-    <table><thead><tr><th>작성자</th><th>댓글</th><th>혐오 댓글</th><th>혐오 비율</th><th>연결 차수</th></tr></thead><tbody>
-    {% for node in network.top_authors %}<tr><td>{{ node.label or "이름 없는 작성자" }}</td><td>{{ node.comment_count|number }}</td><td class="risk">{{ node.hate_speech_count|number }}</td><td>{{ "%.0f"|format(node.hate_speech_ratio * 100) }}%</td><td>{{ (node.metrics or {}).get("degree", 0) }}</td></tr>{% endfor %}
+    <table><thead><tr><th>작성자</th><th>댓글</th><th>혐오 댓글</th><th>혐오 비율</th><th>연결 수 (Degree)</th><th>답글 수 (Strength)</th></tr></thead><tbody>
+    {% for row in network.top_authors %}{% set node = row.node %}<tr><td>{{ node.label or "이름 없는 작성자" }}</td><td>{{ node.comment_count|number }}</td><td class="risk">{{ node.hate_speech_count|number }}</td><td>{{ "%.0f"|format(node.hate_speech_ratio * 100) }}%</td><td>{{ row.metrics.degree|number }}</td><td>{{ row.metrics.strength|number }}</td></tr>{% endfor %}
     </tbody></table>
     {% endif %}
     <p class="muted">관계 그래프는 웹 보고서에서 인터랙티브하게 확인할 수 있습니다.</p>

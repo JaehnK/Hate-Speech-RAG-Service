@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { buildNetworkElements, buildNetworkMetrics, CommentNetworkGraph } from "./CommentNetworkGraph";
+import { buildNetworkElements, buildNetworkMetrics, CommentNetworkGraph, computeNodeMetrics } from "./CommentNetworkGraph";
 import type { CommentNetwork } from "./types";
 
 const network: CommentNetwork = {
@@ -45,8 +45,23 @@ describe("comment network graph", () => {
 
     expect(edges).toHaveLength(1);
     expect(edges[0].data.edgeDetails).toMatchObject({ frequency: 2, hateCount: 1, hateRatio: 0.5 });
-    expect(metrics).toMatchObject({ nodeCount: 3, edgeCount: 2, connectedNodes: 2, isolatedNodes: 1, hateNodes: 1, hateEdges: 1 });
+    expect(metrics).toMatchObject({ nodeCount: 3, edgeCount: 1, replyCount: 2, connectedNodes: 2, isolatedNodes: 1, hateNodes: 1, hateEdges: 1 });
     expect(metrics.density).toBeCloseTo(1 / 6 * 100);
+    expect(metrics.averageDegree).toBeCloseTo(2 / 3);
+    expect(metrics.averageStrength).toBeCloseTo(4 / 3);
+  });
+
+  it("separates degree (distinct partners) from strength (reply counts) and drops self-replies", () => {
+    const selfReply = { source_node_key: "isolated", target_node_key: "isolated", edge_type: "reply_to", weight: 1, is_hate_speech: false };
+    const repeated = { ...network, edges: [...network.edges, { ...network.edges[0], is_hate_speech: false }, selfReply] };
+    const values = computeNodeMetrics(repeated);
+    const metrics = buildNetworkMetrics(repeated);
+
+    expect(values.get("author-a")).toEqual({ inDegree: 0, outDegree: 1, degree: 1, inStrength: 0, outStrength: 2, strength: 2 });
+    expect(values.get("author-b")).toEqual({ inDegree: 1, outDegree: 0, degree: 1, inStrength: 2, outStrength: 0, strength: 2 });
+    expect(values.get("isolated")?.degree).toBe(0);
+    expect(metrics).toMatchObject({ edgeCount: 1, replyCount: 2, selfReplyCount: 1, connectedNodes: 2, isolatedNodes: 1 });
+    expect(metrics.averageDegree).toBeCloseTo(2 * (metrics.nodeCount - 1) * metrics.density / 100);
   });
 
   it("renders an explicit empty state without a browser canvas", () => {

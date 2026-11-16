@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import AnalysisRun, CommentAnalysisResult, CommentNetwork, CommentNetworkEdge, CommentNetworkNode, CommentSnapshot
+from app.reporting.network_metrics import node_metrics
 
 
 class CommentNetworkBuilder:
@@ -21,7 +22,7 @@ class CommentNetworkBuilder:
             .where(CommentSnapshot.job_id == run.job_id)
         ).all()
         comments = {comment.youtube_comment_id: (comment, result) for comment, result in rows}
-        node_stats = defaultdict(lambda: {"comment_count": 0, "hate_count": 0, "in": 0, "out": 0, "label": None, "channel": None})
+        node_stats = defaultdict(lambda: {"comment_count": 0, "hate_count": 0, "label": None, "channel": None})
         edge_values = []
 
         for comment, result in rows:
@@ -35,8 +36,6 @@ class CommentNetworkBuilder:
                 continue
             parent, _parent_result = comments[comment.parent_youtube_comment_id]
             target = _node_key(parent)
-            node_stats[key]["out"] += 1
-            node_stats[target]["in"] += 1
             edge_values.append((comment, key, target, bool(result and result.is_hate_speech)))
 
         network = CommentNetwork(
@@ -46,6 +45,7 @@ class CommentNetworkBuilder:
         )
         session.add(network)
         session.flush()
+        metrics = node_metrics(node_stats.keys(), [(source, target) for _c, source, target, _h in edge_values])
         for key, stats in node_stats.items():
             count = int(stats["comment_count"])
             hate_count = int(stats["hate_count"])
@@ -58,7 +58,7 @@ class CommentNetworkBuilder:
                     comment_count=count,
                     hate_speech_count=hate_count,
                     hate_speech_ratio=Decimal(hate_count) / Decimal(count) if count else Decimal(0),
-                    metrics={"in_degree": stats["in"], "out_degree": stats["out"], "degree": stats["in"] + stats["out"]},
+                    metrics=metrics[key],
                     attributes={},
                 )
             )

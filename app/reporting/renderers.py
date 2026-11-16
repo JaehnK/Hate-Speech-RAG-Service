@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.analysis.citations import describe_citation
 from app.analysis.taxonomy import CATEGORY_CARDS
 from app.reporting.builder import target_scope
+from app.reporting.network_metrics import NODE_METRIC_KEYS, network_overview, node_metrics
 from app.db.models import (
     CommentAnalysisResult,
     CommentNetwork,
@@ -112,26 +113,18 @@ def _network_overview(session: Session, report: ReportSnapshot) -> dict | None:
         return None
     nodes = list(session.scalars(select(CommentNetworkNode).where(CommentNetworkNode.network_id == network.id)))
     edges = list(session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)))
-    # Same formulas as buildNetworkMetrics in frontend/src/CommentNetworkGraph.tsx.
-    connected = {key for edge in edges for key in (edge.source_node_key, edge.target_node_key)}
-    unique_edges = {(edge.source_node_key, edge.target_node_key) for edge in edges if edge.source_node_key != edge.target_node_key}
-    node_count = len(nodes)
-    degrees = [float((node.metrics or {}).get("degree") or 0) for node in nodes]
+    # Recomputed from edges so reports built before the degree/strength split stay correct.
+    keys = [node.node_key for node in nodes]
+    node_values = node_metrics(keys, [(edge.source_node_key, edge.target_node_key) for edge in edges])
     top_authors = sorted(
         (node for node in nodes if node.hate_speech_count),
-        key=lambda node: (node.hate_speech_count, node.comment_count, float((node.metrics or {}).get("degree") or 0)),
+        key=lambda node: (node.hate_speech_count, node.comment_count, node_values[node.node_key]["degree"]),
         reverse=True,
     )[:10]
     return {
-        "node_count": node_count,
-        "edge_count": len(edges),
-        "connected_nodes": len(connected),
-        "isolated_nodes": max(0, node_count - len(connected)),
+        **network_overview(keys, [(edge.source_node_key, edge.target_node_key, bool(edge.is_hate_speech)) for edge in edges]),
         "hate_nodes": sum(1 for node in nodes if node.hate_speech_count > 0),
-        "hate_edges": sum(1 for edge in edges if edge.is_hate_speech),
-        "average_degree": sum(degrees) / node_count if node_count else 0.0,
-        "density": len(unique_edges) / (node_count * (node_count - 1)) * 100 if node_count > 1 else 0.0,
-        "top_authors": top_authors,
+        "top_authors": [{"node": node, "metrics": node_values[node.node_key]} for node in top_authors],
     }
 
 
@@ -165,11 +158,14 @@ class ExcelExporter:
             scripts.append([segment.segment_index, float(segment.start_seconds or 0), float(segment.end_seconds or 0), segment.text, result.status, result.is_hate_speech, _json(result.categories), result.reasoning])
 
         nodes = workbook.create_sheet("network_nodes")
-        nodes.append(["node_key", "label", "comment_count", "hate_speech_count", "hate_speech_ratio", "metrics"])
+        nodes.append(["node_key", "label", "comment_count", "hate_speech_count", "hate_speech_ratio", *NODE_METRIC_KEYS])
         network = session.scalar(select(CommentNetwork).where(CommentNetwork.analysis_run_id == report.analysis_run_id))
         if network:
-            for node in session.scalars(select(CommentNetworkNode).where(CommentNetworkNode.network_id == network.id)):
-                nodes.append([node.node_key, node.label, node.comment_count, node.hate_speech_count, float(node.hate_speech_ratio), _json(node.metrics)])
+            node_rows = list(session.scalars(select(CommentNetworkNode).where(CommentNetworkNode.network_id == network.id)))
+            edge_rows = list(session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)))
+            values = node_metrics([node.node_key for node in node_rows], [(edge.source_node_key, edge.target_node_key) for edge in edge_rows])
+            for node in node_rows:
+                nodes.append([node.node_key, node.label, node.comment_count, node.hate_speech_count, float(node.hate_speech_ratio), *(values[node.node_key][key] for key in NODE_METRIC_KEYS)])
 
         edges = workbook.create_sheet("network_edges")
         edges.append(["source_node_key", "target_node_key", "edge_type", "weight", "is_hate_speech"])
