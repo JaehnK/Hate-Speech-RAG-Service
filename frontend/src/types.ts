@@ -255,6 +255,17 @@ export interface Methodology {
     example_k: number;
     authoritative_slots: { source_type: string; label: string; count: number; guided_by_examples: boolean }[];
   };
+  taxonomy?: {
+    version: string;
+    categories: { code: string; name: string; definition: string; include: string[]; exclude: string[] }[];
+  };
+  corpus?: {
+    taxonomy_items: number;
+    normative_chunks: number | null;
+    normative_sources: number | null;
+    examples: number;
+    example_source: string;
+  };
   models: {
     classifier: string[];
     embedding: string;
