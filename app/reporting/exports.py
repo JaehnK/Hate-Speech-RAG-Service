@@ -7,13 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.core.errors import DomainError
 from app.db.models import ReportExport, ReportSnapshot, utcnow
+from app.reporting.pseudonym import Pseudonymizer
 from app.reporting.renderers import ExcelExporter, HtmlReportRenderer
 
 
 class ExportService:
-    def __init__(self) -> None:
-        self.html = HtmlReportRenderer()
-        self.excel = ExcelExporter()
+    def __init__(self, pseudonymizer: Pseudonymizer | None = None) -> None:
+        self.html = HtmlReportRenderer(pseudonymizer)
+        self.excel = ExcelExporter(pseudonymizer)
         # Exports rendered by an older deploy may use outdated templates, so only reuse files from this process.
         self.started_at = utcnow()
 

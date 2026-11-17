@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False
     session_ttl_seconds: int = Field(default=1209600, ge=300)
     api_key_encryption_key: str | None = Field(default=None, repr=False)
+    # Key for public-sample author pseudonyms (app/reporting/pseudonym.py). Unset: derived from
+    # api_key_encryption_key. Never change it once public samples are out.
+    author_pseudonym_key: str | None = Field(default=None, repr=False)
     youtube_api_key: str | None = Field(default=None, repr=False)
     worker_poll_interval_seconds: float = 2.0
     worker_stale_after_seconds: int = 900
