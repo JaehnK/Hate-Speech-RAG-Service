@@ -26,6 +26,7 @@ from app.reporting.builder import ReportBuilder
 from app.reporting.exports import ExportService
 from app.reporting.network import CommentNetworkBuilder
 from app.reporting.network_metrics import network_overview, node_metrics
+from app.reporting.pseudonym import Pseudonymizer
 from app.reporting.renderers import ExcelExporter, HtmlReportRenderer
 
 
@@ -199,6 +200,57 @@ async def test_public_sample_export_is_anonymous_and_reused(tmp_path) -> None:
 
     with app.state.session_factory() as session:
         assert session.scalar(select(func.count()).select_from(ReportExport)) == 2
+
+
+def test_pseudonyms_are_stable_keyed_and_short() -> None:
+    first, again, other = Pseudonymizer("key-a"), Pseudonymizer("key-a"), Pseudonymizer("key-b")
+    pseudonym = first.author("UCchannel", "snapshot-1")
+    assert pseudonym == again.author("UCchannel", "snapshot-2")  # same channel, any report or video
+    assert pseudonym != other.author("UCchannel", "snapshot-1")  # needs the key
+    assert pseudonym == first.node_key("UCchannel") and len(pseudonym) == 17 and pseudonym.startswith("a")
+    assert first.author(None, "s1") != first.author(None, "s2")
+    assert first.comment("Ugx1") != pseudonym and first.comment(None) is None
+    assert Pseudonymizer.label(pseudonym).startswith("익명-")
+
+
+@pytest.mark.asyncio
+async def test_public_sample_hides_authors_and_comment_ids(tmp_path) -> None:
+    app = _app(tmp_path)
+    with app.state.session_factory.begin() as session:
+        report = _seed_report(session)
+        report.is_public_sample = True
+        report_id = report.id
+        session.add(ReportExport(report_snapshot_id=report.id, format="html", status="succeeded", file_blob=b"private"))
+    leaks = ("author-parent", "author-reply", "Parent", "Reply", '"parent"', '"reply"')
+
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+        comments = (await client.get(f"/api/reports/{report_id}/comments")).json()["items"]
+        network = (await client.get(f"/api/reports/{report_id}/network")).json()
+        page = (await client.get(f"/reports/{report_id}")).text
+        reply = next(item for item in comments if item["is_reply"])
+        parent = next(item for item in comments if not item["is_reply"])
+        assert reply["parent_youtube_comment_id"] == parent["youtube_comment_id"]  # threads survive
+        assert {node["node_key"] for node in network["nodes"]} == {item["author_channel_id"] for item in comments}
+        assert all(node["label"].startswith("익명-") for node in network["nodes"])
+        filtered = await client.get(f"/api/reports/{report_id}/comments", params={"author_channel_id": reply["author_channel_id"]})
+        assert [item["comment_snapshot_id"] for item in filtered.json()["items"]] == [reply["comment_snapshot_id"]]
+        report_json = (await client.get(f"/api/reports/{report_id}")).text
+        for body in (str(comments), str(network), report_json):
+            assert not any(leak in body for leak in leaks)
+        assert "author-parent" not in page and ">Parent<" not in page
+
+        published = await client.put(f"/api/admin/reports/{report_id}/public-sample", headers={"X-Admin-Token": "test-admin-secret"})
+        assert published.status_code == 200
+
+    with app.state.session_factory() as session:
+        assert session.scalar(select(func.count()).select_from(ReportExport)) == 0  # private-era file dropped
+        report = session.get(ReportSnapshot, report_id)
+        workbook = load_workbook(BytesIO(ExcelExporter(Pseudonymizer("k")).render(session, report)))
+        cells = {str(cell.value) for sheet in workbook for row in sheet.iter_rows() for cell in row}
+        assert not cells & {"parent", "reply", "author-parent", "author-reply", "Parent", "Reply"}
+        report.is_public_sample = False
+        workbook = load_workbook(BytesIO(ExcelExporter(Pseudonymizer("k")).render(session, report)))
+        assert "parent" in {str(cell.value) for cell in workbook["comment_analysis"]["A"]}  # owners keep real IDs
 
 
 def test_public_sample_does_not_reuse_exports_from_previous_deploy(tmp_path) -> None:

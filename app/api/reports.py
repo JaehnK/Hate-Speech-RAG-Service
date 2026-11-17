@@ -24,6 +24,7 @@ from app.db.models import (
 )
 from app.reporting.builder import target_scope
 from app.reporting.exports import ExportService
+from app.reporting.pseudonym import Pseudonymizer
 from app.reporting.renderers import HtmlReportRenderer
 
 
@@ -34,7 +35,8 @@ class ExportRequest(BaseModel):
 def build_reports_router(get_session: Callable[[], Iterator[Session]], settings: Settings) -> APIRouter:
     router = APIRouter(prefix="/api/reports", tags=["reports"])
     SessionDependency = Annotated[Session, Depends(get_session)]
-    export_service = ExportService()
+    pseudonymizer = Pseudonymizer.from_settings(settings)
+    export_service = ExportService(pseudonymizer)
     resolver = AuthResolver(settings)
 
     @router.get("/public")
@@ -58,7 +60,7 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
             "status": report.status,
             "title": report.title,
             "created_at": report.created_at,
-            **report.payload,
+            **(pseudonymizer.report_payload(report.payload) if report.is_public_sample else report.payload),
             "links": {
                 "comments": f"/api/reports/{report.id}/comments",
                 "script_segments": f"/api/reports/{report.id}/script-segments",
@@ -96,16 +98,23 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
         else:
             statement = statement.order_by(CommentSnapshot.collected_at, CommentSnapshot.id)
         rows = session.execute(statement).all()
+        # Public samples hide who wrote what: authors and comment IDs go out as pseudonyms (the
+        # author filter takes the pseudonym too), so a hate label never points at a real account.
+        anonymous = pseudonymizer if report.is_public_sample else None
+
+        def author_of(comment: CommentSnapshot) -> str | None:
+            return anonymous.author(comment.author_channel_id, comment.id) if anonymous else comment.author_channel_id
+
         filtered = [
             (comment, result)
             for comment, result in rows
             if (is_hate_speech is None or result.is_hate_speech == is_hate_speech)
             and (result_status is None or result.status == result_status)
             and (category is None or category in (result.categories or []))
-            and (author_channel_id is None or comment.author_channel_id == author_channel_id)
+            and (author_channel_id is None or author_of(comment) == author_channel_id)
         ]
         page = filtered[cursor : cursor + limit]
-        return _page([_comment_payload(*row) for row in page], cursor, limit, len(filtered))
+        return _page([_comment_payload(*row, anonymous) for row in page], cursor, limit, len(filtered))
 
     @router.get("/{report_id}/script-segments")
     def get_script_segments(
@@ -142,6 +151,7 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
             raise DomainError("NETWORK_NOT_FOUND", "댓글 네트워크가 없습니다.", status_code=404)
         nodes = list(session.scalars(select(CommentNetworkNode).where(CommentNetworkNode.network_id == network.id)))
         edges = list(session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)))
+        key = pseudonymizer.node_key if report.is_public_sample else (lambda value: value)
         return {
             "network_id": str(network.id),
             "status": network.status,
@@ -150,9 +160,9 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
             "summary": network.summary,
             "nodes": [
                 {
-                    "node_key": node.node_key,
+                    "node_key": key(node.node_key),
                     "node_type": node.node_type,
-                    "label": node.label,
+                    "label": Pseudonymizer.label(key(node.node_key)) if report.is_public_sample else node.label,
                     "comment_count": node.comment_count,
                     "hate_speech_count": node.hate_speech_count,
                     "hate_speech_ratio": float(node.hate_speech_ratio),
@@ -162,8 +172,8 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
             ],
             "edges": [
                 {
-                    "source_node_key": edge.source_node_key,
-                    "target_node_key": edge.target_node_key,
+                    "source_node_key": key(edge.source_node_key),
+                    "target_node_key": key(edge.target_node_key),
                     "edge_type": edge.edge_type,
                     "weight": float(edge.weight),
                     "is_hate_speech": edge.is_hate_speech,
@@ -198,7 +208,7 @@ def build_reports_router(get_session: Callable[[], Iterator[Session]], settings:
 def build_report_pages_router(get_session: Callable[[], Iterator[Session]], settings: Settings) -> APIRouter:
     router = APIRouter(tags=["report-pages"])
     SessionDependency = Annotated[Session, Depends(get_session)]
-    renderer = HtmlReportRenderer()
+    renderer = HtmlReportRenderer(Pseudonymizer.from_settings(settings))
     resolver = AuthResolver(settings)
 
     @router.get("/reports/{report_id}", response_class=HTMLResponse)
@@ -271,14 +281,26 @@ def _analysis_payload(result) -> dict[str, Any]:
     }
 
 
-def _comment_payload(comment, result) -> dict[str, Any]:
+def _comment_payload(comment, result, anonymous: Pseudonymizer | None = None) -> dict[str, Any]:
+    if anonymous:
+        author = anonymous.author(comment.author_channel_id, comment.id)
+        identity = {
+            "youtube_comment_id": anonymous.comment(comment.youtube_comment_id),
+            "parent_youtube_comment_id": anonymous.comment(comment.parent_youtube_comment_id),
+            "author_display_name": Pseudonymizer.label(author),
+            "author_channel_id": author,
+        }
+    else:
+        identity = {
+            "youtube_comment_id": comment.youtube_comment_id,
+            "parent_youtube_comment_id": comment.parent_youtube_comment_id,
+            "author_display_name": comment.author_display_name,
+            "author_channel_id": comment.author_channel_id,
+        }
     return {
         "comment_snapshot_id": str(comment.id),
-        "youtube_comment_id": comment.youtube_comment_id,
         "is_reply": comment.is_reply,
-        "parent_youtube_comment_id": comment.parent_youtube_comment_id,
-        "author_display_name": comment.author_display_name,
-        "author_channel_id": comment.author_channel_id,
+        **identity,
         "text_original": comment.text_original,
         "like_count": comment.like_count,
         "published_at": comment.published_at,

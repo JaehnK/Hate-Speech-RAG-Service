@@ -5,14 +5,14 @@ from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.analysis.taxonomy import DEFAULT_DEFINITION_CORPUS_VERSION
 from app.analysis.collections import AUTHORITATIVE_COLLECTION_NAME, EXAMPLE_COLLECTION_NAME, TAXONOMY_COLLECTION_NAME
 from app.core.config import Settings
 from app.core.errors import DomainError
-from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog, ReportSnapshot
+from app.db.models import AnalysisJob, ApiQuotaEvent, OperationLog, ReportExport, ReportSnapshot
 from app.db.repositories import AnalysisJobRepository
 
 
@@ -122,6 +122,9 @@ def build_admin_router(get_session: Callable[[], Iterator[Session]], settings: S
     def publish_sample(report_id: UUID, session: SessionDependency) -> dict[str, Any]:
         report = _report(session, report_id)
         report.is_public_sample = True
+        # Files rendered while the report was private carry real author and comment IDs; public
+        # downloads reuse stored files, so drop them and let the next request render a pseudonymized one.
+        session.execute(delete(ReportExport).where(ReportExport.report_snapshot_id == report.id))
         session.flush()
         return {"report_id": str(report.id), "is_public_sample": True}
 

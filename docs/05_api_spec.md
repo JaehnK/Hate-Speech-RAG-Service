@@ -465,6 +465,17 @@ Query:
 
 이 절의 `report_id` 기반 endpoint(`comments`, `script-segments`, `network`, `exports` 포함)는 모두 `GET /api/reports/{report_id}`와 같은 인증/소유권 규칙을 따른다: `is_public_sample = true`이면 인증 없이 허용하고, 그 외에는 소유자 본인만 접근할 수 있다.
 
+공개 샘플은 작성자를 가명으로 내보낸다(`app/reporting/pseudonym.py`). 소유자 본인이 보는 비공개 report는 원래 값을 그대로 쓴다.
+
+| 필드 | 공개 샘플에서의 값 |
+| --- | --- |
+| `author_channel_id`, network `node_key`·`source_node_key`·`target_node_key` | `a` + 16자. 채널 ID의 HMAC-SHA256 앞 80비트(base32). 같은 채널은 모든 영상·report에서 같은 값이다. 채널 ID가 없는 작성자는 `n` + 16자(그 댓글 안에서만 유효) |
+| `author_display_name`, network `label` | `익명-` + 가명 6자 |
+| `youtube_comment_id`, `parent_youtube_comment_id`, 대표 댓글 ID | `c` + 16자. 답글-원댓글 관계는 유지된다 |
+| `author_channel_id` 필터 | 가명으로 받는다 |
+
+HTML·Excel export와 `/reports/{report_id}` 페이지도 같다. 키는 `AUTHOR_PSEUDONYM_KEY`이고, 없으면 `API_KEY_ENCRYPTION_KEY`에서 파생한다. 키가 바뀌면 모든 가명이 바뀌므로 공개 이후에는 바꾸지 않는다. 키 없이는 가명에서 채널을 되찾을 수 없지만, 댓글 본문을 YouTube에서 검색하면 작성자를 찾을 수 있다는 한계는 남는다.
+
 ### GET /api/reports/public
 
 로그인 없이 열람 가능한 공개 샘플 report 목록을 조회한다.
@@ -853,7 +864,7 @@ Query:
 
 ### PUT /api/admin/reports/{report_id}/public-sample
 
-운영자가 공개 적합성을 검토한 report를 로그인 전 공개 샘플로 지정한다. 성공 시 `is_public_sample: true`를 반환한다.
+운영자가 공개 적합성을 검토한 report를 로그인 전 공개 샘플로 지정한다. 성공 시 `is_public_sample: true`를 반환한다. 비공개일 때 만든 export 파일은 실제 ID를 담고 있으므로 지정할 때 지운다.
 
 ### DELETE /api/admin/reports/{report_id}/public-sample
 

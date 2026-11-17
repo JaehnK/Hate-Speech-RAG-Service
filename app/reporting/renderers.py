@@ -12,6 +12,7 @@ from app.analysis.citations import describe_citation
 from app.analysis.taxonomy import CATEGORY_CARDS
 from app.reporting.builder import target_scope
 from app.reporting.network_metrics import NODE_METRIC_KEYS, network_overview, node_metrics
+from app.reporting.pseudonym import Pseudonymizer
 from app.db.models import (
     CommentAnalysisResult,
     CommentNetwork,
@@ -36,8 +37,21 @@ RAG_CONTEXT_LABELS = {
 }
 
 
+def _public_view(pseudonymizer: Pseudonymizer | None, report: ReportSnapshot):
+    """(payload, comment id, node key, node label) mappers: pseudonymized for public samples."""
+    if pseudonymizer is None or not report.is_public_sample:
+        return report.payload, (lambda comment_id: comment_id), (lambda key: key), (lambda node: node.label)
+    return (
+        pseudonymizer.report_payload(report.payload),
+        pseudonymizer.comment,
+        pseudonymizer.node_key,
+        lambda node: Pseudonymizer.label(pseudonymizer.node_key(node.node_key)),
+    )
+
+
 class HtmlReportRenderer:
-    def __init__(self) -> None:
+    def __init__(self, pseudonymizer: Pseudonymizer | None = None) -> None:
+        self.pseudonymizer = pseudonymizer
         template_dir = Path(__file__).with_name("templates")
         self.environment = Environment(
             loader=FileSystemLoader(template_dir),
@@ -51,7 +65,7 @@ class HtmlReportRenderer:
         self.environment.filters["scope_label"] = lambda result: SCOPE_LABELS[target_scope(result)]
 
     def render(self, session: Session, report: ReportSnapshot) -> str:
-        payload = report.payload
+        payload, comment_ref, _node_key, author_label = _public_view(self.pseudonymizer, report)
         summary = payload.get("comment_analysis_summary") or {}
         collection = payload.get("collection_summary") or {}
         total = summary.get("total") or 0
@@ -87,6 +101,8 @@ class HtmlReportRenderer:
             script_segments=script_segments,
             network=_network_overview(session, report),
             config=payload.get("analysis_config") or {},
+            comment_ref=comment_ref,
+            author_label=author_label,
         )
 
 
@@ -129,14 +145,19 @@ def _network_overview(session: Session, report: ReportSnapshot) -> dict | None:
 
 
 class ExcelExporter:
+    def __init__(self, pseudonymizer: Pseudonymizer | None = None) -> None:
+        self.pseudonymizer = pseudonymizer
+
     def render(self, session: Session, report: ReportSnapshot) -> bytes:
         from io import BytesIO
+
+        payload, comment_ref, node_key, author_label = _public_view(self.pseudonymizer, report)
 
         workbook = Workbook()
         summary = workbook.active
         summary.title = "summary"
         summary.append(["field", "value"])
-        for key, value in _flatten(report.payload):
+        for key, value in _flatten(payload):
             summary.append([key, value])
 
         comments = workbook.create_sheet("comment_analysis")
@@ -146,7 +167,7 @@ class ExcelExporter:
             .join(CommentAnalysisResult, CommentAnalysisResult.comment_snapshot_id == CommentSnapshot.id)
             .where(CommentAnalysisResult.analysis_run_id == report.analysis_run_id)
         ):
-            comments.append([comment.youtube_comment_id, comment.is_reply, comment.text_original, result.status, result.is_hate_speech, target_scope(result), _json(result.categories), result.reasoning])
+            comments.append([comment_ref(comment.youtube_comment_id), comment.is_reply, comment.text_original, result.status, result.is_hate_speech, target_scope(result), _json(result.categories), result.reasoning])
 
         scripts = workbook.create_sheet("script_analysis")
         scripts.append(["segment_index", "start_seconds", "end_seconds", "text", "status", "is_hate_speech", "categories", "분석 사유"])
@@ -165,13 +186,13 @@ class ExcelExporter:
             edge_rows = list(session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)))
             values = node_metrics([node.node_key for node in node_rows], [(edge.source_node_key, edge.target_node_key) for edge in edge_rows])
             for node in node_rows:
-                nodes.append([node.node_key, node.label, node.comment_count, node.hate_speech_count, float(node.hate_speech_ratio), *(values[node.node_key][key] for key in NODE_METRIC_KEYS)])
+                nodes.append([node_key(node.node_key), author_label(node), node.comment_count, node.hate_speech_count, float(node.hate_speech_ratio), *(values[node.node_key][key] for key in NODE_METRIC_KEYS)])
 
         edges = workbook.create_sheet("network_edges")
         edges.append(["source_node_key", "target_node_key", "edge_type", "weight", "is_hate_speech"])
         if network:
             for edge in session.scalars(select(CommentNetworkEdge).where(CommentNetworkEdge.network_id == network.id)):
-                edges.append([edge.source_node_key, edge.target_node_key, edge.edge_type, float(edge.weight), edge.is_hate_speech])
+                edges.append([node_key(edge.source_node_key), node_key(edge.target_node_key), edge.edge_type, float(edge.weight), edge.is_hate_speech])
 
         output = BytesIO()
         workbook.save(output)

@@ -88,7 +88,7 @@
     <h2>{% if split %}전체 혐오·모욕 댓글{% else %}전체 혐오 댓글{% endif %} <span class="muted">({{ hate_comments|length|number }}건 · 좋아요 많은 순)</span></h2>
     {% for comment, result in hate_comments %}
     <article class="case">
-      <div class="case-meta"><span><span class="flag">{% if split %}{{ result|scope_label }}{% else %}FLAGGED{% endif %}</span> · <code>{{ comment.youtube_comment_id[:12] }}</code>{% if comment.is_reply %} · 답글{% endif %}</span><span>좋아요 {{ comment.like_count|number }}</span></div>
+      <div class="case-meta"><span><span class="flag">{% if split %}{{ result|scope_label }}{% else %}FLAGGED{% endif %}</span> · <code>{{ (comment_ref(comment.youtube_comment_id) or "")[:12] }}</code>{% if comment.is_reply %} · 답글{% endif %}</span><span>좋아요 {{ comment.like_count|number }}</span></div>
       <p>{{ comment.text_original or "내용이 없는 댓글입니다." }}</p>
       <div class="muted">{{ (result.categories or [])|map("category")|join(", ") or "미분류" }}</div>
       <details>
@@ -144,7 +144,7 @@
     {% if network.top_authors %}
     <h3>혐오 댓글이 많은 작성자 상위 {{ network.top_authors|length }}명</h3>
     <table><thead><tr><th>작성자</th><th>댓글</th><th>혐오 댓글</th><th>혐오 비율</th><th>연결 수 (Degree)</th><th>답글 수 (Strength)</th></tr></thead><tbody>
-    {% for row in network.top_authors %}{% set node = row.node %}<tr><td>{{ node.label or "이름 없는 작성자" }}</td><td>{{ node.comment_count|number }}</td><td class="risk">{{ node.hate_speech_count|number }}</td><td>{{ "%.0f"|format(node.hate_speech_ratio * 100) }}%</td><td>{{ row.metrics.degree|number }}</td><td>{{ row.metrics.strength|number }}</td></tr>{% endfor %}
+    {% for row in network.top_authors %}{% set node = row.node %}<tr><td>{{ author_label(node) or "이름 없는 작성자" }}</td><td>{{ node.comment_count|number }}</td><td class="risk">{{ node.hate_speech_count|number }}</td><td>{{ "%.0f"|format(node.hate_speech_ratio * 100) }}%</td><td>{{ row.metrics.degree|number }}</td><td>{{ row.metrics.strength|number }}</td></tr>{% endfor %}
     </tbody></table>
     {% endif %}
     <p class="muted">관계 그래프는 웹 보고서에서 인터랙티브하게 확인할 수 있습니다.</p>
