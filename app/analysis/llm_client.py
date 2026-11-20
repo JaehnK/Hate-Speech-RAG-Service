@@ -8,6 +8,7 @@ from typing import Protocol
 import anthropic
 
 from app.analysis.errors import ApiKeyInvalidError, LlmRequestError
+from app.analysis.prompt_template import PROMPT_CACHE_SPLIT
 from app.analysis.retry import RetryPolicy, parse_retry_after
 
 
@@ -90,7 +91,7 @@ class AnthropicLlmClient:
                 message = self.client.messages.create(
                     model=self.model,
                     system=DEFAULT_SYSTEM_PROMPT,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[{"role": "user", "content": _user_content(prompt)}],
                     **self._generation_options(),
                 )
         except anthropic.AuthenticationError as exc:
@@ -117,6 +118,20 @@ def is_adaptive_model(model: str) -> bool:
     return model.startswith(ADAPTIVE_MODEL_PREFIXES)
 
 
+def _user_content(prompt: str) -> str | list[dict]:
+    """Mark the version-wide prefix of a cache-ordered prompt (v0.8.2+) for prompt caching.
+
+    The text the model sees is unchanged; it only arrives as two blocks. Older prompts put the
+    input early, so they have no shared prefix worth caching and go out as one string."""
+    split = prompt.find(PROMPT_CACHE_SPLIT)
+    if split <= 0:
+        return prompt
+    return [
+        {"type": "text", "text": prompt[:split], "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": prompt[split:]},
+    ]
+
+
 def _message_text(message) -> str:
     texts = []
     for block in getattr(message, "content", []):
@@ -132,7 +147,7 @@ def _message_usage(message) -> dict[str, int]:
         return {}
 
     result = {}
-    for key in ("input_tokens", "output_tokens"):
+    for key in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
         value = getattr(usage, key, None)
         if value is not None:
             result[key] = int(value)

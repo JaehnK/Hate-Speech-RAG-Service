@@ -83,6 +83,8 @@ def evaluate(
             "repeat_item_count": len(repeated),
             "mean_input_tokens": _mean_usage(succeeded, "input_tokens"),
             "mean_output_tokens": _mean_usage(succeeded, "output_tokens"),
+            "mean_cache_creation_input_tokens": _mean_usage(succeeded, "cache_creation_input_tokens"),
+            "mean_cache_read_input_tokens": _mean_usage(succeeded, "cache_read_input_tokens"),
         }
         if bootstrap_samples and item_ids:
             summary["ci95"] = _bootstrap(item_ids, primary, gold, label_space, bootstrap_samples)

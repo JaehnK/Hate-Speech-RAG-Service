@@ -94,3 +94,20 @@ def test_v080_offers_six_categories_and_maps_example_labels() -> None:
     v071 = build_category_prompt("text", "comment", [], example_context=[example], prompt_version=PROMPT_V071)
     assert "political_actor" not in v071
     assert '"mapped_categories":["non_state_community","no_target"]' in v071
+
+
+def test_v082_is_v081_reordered_with_pinned_cards_in_the_prefix() -> None:
+    from app.analysis.prompt_template import PROMPT_CACHE_SPLIT, PROMPT_V081, PROMPT_V082
+    from app.analysis.taxonomy import build_internal_taxonomy_documents
+
+    docs = {doc.doc_id: doc for doc in build_internal_taxonomy_documents()}
+    taxonomy = [docs["taxonomy:hate_threshold:0"], docs["category:age:0"], docs["taxonomy:context_exception:0"]]
+    v081 = build_category_prompt("댓글", "comment", taxonomy, prompt_version=PROMPT_V081, video_title="제목")
+    v082 = build_category_prompt("댓글", "comment", taxonomy, prompt_version=PROMPT_V082, video_title="제목")
+    prefix, rest = v082.split(PROMPT_CACHE_SPLIT)
+    assert docs["taxonomy:hate_threshold:0"].chunk_text in prefix and docs["taxonomy:context_exception:0"].chunk_text in prefix
+    assert docs["category:age:0"].chunk_text in rest and 'Input text JSON: "댓글"' in rest
+    # Same lines as v0.8.1 apart from the version, section headers and the input_text placeholder.
+    def lines(text: str) -> set[str]:
+        return {line for line in text.splitlines() if line and not line.startswith(("[", "Prompt version", '  "input_text"', "- doc_id"))}
+    assert lines(v081) == lines(v082)

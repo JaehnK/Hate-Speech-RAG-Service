@@ -26,6 +26,8 @@ class RuntimeMetrics:
             "llm_retries": 0,
             "input_tokens": 0,
             "output_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
         }
 
     def increment_retry(self, provider: str) -> None:
@@ -35,8 +37,8 @@ class RuntimeMetrics:
 
     def record_outcome(self, outcome: AnalysisOutcome) -> None:
         with self._lock:
-            self._values["input_tokens"] += outcome.usage.get("input_tokens", 0)
-            self._values["output_tokens"] += outcome.usage.get("output_tokens", 0)
+            for key in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
+                self._values[key] += outcome.usage.get(key, 0)
 
     def snapshot(self) -> dict[str, int]:
         with self._lock:
@@ -265,5 +267,8 @@ def _progress_payload(
         "llm_retries": current["llm_retries"] - baseline["llm_retries"],
         "input_tokens": current["input_tokens"] - baseline["input_tokens"],
         "output_tokens": current["output_tokens"] - baseline["output_tokens"],
+        # input_tokens excludes cached prefix tokens (prompt v0.8.2+); these two hold them.
+        "cache_creation_input_tokens": current["cache_creation_input_tokens"] - baseline["cache_creation_input_tokens"],
+        "cache_read_input_tokens": current["cache_read_input_tokens"] - baseline["cache_read_input_tokens"],
         "elapsed_ms": int((monotonic() - started) * 1000),
     }

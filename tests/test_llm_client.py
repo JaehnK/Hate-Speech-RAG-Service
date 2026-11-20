@@ -184,3 +184,21 @@ def test_anthropic_client_maps_usage_limit_400_to_billing_error() -> None:
         client.complete("prompt")
 
     assert error.value.code == "LLM_BILLING_ERROR"
+
+
+def test_cache_ordered_prompt_marks_shared_prefix_for_caching() -> None:
+    from app.analysis.prompt_template import PROMPT_V081, PROMPT_V082, build_category_prompt
+
+    fake_client = FakeAnthropicClient()
+    client = AnthropicLlmClient(api_key=None, model="claude-haiku-5-5", max_tokens=100, temperature=0.0, client=fake_client)
+
+    prompt = build_category_prompt("댓글", "comment", [], prompt_version=PROMPT_V082, video_title="제목")
+    client.complete(prompt)
+    blocks = fake_client.messages.kwargs["messages"][0]["content"]
+    assert [block.get("cache_control") for block in blocks] == [{"type": "ephemeral"}, None]
+    assert "".join(block["text"] for block in blocks) == prompt  # the model sees the same text
+    assert "댓글" not in blocks[0]["text"] and "제목" not in blocks[0]["text"]
+    assert blocks[0]["text"] == build_category_prompt("다른", "reply", [], prompt_version=PROMPT_V082).split("\n[input]\n")[0]
+
+    client.complete(build_category_prompt("댓글", "comment", [], prompt_version=PROMPT_V081))
+    assert isinstance(fake_client.messages.kwargs["messages"][0]["content"], str)
