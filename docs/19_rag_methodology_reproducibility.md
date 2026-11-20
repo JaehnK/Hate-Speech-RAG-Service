@@ -104,7 +104,7 @@ taxonomy v0.7.0의 6개 category(`gender`, `age`, `identity`, `political_actor`,
 
 사람 라벨과 조정한 판정 기준을 taxonomy v0.7.1 `hate_threshold` 카드에 반영했다(docs/55). 멸칭 없는 근거 없는 부정적 일반화와 욕설 없는 조롱은 혐오, 모욕 없는 비판·퇴진 요구는 비혐오다. 진영 멸칭과 여러 사람을 복수로 묶은 욕은 `group`, 한 사람을 나이·출신 멸칭으로 욕하면 `individual`(멸칭의 category는 함께 씀), 영상 제목이 다루는 집단의 구성원 여럿을 향한 욕은 `group`이다. prompt는 영상 제목 규칙만 이 기준에 맞게 바꿨다. 카드 수는 16개 그대로다.
 
-### 3.2f `category-rag-v0.8.2` (실험)
+### 3.2f `category-rag-v0.8.2` (실험, 미채택)
 
 v0.8.1과 내용이 같고 순서만 바꿨다(docs/56). 규칙, 허용 category, 출력 형식, 고정 카드 2개를 앞에 두고 `[input]`부터 입력과 검색 결과를 둔다. LLM client는 `[input]` 앞부분(2,780토큰)에 `cache_control`을 붙여 프롬프트 캐싱을 쓴다.
 
