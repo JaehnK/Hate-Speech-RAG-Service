@@ -96,12 +96,14 @@ export interface CommentFilters {
 
 export function getHateComments(reportId: string, cursor = 0, filters: CommentFilters = {}): Promise<ReportCommentPage> {
   const query = new URLSearchParams({
-    is_hate_speech: "true",
     status: "succeeded",
     sort: "like_count",
     limit: "200",
     cursor: String(cursor),
   });
+  // An author's view lists all of their comments: the author table also shows authors with no
+  // hate comments, and a hate-only list would come back empty for them.
+  if (!filters.authorChannelId) query.set("is_hate_speech", "true");
   if (filters.category) query.set("category", filters.category);
   if (filters.authorChannelId) query.set("author_channel_id", filters.authorChannelId);
   return request(`/api/reports/${encodeURIComponent(reportId)}/comments?${query}`);
