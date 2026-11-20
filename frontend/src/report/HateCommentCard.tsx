@@ -11,14 +11,15 @@ export function HateCommentCard({ comment }: { comment: ReportComment }) {
   const similarCases = analysis.similar_cases_used ?? [];
   const definitionDocs = analysis.definition_docs_used ?? [];
   const isInsult = analysis.target_scope === "individual";
+  const isNormal = analysis.is_hate_speech === false;
   return (
     <article className="hs-comment">
       <details>
         <summary>
           <span className="hs-comment-meta">
-            <span className={`hs-swatch ${isInsult ? "is-insult" : "is-hate"}`} aria-hidden />
-            <Text type="label">{SCOPE_LABELS[analysis.target_scope ?? ""] ?? "혐오표현"}</Text>
-            <Text type="supporting">{analysis.categories.map(categoryLabel).join(", ") || "유형 없음"}</Text>
+            <span className={`hs-swatch ${isNormal ? "is-normal" : isInsult ? "is-insult" : "is-hate"}`} aria-hidden />
+            <Text type="label">{isNormal ? "혐오 아님" : SCOPE_LABELS[analysis.target_scope ?? ""] ?? "혐오표현"}</Text>
+            {!isNormal && <Text type="supporting">{(analysis.categories ?? []).map(categoryLabel).join(", ") || "유형 없음"}</Text>}
             <Text type="supporting" hasTabularNumbers>좋아요 {formatNumber(comment.like_count)}</Text>
             {comment.is_reply && <Badge variant="neutral" label="답글" />}
           </span>

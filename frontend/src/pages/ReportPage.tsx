@@ -212,7 +212,7 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
   return (
     <section className="hs-section" id="comments" aria-labelledby="comments-title">
       <div className="hs-section-header">
-        <Heading level={2} id="comments-title">{split ? "혐오·모욕 댓글" : "혐오 댓글"}</Heading>
+        <Heading level={2} id="comments-title">{filter?.kind === "author" ? "작성자의 댓글" : split ? "혐오·모욕 댓글" : "혐오 댓글"}</Heading>
         <Text type="supporting">좋아요 많은 순 · {formatNumber(items.length)} / {formatNumber(page?.total ?? report.comment_analysis_summary.hate_speech_count)}개</Text>
       </div>
       <div className="hs-toolbar">

@@ -65,6 +65,22 @@ describe("hate comment evidence", () => {
     expect(html).toContain("유형 정의 + 비슷한 사례");
     expect(html).toContain('rel="noopener noreferrer"');
   });
+
+  it("labels a non-hate comment shown in an author's view as not hate", () => {
+    const html = renderToStaticMarkup(
+      <HateCommentCard comment={{
+        comment_snapshot_id: "s2", youtube_comment_id: "c2", is_reply: true, parent_youtube_comment_id: "c1",
+        author_display_name: "익명-ABCDEF", author_channel_id: "aabcdef", text_original: "평범한 답글", like_count: 0, published_at: null,
+        analysis: {
+          status: "succeeded", is_hate_speech: false, categories: ["unclassified"], target_scope: "none", target_group: null, hate_type: null,
+          reasoning: "모욕이 없다.", rag_context_status: "complete", similar_cases_used: [], definition_docs_used: [],
+        },
+      }} />,
+    );
+    expect(html).toContain("혐오 아님");
+    expect(html).toContain("is-normal");
+    expect(html).not.toContain("집단 혐오");
+  });
 });
 
 describe("analysis tier picker", () => {
