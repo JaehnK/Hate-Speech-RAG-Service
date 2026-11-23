@@ -18,11 +18,17 @@ import { categoryLabel, formatNumber } from "../utils";
 
 export function HomePage() {
   return (
-    <div className="hs-page">
-      <AnalysisForm />
-      <SampleReports />
-      <HowItWorks />
-    </div>
+    <>
+      <div className="hs-page hs-page--lead">
+        <AnalysisForm />
+      </div>
+      <div className="hs-band">
+        <div className="hs-page hs-page--band">
+          <SampleReports />
+          <HowItWorks />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -119,7 +125,7 @@ function AnalysisForm() {
         {tiers.length > 0 && <TierPicker tiers={tiers} value={tier} onChange={setTier} disabled={submitting} />}
         <div className="hs-row">
           <Button type="submit" variant="primary" size="lg" label={submitLabel} isLoading={submitting} isDisabled={needsKey || session === undefined} />
-          {session === null && <Text type="supporting">로그인 창에서 로그인하면 입력한 주소로 바로 분석을 시작합니다.</Text>}
+          {session === null && <Text type="supporting">로그인하면 바로 분석을 시작합니다.</Text>}
         </div>
       </form>
     </section>
@@ -152,7 +158,7 @@ export function TierPicker({ tiers, value, onChange, disabled }: { tiers: Analys
           );
         })}
       </div>
-      {sameAccuracy !== null && <p className="hs-note">두 방식의 정확도는 같습니다({Math.round(sameAccuracy * 100)}%). 비용과 처리 방식만 다릅니다.</p>}
+      {sameAccuracy !== null && <p className="hs-note">정확도는 두 방식 모두 {Math.round(sameAccuracy * 100)}%입니다.</p>}
       <Collapsible defaultIsOpen={false} trigger={<Text type="label">분석은 어떻게 처리되나요?</Text>}>
         <div className="hs-stack hs-collapsible-body">
           <ol className="hs-list">
@@ -170,7 +176,7 @@ export function TierPicker({ tiers, value, onChange, disabled }: { tiers: Analys
 /** One plain line on how the tier works; the server summary is longer and uses older wording. */
 function tierMethod(tier: AnalysisTier): string {
   return tier.jev_prefilter
-    ? "확실히 문제없는 댓글은 가벼운 모델이 먼저 걸러내고, 나머지만 AI가 판정합니다."
+    ? "가벼운 모델이 먼저 거르고, 나머지만 AI가 판정합니다."
     : "모든 댓글을 AI가 판정합니다.";
 }
 
