@@ -117,7 +117,7 @@ function AnalysisForm() {
           statusVariant="detached"
         />
         {tiers.length > 0 && <TierPicker tiers={tiers} value={tier} onChange={setTier} disabled={submitting} />}
-        <div className="hs-row">
+        <div className="hs-form-action">
           <Button type="submit" variant="primary" size="lg" label={submitLabel} isLoading={submitting} isDisabled={needsKey || session === undefined} />
           {session === null && <Text type="supporting">로그인 창에서 로그인하면 입력한 주소로 바로 분석을 시작합니다.</Text>}
         </div>
