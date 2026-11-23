@@ -15,7 +15,7 @@ describe("public navigation", () => {
     );
 
     expect(html).toContain("HateScope");
-    expect(html).toContain("YouTube 영상의 혐오표현을 근거와 함께 분석합니다");
+    expect(html).toContain("YouTube 댓글과 자막의 혐오표현을 한 줄씩 판정하고, 근거를 함께 보여줍니다.");
     expect(html).toContain("방법론");
     expect(html).not.toContain("API 문서");
     expect(html).not.toContain('href="/docs"');
