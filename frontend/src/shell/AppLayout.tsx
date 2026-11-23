@@ -31,7 +31,7 @@ function Header() {
   return (
     <TopNav
       label="주 메뉴"
-      heading={<Link className="hs-brand" to="/">HateScope</Link>}
+      heading={<Link className="hs-brand" to="/"><img className="hs-brand-mark" src="/favicon.svg" alt="" width={20} height={20} />HateScope</Link>}
       startContent={
         <>
           {session && <TopNavItem label="내 분석" href="/history" isSelected={active("/history") || active("/jobs")} />}
