@@ -49,7 +49,7 @@ export function HateCommentCard({ comment }: { comment: ReportComment }) {
                       <>
                         <Text weight="medium">{item.title}</Text>
                         <Text type="supporting">
-                          {item.section}{item.source_label ? ` · ${item.source_label}` : ""}
+                          {item.section}{item.source_label ? ` (${item.source_label})` : ""}
                           {item.source_url && <> · <a href={item.source_url} target="_blank" rel="noopener noreferrer">원문 <ExternalLink size={12} aria-hidden /></a></>}
                         </Text>
                       </>

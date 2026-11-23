@@ -12,8 +12,8 @@ type FlowNode = {
 const NODES: FlowNode[] = [
   { id: "request", type: "start", x: 40, y: 74, width: 140, height: 56, title: "분석 요청", detail: "YouTube URL" },
   { id: "accept", type: "process", x: 230, y: 74, width: 140, height: 56, title: "분석 작업 접수", detail: "비동기 처리" },
-  { id: "collect", type: "process", x: 420, y: 74, width: 140, height: 56, title: "공개 데이터 수집", detail: "댓글 · 자막" },
-  { id: "items", type: "input", x: 610, y: 70, width: 150, height: 64, title: "판정 단위 나누기", detail: "댓글 · 답글 · 자막" },
+  { id: "collect", type: "process", x: 420, y: 74, width: 140, height: 56, title: "공개 데이터 수집", detail: "댓글·자막" },
+  { id: "items", type: "input", x: 610, y: 70, width: 150, height: 64, title: "판정 단위 나누기", detail: "댓글·답글·자막" },
   { id: "pool", type: "pool", x: 810, y: 68, width: 160, height: 68, title: "병렬 분석", detail: "안정적인 동시 처리" },
   { id: "embed", type: "process", x: 50, y: 320, width: 150, height: 62, title: "검색용 변환", detail: "임베딩" },
   { id: "examples", type: "store", x: 240, y: 220, width: 160, height: 68, title: "유사 사례", detail: "경험적 근거" },
@@ -28,9 +28,9 @@ const NODES: FlowNode[] = [
   { id: "correct", type: "process", x: 800, y: 508, width: 140, height: 60, title: "결과 교정", detail: "검증 오류 반영" },
   { id: "persist", type: "success", x: 1020, y: 490, width: 150, height: 62, title: "분류 결과 저장", detail: "판정 + 근거" },
   { id: "fail", type: "failure", x: 610, y: 600, width: 140, height: 48, title: "실패 상태 기록", detail: "원인 추적" },
-  { id: "aggregate", type: "process", x: 250, y: 735, width: 150, height: 60, title: "판정 결과 집계", detail: "성공 · 실패 포함" },
-  { id: "network", type: "process", x: 480, y: 735, width: 150, height: 60, title: "답글 네트워크", detail: "작성자 · 답글 관계" },
-  { id: "report", type: "success", x: 710, y: 735, width: 150, height: 60, title: "분석 보고서", detail: "HTML · XLSX" },
+  { id: "aggregate", type: "process", x: 250, y: 735, width: 150, height: 60, title: "판정 결과 집계", detail: "성공·실패 포함" },
+  { id: "network", type: "process", x: 480, y: 735, width: 150, height: 60, title: "답글 네트워크", detail: "작성자·답글 관계" },
+  { id: "report", type: "success", x: 710, y: 735, width: 150, height: 60, title: "분석 보고서", detail: "HTML, XLSX" },
   { id: "complete", type: "start", x: 960, y: 735, width: 170, height: 60, title: "분석 완료", detail: "결과 제공" },
 ];
 
@@ -61,9 +61,9 @@ export function RagPipelineFlow() {
             </marker>
           </defs>
 
-          <Phase x={20} y={20} width={1160} height={140} title="01 · 데이터 수집과 작업 구성" className="job" />
-          <Phase x={20} y={185} width={1160} height={470} title="02 · Three-Vector RAG 분석" className="rag" />
-          <Phase x={20} y={680} width={1160} height={140} title="03 · 집계와 보고서" className="report" />
+          <Phase x={20} y={20} width={1160} height={140} title="01. 데이터 수집과 작업 구성" className="job" />
+          <Phase x={20} y={185} width={1160} height={470} title="02. Three-Vector RAG 분석" className="rag" />
+          <Phase x={20} y={680} width={1160} height={140} title="03. 집계와 보고서" className="report" />
 
           <g className="flow-edges">
             {EDGES.map(([path, kind = ""], index) => <path className={`flow-edge ${kind}`} d={path} key={index} markerEnd="url(#rag-arrow)" />)}

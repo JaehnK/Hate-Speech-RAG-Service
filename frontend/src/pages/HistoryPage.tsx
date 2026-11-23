@@ -60,7 +60,7 @@ export function HistoryPage() {
       <PageHeader title="내 분석" description="Google 계정으로 요청한 분석을 다시 확인합니다." />
       <div className="hs-toolbar">
         <TextInput type="search" label="검색" isLabelHidden value={query} onChange={setQuery} placeholder="영상 제목, 영상 ID, 작업 번호" startIcon={Search} hasClear width={320} />
-        <SegmentedControl label="상태" value={filter} onChange={(value) => setFilter(value as Filter)}>
+        <SegmentedControl label="상태" value={filter} onChange={(value) => setFilter(value as Filter)} size="lg">
           <SegmentedControlItem value="all" label="전체" />
           <SegmentedControlItem value="active" label="진행 중" />
           <SegmentedControlItem value="done" label="완료" />

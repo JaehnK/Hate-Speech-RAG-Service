@@ -163,7 +163,7 @@ function stepDetail(step: JobStep, totalHint: number | null): string {
   const unit = step.step_key === "analyze_script" ? "구간" : "개";
   const p = step.item_progress;
   if (p) {
-    const failed = p.failed > 0 ? ` · ${formatNumber(p.failed)}${unit} 실패` : "";
+    const failed = p.failed > 0 ? `, ${formatNumber(p.failed)}${unit} 실패` : "";
     return `${formatNumber(p.total)}${unit} 중 ${formatNumber(p.completed)}${unit} 판정${failed}`;
   }
   if (step.status === "succeeded" && totalHint !== null) return `${formatNumber(totalHint)}${unit} 판정`;
@@ -174,5 +174,5 @@ function summaryLine(job: Job): string {
   const parts: string[] = [];
   if (typeof job.summary.comments_collected === "number") parts.push(`댓글·답글 ${formatNumber(job.summary.comments_collected)}개`);
   if (typeof job.summary.segments_collected === "number" && job.summary.segments_collected > 0) parts.push(`자막 ${formatNumber(job.summary.segments_collected)}구간`);
-  return parts.length ? `${parts.join(" · ")}을 판정했습니다.` : "보고서를 열어 결과를 확인하세요.";
+  return parts.length ? `${parts.join(", ")}을 판정했습니다.` : "보고서를 열어 결과를 확인하세요.";
 }
