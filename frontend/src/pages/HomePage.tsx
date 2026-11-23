@@ -210,8 +210,8 @@ function SampleCard({ report }: { report: PublicReportSummary }) {
         <span className="hs-job-main">
           <Text weight="semibold" maxLines={1}>{report.title}</Text>
           <Text type="supporting">
-            {report.channel_title ?? report.youtube_video_id ?? "YouTube 영상"} · 댓글 {formatNumber(report.comments_collected)}개
-            {report.top_categories.length > 0 ? ` · 많은 유형: ${report.top_categories.slice(0, 2).map(categoryLabel).join(", ")}` : ""}
+            {report.channel_title ?? report.youtube_video_id ?? "YouTube 영상"}, 댓글 {formatNumber(report.comments_collected)}개
+            {report.top_categories.length > 0 ? `, 많은 유형: ${report.top_categories.slice(0, 2).map(categoryLabel).join(", ")}` : ""}
           </Text>
         </span>
         <span className="hs-job-status">

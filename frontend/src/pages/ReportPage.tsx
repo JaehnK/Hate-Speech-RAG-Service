@@ -217,7 +217,7 @@ function CommentsSection({ reportId, report, filter, onClearFilter }: { reportId
       </div>
       <div className="hs-toolbar">
         {split && (
-          <SegmentedControl label="볼 댓글" value={scope} onChange={(value) => { setScope(value as Scope); setShown(PAGE_SIZE); }} size="sm">
+          <SegmentedControl label="볼 댓글" value={scope} onChange={(value) => { setScope(value as Scope); setShown(PAGE_SIZE); }} size="lg">
             <SegmentedControlItem value="all" label="전체" />
             <SegmentedControlItem value="group" label="집단 혐오" />
             <SegmentedControlItem value="individual" label="모욕·욕설" />
@@ -278,11 +278,11 @@ function ScriptSection({ reportId, report }: { reportId: string; report: Report 
     <section className="hs-section" aria-labelledby="script-title">
       <div className="hs-section-header">
         <Heading level={2} id="script-title">자막 판정</Heading>
-        <Text type="supporting">영상 시간순 · {formatNumber(summary.succeeded)}구간 판정 · 혐오표현 {formatNumber(summary.hate_speech_count)}구간</Text>
+        <Text type="supporting">영상 시간순, 판정한 {formatNumber(summary.succeeded)}구간 중 혐오표현 {formatNumber(summary.hate_speech_count)}구간</Text>
       </div>
       {items.length > 0 && summary.hate_speech_count > 0 && (
         <div className="hs-toolbar">
-          <SegmentedControl label="볼 자막" value={onlyFlagged} onChange={setOnlyFlagged} size="sm">
+          <SegmentedControl label="볼 자막" value={onlyFlagged} onChange={setOnlyFlagged} size="lg">
             <SegmentedControlItem value="all" label="전체" />
             <SegmentedControlItem value="flagged" label="혐오표현만" />
           </SegmentedControl>
@@ -307,13 +307,13 @@ function ScriptRow({ segment }: { segment: ReportScriptSegment }) {
   const categories = segment.analysis.categories ?? [];
   return (
     <li className="hs-script-row" data-flagged={flagged || undefined}>
-      <Text type="supporting" hasTabularNumbers>{formatPlaybackTime(segment.start_seconds)}–{formatPlaybackTime(segment.end_seconds)}</Text>
+      <Text type="supporting" hasTabularNumbers>{formatPlaybackTime(segment.start_seconds)}~{formatPlaybackTime(segment.end_seconds)}</Text>
       <div className="hs-stack hs-stack--tight">
         <Text as="p">{segment.text}</Text>
         {flagged && (
           <Text type="supporting">
             <span className="hs-swatch is-hate" aria-hidden /> {categories.map(categoryLabel).join(", ") || "혐오표현"}
-            {segment.analysis.reasoning ? ` — ${segment.analysis.reasoning}` : ""}
+            {segment.analysis.reasoning ? `: ${segment.analysis.reasoning}` : ""}
           </Text>
         )}
         {failed && <Text type="supporting">판정 실패</Text>}

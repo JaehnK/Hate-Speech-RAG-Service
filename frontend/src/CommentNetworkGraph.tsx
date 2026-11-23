@@ -184,7 +184,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
     <div className="hs-stack">
       <div className="hs-toolbar">
         {hasIsolates && (
-          <SegmentedControl label="표시할 작성자" value={scope} onChange={setScope} size="sm">
+          <SegmentedControl label="표시할 작성자" value={scope} onChange={setScope} size="lg">
             <SegmentedControlItem value="connected" label="답글이 오간 작성자만" />
             <SegmentedControlItem value="all" label="전체 작성자" />
           </SegmentedControl>
@@ -193,7 +193,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
         <div className="hs-legend" aria-label="그래프 범례">
           <span><i className="hs-dot" />일반 작성자</span>
           <span><i className="hs-dot is-hate" />혐오표현을 쓴 작성자</span>
-          <span>화살표: 답글 방향 · 굵기: 답글 수 <span className="hs-term">(Edge weight)</span></span>
+          <span>화살표는 답글 방향, 굵기는 답글 수 <span className="hs-term">(Edge weight)</span></span>
         </div>
       </div>
 
@@ -206,7 +206,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
             <IconButton size="sm" variant="ghost" label="화면에 맞춤" tooltip="화면에 맞춤" icon={<Maximize2 size={16} />} onClick={fit} />
             <IconButton size="sm" variant="ghost" label="배치 다시 계산" tooltip="배치 다시 계산" icon={<RefreshCw size={16} />} onClick={relayout} />
           </div>
-          <span className="hs-network-hint">드래그로 이동 · 작성자나 선을 누르면 자세히 보기</span>
+          <span className="hs-network-hint">드래그로 이동하고, 작성자나 선을 누르면 자세히 봅니다</span>
         </div>
 
         <aside className="hs-network-aside">
@@ -220,7 +220,7 @@ export function CommentNetworkGraph({ network, onShowAuthor }: { network: Commen
         <div className="hs-stack">
           <div className="hs-section-header">
             <Heading level={3}>대화가 몰린 작성자</Heading>
-            <Text type="supporting">그래프와 같은 내용을 표로 · 연결 수(Degree)가 많은 순</Text>
+            <Text type="supporting">그래프와 같은 내용을 연결 수(Degree)가 많은 순으로 정리한 표</Text>
           </div>
           <div className="hs-table-scroll">
             <Table<AuthorRow>
