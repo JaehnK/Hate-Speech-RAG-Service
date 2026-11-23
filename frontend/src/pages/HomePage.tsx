@@ -85,7 +85,10 @@ function AnalysisForm() {
   return (
     <section className="hs-hero" aria-labelledby="home-title">
       <div className="hs-stack">
-        <Heading level={1} type="display-1" id="home-title">HateScope</Heading>
+        <div className="hs-hero-brand">
+          <img className="hs-logo" src="/favicon.svg" alt="" width={48} height={48} />
+          <Heading level={1} type="display-1" id="home-title">HateScope</Heading>
+        </div>
         <Text type="large" color="secondary" as="p">
           YouTube 댓글과 자막의 혐오표현을 한 줄씩 판정하고, 근거를 함께 보여줍니다.
         </Text>
