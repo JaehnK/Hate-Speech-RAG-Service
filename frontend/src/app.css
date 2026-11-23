@@ -2,6 +2,7 @@
  * floor: 0 FAIL · fixed: 19, 34, 39a, 39b, 40, 63, 24b, 26b, 75, F3, F26 · dismissed: 54 (Heading renders h2), 73 (text inside the scrollable script list and prompt box), 39b on input (inner field of a 36px control), kept #_r_k_ (React useId on the reply-graph checkbox; nothing reads it) · structural: printed (8, 58, 77, 79)
  * built: the project · redesign: polish · v2.0.0 */
 /* Hallmark · waive 39b · the measured 28px and 20px are inner parts of 36px Astryx controls (segmented track, text field) · the visible control and its hit area sit inside the 32 to 40px app range */
+/* Hallmark · reworded "YouTube 영상의 혐오표현을 근거와 함께 분석합니다" to "HateScope" · the owner asked the hero to lead with the service name */
 /* Hallmark · dropped #_r_k_ · a React useId on the reply-graph checkbox that renumbers itself; the checkbox stays and nothing reads the id */
 
 /*
